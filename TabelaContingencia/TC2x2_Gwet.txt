@@ -1,0 +1,46 @@
+    P N
+P 118 5
+N   2 0
+pdf 
+  5 
+ff.name    pa       pe coeff.val coeff.se      conf.int p.value     w.name
+1        AC1 0.944 0.054432   0.94078  0.02306 (0.895,0.986)       0 unweighted
+
+$weights
+     [,1] [,2]
+[1,]    1    0
+[2,]    0    1
+
+$categories
+[1] "N" "P"
+
+pdf 
+  3 
+t = 0.9407763
+IC95 de AC1 de Gwet = (0.895,0.986)
+      types       scores
+1   adjrand   -0.0223915
+2     chisq    0.0846883
+3         f  119.6007286
+4       fmi    0.9439086
+5   jaccard    0.8932817
+6      jent    0.3596921
+7       mhm    0.9600000
+8        mi    0.0009501
+9    mirkin 1652.0000000
+10      mmm    0.9600000
+11     nmi1    0.0056106
+12     nmi2    0.0052688
+13      nvi    0.9940255
+14  overlap    0.9669930
+15       pd   10.0000000
+16     rand    0.8934194
+17      sdc    0.9436331
+18      smc    0.8934194
+19 tanimoto    0.89328null device 
+          1 
+7
+21      vdm    7.0000000
+22       vi    0.3587420
+23 wallace1    0.9213753
+24 wallace2    0.9669930

@@ -1,0 +1,2906 @@
+---
+title: "Análise de Tabela de Contingência"
+subtitle: ""
+author: |
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    font_adjustment: 1
+    css: style.css
+    df_print: tibble
+    footer: "TabelaContingencia.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  slidy_presentation:
+    font_adjustment: -1
+    css: style.css
+    footer: "TabelaContingencia.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size:  18px;
+  background-color: white;
+  border: 2px solid darkblue;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r echo=FALSE}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE, error=FALSE}
+options(warn=-1)
+suppressMessages(library(coin, warn.conflicts=FALSE))
+suppressMessages(library(corrplot, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(effectsize, warn.conflicts=FALSE))
+suppressMessages(library(epiR, warn.conflicts=FALSE))
+suppressMessages(library(exact2x2, warn.conflicts=FALSE))
+suppressMessages(library(gplots, warn.conflicts=FALSE))
+suppressMessages(library(haven, warn.conflicts=FALSE))
+suppressMessages(library(irr, warn.conflicts=FALSE))
+suppressMessages(library(irrCAC, warn.conflicts=FALSE))
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(rcompanion, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(RVAideMemoire, warn.conflicts=FALSE))
+suppressMessages(library(tidyr, warn.conflicts=FALSE))
+suppressMessages(library(tidyverse, warn.conflicts=FALSE))
+suppressMessages(library(vcd, warn.conflicts=FALSE))
+suppressMessages(library(vcdExtra, warn.conflicts=FALSE))
+suppressMessages(library(logbin, warn.conflicts=FALSE))
+source("eiras.bartitle.R")
+source("eiras.chisqgof.R")
+source("eiras.cramerV.R")
+source("eiras.matrix2dataframe.R")
+source("eiras.show.MCSTAR.R")
+source("friendlycolor.R")
+options(warn=0)
+```
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+# Objetivos
+
+- Identificar e sumariar variáveis nominais e ordinais em tabela de contingência.
+- Identificar distribuição amostral $\chi^2$ (qui-quadrado).
+- Formular hipótese estatística na análise de dados qualitativos.
+- Identificar, aplicar e interpretar os testes de aderência.
+- Definir e determinar frequências observada e esperada.
+- Identificar e analisar tabela de contingência $l\times c$ (número de linhas versus de colunas).
+- Analisar tabelas de contingencia com variáveis ordinais.
+- Analisar tabelas tridimensionais $l\times c \times k$, com a inclusão de variável de estratificação.
+- Realizar os procedimentos estatísticos em R.
+
+# Roteiro em R
+
+Este roteiro serve para facilitar a localização das principais funções e procedimentos envolvidos neste texto, de acordo com o tipo de delineamento dos estudos.
+
+## Delineamento entre participantes
+
+### Teste de independência
+
+* Tabela unidimensional
+  * Uma variável nominal 
+    * Teste de aderência: `chisq.test(simulate.p.value=TRUE,B=1e6,...)`
+
+* Tabela bidimensional
+  * Duas variáveis nominais dicotômicas
+    * Teste exato de Fisher de OR bruto: `exact2x2::fisher.exact`, `coin::chisq_test(...,distribution="exact")`
+    * Teste qui-quadrado de Pearson: `chisq.test(simulate.p.value=TRUE,B=1e6,...)`
+    * Teste kappa de Cohen: `epiR::epi.kappa`
+  * Duas variáveis nominais com pelo menos uma politômica
+    * Teste qui-quadrado de Pearson: `chisq.test(simulate.p.value=TRUE,B=1e6,...)`, `coin::chisq_test`
+    * Teste qui-quadrado de Cochran-Armitage generalizado: `coin::chisq_test`
+    * Teste kappa de Cohen não ponderado: `psych::cohen.kappa`
+	* Uma variável nominal dicotômica e uma ordinal
+		* Teste qui-quadrado de Cochran-Armitage (trend): `stats::prop.trend.test`, `DescTools::CochranArmitageTest`
+  * Uma variável nominal politômica e uma ordinal
+    * Teste qui-quadrado de Cochran-Armitage generalizado: `coin::chisq_test`, `coin::cmh_test`
+  * Duas variáveis ordinais
+    * Teste qui-quadrado de Mantel-Haenszel: `coin::lbl_test`, `coin::cmh_test`, `DescTools::MHChisqTest`
+
+* Tabela tridimensional
+  * Duas variáveis nominais dicotômicas e uma variável de estratificação nominal politômica
+    * Teste de Mantel-Haenszel de OR comum: `mantelhaen.test(exact=TRUE,...)`, `epiR::2by2`, `coin::cmh_test`
+  * Duas variáveis nominais politômicas e uma variável de estratificação nominal politômica
+    * Teste de Mantel-Haenszel de OR comum generalizado: `coin::cmh_test`
+  * Duas variáveis ordinais e uma variável de estratificação nominal politômica
+    * Teste qui-quadrado ordinal estratificado (linear-by-linear association model): `coin::lbl_test`
+    
+### Teste de concordância
+
+* Tabela bidimensional
+  * Duas variáveis nominais dicotômicas
+    * Teste AC1 de Gwet: `irrCAC::gwet.ac1.raw`
+    * Intervalo de confiança para diferença de proporção em dados pareados: `diffdepprop::diffpci`
+  * Duas variáveis ordinais 
+    * Teste de homogeneidade marginal ($H_0$: concordância): `coin::mh_test`
+* Tabela tridimensional
+  * Duas variáveis ordinais com variável de estratificação
+    * Teste de homogeneidade marginal: `coin::mh_test`
+* Dois ou mais avaliadores
+	* Teste AC1 de Gwet: `rrCAC::gwet.ac1.table`, `irrCAC::gwet.ac1.raw` 
+
+## Delineamento intraparticipantes
+
+* Tabela bidimensional
+  * Duas variáveis nominais dicotômicas
+    * Teste qui-quadrado de mudança de McNemar ($H_0$: não mudança): `coin::mh_test`, `exact2x2::mcnemar.exact` 
+    * Intervalo de confiança para diferença de proporção em dados pareados: `diffdepprop::diffpci`
+
+# Introdução
+
+Observamos eventos que podem estar, de alguma forma, interligados. Por exemplo, 
+
+* Pessoas chegam todos os dias ao pronto-socorro de um certo hospital e temos a impressão que o movimento no fim de semana não é igual ao dos outros dias ou que a segunda-feira tem menos procura:
+  * Hitzek, J et al (2022) Influence of Weekday and Seasonal Trends on Urgency and In-hospital Mortality of Emergency Department Patients. _Frontiers in public health_ 10: 711235. https://doi.org/10.3389/fpubh.2022.711235
+
+* Alguns acreditam que o número de partos coincide com a mudança da fase da Lua ([Stabolidou et al., 2008](https://obgyn.onlinelibrary.wiley.com/action/showCitFormats?doi=10.1080%2F00016340802233090){target="_blank"}, [Wake et al., 2010](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2956479/){target="_blank"}, [Gudziunaite & Moshammer, 2022](https://pubmed.ncbi.nlm.nih.gov/35608674/){target="_blank"}).
+
+* [Pharma Hoje (2017) Vinte alimentos nutritivos que ajudam a manter o bom funcionamento do organismo](https://www.hipolabor.com.br/blog/8-alimentos-nutritivos-que-ajudam-manter-o-bom-funcionamento-do-organismo/){target="_blank"}:
+
+  * A linhaça [...] aumenta o HDL — conhecido também como o bom colesterol, fundamental para a formação de diversas estruturas em nossas células — e ainda reduz os triglicérides e o LDL (colesterol ruim).
+
+  * O azeite de oliva extravirgem traz diversos benefícios. Ele atua inibindo os radicais livres e é um verdadeiro aliado quando o assunto é combater doenças. Também combate a oxidação do LDL, sendo um dos alimentos nutritivos que ajudam o bom funcionamento do organismo. Não é à toa que algumas nações, como os italianos e os franceses, são reconhecidamente saudáveis em todo o mundo. O hábito de utilizar o azeite de oliva em seu dia a dia, em vez de outros óleos menos benéficos, tem muito a ver com a disposição e a qualidade de vida desses povos.
+
+  * Se gosta desse tipo de alimento [vegetais crucíferos], temos uma boa notícia: ao consumi-los, você está melhorando sua saúde! Alimentos como a couve-flor, a couve de Bruxelas, o agrião, o rabanete, o repolho e a mostarda são bons exemplos de vegetais crucíferos, ricos em vitaminas e minerais. Eles também ajudam na prevenção de várias doenças, inclusive do câncer — na medida em que são ricos em glicosinolatos. 
+
+**Como saber se tais ocorrências não são apenas coincidências?**
+
+# Contingência
+
+Em sentido geral, contingência pode significar qualquer relação de dependência entre eventos ambientais ou entre eventos comportamentais e ambientais (Catania, 1993; Skinner, 1953, 1969; Todorov, 1985). Embora possa ser encontrado nos dicionários com diferentes significados, esse termo é empregado, na análise do comportamento, **como termo técnico para enfatizar como a probabilidade de um evento pode ser afetada ou causada por outros eventos**. (Catania, 1999, p. 368)
+
+# Delineamento entre participantes: testes de associação
+
+Os testes baseados na estatística qui-quadrado de Pearson podem ser divididos em dois tipos:
+
+1. Teste de aderência de uma variável nominal com duas ou mais categorias:
+teste de frequências hipotetizadas.
+
+2. Teste de independência entre duas variáveis nominais com duas ou mais
+categorias.
+
+A decisão estatística destes testes utiliza a distribuição de mesmo nome (veja o apêndice 1 para mais detalhes).
+
+# Teste qui-quadrado de aderência: uma variável nominal
+
+O teste qui-quadrado de aderência é também conhecido por teste multinomial.
+
+Em inglês é chamado também de _Goodness of Fit_ (_GoF_).
+
+Este teste permite descobrir se um conjunto de frequências observadas difere de um outro conjunto de frequências hipotetizadas.
+
+## Suposição
+
+Independência das observações: cada observação da unidade observacional
+deve ser alocada em apenas uma categoria da variável nominal.
+
+> SIEGEL & CASTELLAN Jr., 1988, p. 111
+
+O teste está implementado em uma função criada por nós e chamada `chisqgof`, disponível no arquivo [`eiras.chisqgof.R`](eiras.chisqgof.R){target="_blank"}.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+O uso de funções pode parecer coisa de programador, mas traz vantagens. Uma vez que uma função está organizada, os códigos que as utilizam são muito mais curtos, legíveis e fáceis de adaptar para casos particulares. Também tem a vantagem de que, uma vez bem desenvolvidas, podemos deixar de nos preocupar com os detalhes internos de uma função.
+
+Neste exemplo, a função foi definida em [`eiras.chisqgof.R`](eiras.chisqgof.R){target="_blank"}.
+</td></tr></table>
+
+Esta função recebe um _dataframe_ com três colunas contendo, respectivamente, os nomes dados ao fator, as frequências observadas e as frequências hipotetizadas; por _default_, faz o teste robusto por _bootstrapping_ com $10^5$ reamostragens. O principal desta função é o teste em si. Encontre a linha que traz:
+
+```{r echo=TRUE, eval=FALSE}
+test <- chisq.test(x, p=probs, simulate.p.value=TRUE, B=B) 
+```
+
+Esta é a função nativa do R que faz o teste de aderência, recebendo os valores em **x** e as probabilidades em **probs** como dois vetores de igual tamanho (preparados, a partir do _dataframe_, pelas linhas de código anteriores ao teste). Você pode experimentar usar a função sozinha, mas como sua saída não é muito instrutiva, aproveitamos para reorganizar os resultados no restante da função e acrescentamos o cálculo do tamanho de efeito utilizando o $V$ de Cramér.
+
+## Exemplo 1: Preferência por marca de chocolate
+
+Setenta e nove pessoas foram solicitadas a manifestar suas preferências com respeito às marcas de chocolate Dream Brown, Best Cocoa e Wonka. Queremos verificar se alguma das marcas é a preferida em detrimento de outras. No experimento, as marcas foram ocultadas dos participantes (estudo cego) e para os pesquisadores (duplo cego).
+
+Caso os chocolates fossem igualmente preferidos pelas pessoas, deveríamos esperar aproximadamente a mesma proporção de pessoas com preferência para cada uma das marcas, i.e., $1/3$ para cada marca de chocolate ($H_0$). 
+
+Na prática, dificilmente haverá exatamente o mesmo número de participantes em cada categoria, mas os números deveriam ter uma distribuição com razoável proximidade a 33.33% das pessoas com preferência para cada tipo de chocolate. O teste avalia tal proximidade, permitindo uma decisão estatística.
+
+O número de pessoas que escolheu apenas uma entre três marcas diferentes está em [`Chocolate.rds`](Chocolate.rds), uma planilha organizada da seguinte forma:
+
+```{r echo=FALSE}
+alfa <- 0.05
+Dados <- data.frame(readxl::read_excel("chocolate.xlsx"))
+Dados$marca <- factor(Dados$marca)
+saveRDS(Dados, "Chocolate.rds")
+prmatrix(Dados, rowlab=rep("",nrow(Dados)),quote=FALSE)
+```
+
+O teste está implementado em [`TesteQuiQuadradoAderencia_Chocolate.R`](TesteQuiQuadradoAderencia_Chocolate.R){target="_blank"}, resultando:
+
+```{r echo=FALSE}
+cat(readLines("TesteQuiQuadradoAderencia_Chocolate.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("TesteQuiQuadradoAderencia_Chocolate.R")
+```
+
+Com $p \approx$ `r sprintf("%f",100*fit[[1]]$p.value)`%, rejeita-se $H_0$ e, portanto, temos evidência de que a preferência pelas marcas de chocolate não é homogênea.
+
+Em outras palavras, o teste indica que as diferenças entre a frequência observada e a hipotetizada de $1/3$ de preferência em cada marca é significante, improvável, o que é dado pelo valor _p_. 
+
+Observando a tabela, vemos que o desequilíbrio ocorreu pela maior preferência pelo chocolate da marca Wonka.
+
+## Exemplo 2: genética
+
+As probabilidades relacionadas com $H_0$ não precisam ser sempre todas iguais. Por exemplo, em genética, é comum precisarmos avaliar como é a herança de um genótipo a partir dos fenótipos observados. 
+
+Duas linhagens puras de plantas foram cruzadas: uma com pétalas amarelas e outra com pétalas vermelhas. A primeira geração, $F_1$, tem pétalas cor de laranja. Então $F_1$ é cruzada entre si, gerando $F_2$ com 320 plantas, das quais 182 têm pétalas cor de laranja, 61 amarelas e 77 vermelhas. 
+
+> exemplo traduzido de https://www.ncbi.nlm.nih.gov/books/NBK21907/
+
+Há duas possibilidades para explicar este resultado, e queremos saber qual é o caso para o fenótipo das pétalas das flores desta espécie:
+
+1. dominância incompleta ou codominância, com os seguintes genótipos e frequências esperadas:
+    * Y/R: laranja ($1 \over 2$)
+    * Y/Y: amarela ($1 \over 4$)
+    * R/R: vermelha ($1 \over 4$)
+
+Neste caso, os números esperados para $F_2$ são, respectivamente, 160, 80 e 80, seguindo as proporções 2:1:1.
+  
+2. [_epistasis_](https://en.wikipedia.org/wiki/Epistasis){target="_blank"} recessiva, com os seguintes genótipos e frequências esperadas:
+    * Y/-; R/-: laranja ($9 \over 16$)
+    * y/y; R/-: amarela ($3 \over 16$)
+    * Y/-; r/r: vermelha ($3 \over 16$)
+    * y/y; r/r: vermelha ($1 \over 16$)
+
+Neste caso, os números esperados para $F_2$ são, respectivamente, 180, 60 e 80 (60+20), seguindo as proporções 9:3:(3:1).
+
+A qual das duas hipóteses a herança da cor das flores desta espécie adere?
+
+A diferença com o exemplo anterior é que o arquivo de dados [`Flores.rds`](Flores.rds){target="_blank"} tem 4 colunas:
+
+```{r echo=FALSE}
+Dados <- data.frame(readxl::read_excel("flores.xlsx"))
+Dados$CorPetalas <- factor(Dados$CorPetalas)
+saveRDS(Dados,"Flores.rds")
+prmatrix(Dados, rowlab=rep("",nrow(Dados)),quote=FALSE)
+```
+
+As duas primeiras são as cores das flores e os números observados de plantas, respectivamente similares às marcas e número de pessoas em [`Chocolate.rds`](Chocolate.rds){target="_blank"}. A terceira coluna tem as probabilidades $0.50, 0.25, 0.25$, que são a $H_0$ da codominância. A quarta coluna tem $\frac{9}{16}, \frac{3}{16}, \frac{3+1}{16}$, a $H_0$ da epistasis recessiva. Por isso, chamamos `chisqgof` duas vezes, passando as colunas <code>c(1,2,3)</code> e <code>c(1,2,4)</code> para testarmos as duas possibilidades de herança genética.
+
+O código [`TesteQuiQuadradoAderencia_Flores.R`](TesteQuiQuadradoAderencia_Flores.R){target="_blank"} produz a seguinte saída:
+
+```{r echo=FALSE}
+cat(readLines("TesteQuiQuadradoAderencia_Flores.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("TesteQuiQuadradoAderencia_Flores.R")
+```
+
+Neste exemplo, buscamos **não** rejeitar $H_0$. Estes resultados sugerem que a herança das cores das pétalas desta espécie é explicada por epistasis recessiva. Esta é a conclusão porque, para o habitual $\alpha=0.05$, $H_0$ é rejeitada com as proporções esperadas pela codominância, com $p \approx 0.02$, mas não é rejeitada com as proporções esperadas para epistasis recessiva, com $p \approx 0.93$. 
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Em teste de aderência, o número de graus de liberdade corresponde ao número de categorias menos 1. Portanto, para o exemplo da preferência pelos chocolates com 3 marcas ou para as flores com três cores possíveis, temos 2 graus de liberdade. Um teste para o número de pacientes atendidos de acordo com o dia da semana, de segunda a domingo, tem 6 graus de liberdade.
+</td></tr></table>
+
+# Teste qui-quadrado de Pearson para Independência
+
+O teste qui-quadrado de Pearson permite o teste da existência de  associação ou efeito de interação entre duas variáveis qualitativas nominais com duas ou mais categorias.
+
+## Suposição
+
+Para o teste qui-quadrado de Pearson para Independência é necessário que cada observação da unidade observacional deve ser alocada em apenas uma categoria de cada uma das duas variáveis nominais.
+
+> SIEGEL & CASTELLAN Jr., 1988, p. 111
+
+## Relações entre duas variáveis nominais 
+
+<div align=center>
+<table style="border:1; background-color:#F7F056; border-radius: 25px; cellpadding=25"><tr><td  style="text-align:center;">
+<font style="font-size:300%">1</font><br>
+<font style="font-size:200%">Exposição e Desfecho</font>
+</td></tr></table>
+</div>
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/exposicao_desfecho.png")
+```
+
+### tabela 2x2
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/expdfc_tabela.png")
+```
+
+### independência
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/expdfc_independencia.png")
+```
+
+### concordância
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/expdfc_concordancia.png")
+```
+
+### discordância
+
+```{r out.width = "70%", out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/expdfc_discordancia.png")
+```
+
+## Associação
+
+<div align=center>
+<table style="border:2; background-color:#F7F056; border-radius: 25px; cellpadding=50px"><tr><td  style="text-align:center;">
+<font style="font-size:300%">2</font><br>
+<font style="font-size:200%">Não avalia<br>causa e efeito:<br>apenas associação.</font>
+</td></tr></table>
+</div>
+
+### causa e efeito positivo?
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitopositivo.png")
+```
+
+### causa e efeito negativo?
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitonegativo.png")
+```
+
+### causa e efeito positivo?
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitopositivo2.png")
+```
+
+### causa e efeito?
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitoxixi01.png")
+```
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitoxixi02.png")
+```
+
+"Quando alguém lhe traz uma opinião coincidente com sua crença, você a toma como um fato.
+
+Quando alguém lhe traz um fato discordante de sua crença, você o toma como uma opinião."
+
+> Prof. Eduardo Massad
+
+## Gatos e alergia
+
+### - gatos causam alergia [...](#gatoStress)
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitopositivo.png")
+```
+
+### - estresse
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitogatos01.png")
+```
+
+### - mecanismo imune
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitogatos02.png")
+```
+
+### - desinfetantes
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitogatos03.png")
+```
+
+### - alergia e estresse
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitogatos04.png")
+```
+
+### - alergia é a causa dos gatos
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitogatos05.png")
+```
+
+## Vinho e doença coronariana
+
+"O suco de uva tinto integral — ou até mesmo o consumo moderado de vinho — pode fazer muito bem. Como reduz a pressão arterial e é rico em flavonoides, ele traz uma série de benefícios para quem o ingere. O resultado disso é a diminuição do risco de algumas doenças, como a aterosclerose."
+
+> [Pharma Hoje (2017) Vinte alimentos nutritivos que ajudam a manter o bom funcionamento do organismo](https://www.hipolabor.com.br/blog/8-alimentos-nutritivos-que-ajudam-manter-o-bom-funcionamento-do-organismo/)
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho01.png")
+```
+
+### - ambiente inseguro
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho02.png")
+```
+
+### - moradia precária
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho03.png")
+```
+
+### - má nutrição
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho04.png")
+```
+
+### - boa moradia
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho05.png")
+```
+
+### - segurança
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho06.png")
+```
+
+### - boa alimentação
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho07.png")
+```
+
+### - outros cuidados
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho08.png")
+```
+
+### - é o vinho?
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitovinho09.png")
+```
+
+## Coronary heart disease: what is the evidence?
+
+"A **educação do paciente** é o processo pelo qual os profissionais de saúde transmitem informações aos pacientes e aos cuidadores que irão alterar seus comportamentos de saúde ou melhorar seu estado de saúde. Uma revisão recente da Cochrane nos diz que, atualmente, **há poucas evidências de que a educação do paciente, como parte de um programa de reabilitação cardíaca, reduza os eventos relacionados ao coração e melhore a qualidade de vida relacionada à saúde**. Na verdade, não há informações suficientes no momento para compreender completamente os benefícios ou malefícios da educação do paciente para pessoas com doenças cardíacas. No entanto, os resultados sugerem provisoriamente que as pessoas com doenças cardíacas devem receber reabilitação abrangente que inclui educação.
+
+Um segundo componente da reabilitação é o **exercício**. Expliquei ao meu paciente a importância dos exercícios para seus resultados de curto e longo prazo. Outra revisão recente da Cochrane mostrou que a **reabilitação cardíaca baseada em exercícios reduz o risco de morte por causa cardiovascular, diminui a duração da internação hospitalar e melhora a qualidade de vida relacionada à saúde quando comparada com aqueles que não praticam exercícios**.
+
+Ataques cardíacos e cirurgia cardíaca podem ser assustadores e traumáticos, podendo causar aumento do sofrimento psicológico. Uma terceira revisão recente da Cochrane avaliou a eficácia das **intervenções psicológicas** para doença coronariana. Embora as evidências tenham mostrado que as intervenções psicológicas, como parte da reabilitação cardíaca, **não reduzem a mortalidade total de pessoas com doença coronariana**, há algumas evidências de que podem aliviar os sintomas de depressão, ansiedade e estresse relatados pelo paciente [3]. Para prevenir e controlar esses sintomas no futuro, recomendei que meu paciente fizesse terapia psicológica regular. Mesmo que não tenha nenhum papel na redução do risco de mortalidade por doença coronariana, pode melhorar outros sintomas psicológicos importantes."
+
+> Traduzido de [Pandit K (2017)](https://s4be.cochrane.org/blog/2017/11/17/coronary-heart-disease-what-is-the-evidence/) (grifos nossos)
+
+<big>**Mediterranean-style diet for the prevention of cardiovascular disease**</big>
+
+"Esta revisão avaliou os efeitos de fornecer aconselhamento dietético para seguir uma dieta de estilo mediterrâneo ou fornecimento de alimentos relevantes para a dieta (ou ambos) para adultos saudáveis, pessoas com risco aumentado de doença cardiovascular e aquelas com doença cardiovascular, a fim de prevenir o ocorrência ou recorrência de doença cardiovascular e reduzir os fatores de risco a ela associados.
+
+As definições de um padrão alimentar mediterrâneo variam e incluímos apenas ensaios clínicos randomizados de intervenções que relataram ambos os seguintes componentes principais: uma alta proporção de gordura monoinsaturada / saturada (uso de **azeite de oliva** como ingrediente principal para cozinhar e / ou consumo de outro alimentos tradicionais ricos em gorduras monoinsaturadas, como **nozes**, e uma alta ingestão de alimentos **vegetais, incluindo frutas, vegetais e legumes**. Componentes adicionais incluídos: baixo a moderado consumo de **vinho tinto**; alto consumo de **grãos inteiros e cereais**; baixo consumo de carnes e derivados e aumento do consumo de **peixes**; consumo moderado de leite e produtos lácteos.
+
+[...]
+
+Apesar do número relativamente grande de estudos incluídos nesta revisão, ainda há **alguma incerteza em relação aos efeitos de uma dieta de estilo mediterrâneo** nos desfechos clínicos e nos fatores de risco de doença cardiovascular para prevenção primária e secundária. A qualidade da **evidência** para os benefícios modestos sobre os fatores de risco de DCV na prevenção primária é **baixa ou moderada**, com um pequeno número de estudos relatando **danos mínimos**. Existem poucas evidências de prevenção secundária. Os estudos em andamento podem fornecer mais certeza no futuro."
+
+> Traduzido de [Rees K, Takeda A, Martin N, Ellis L, Wijesekara D, Vepa A, Das A, Hartley L, Stranges S  (2019)](https://www.cochrane.org/CD009825/VASC_mediterranean-style-diet-prevention-cardiovascular-disease) (grifos nossos)
+
+## Tabagismo e Câncer de Pulmão
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/causaefeitopositivo2.png")
+```
+
+### - The Cigarette Century
+
+```{r out.width = "40%", echo=FALSE}
+knitr::include_graphics("./image/cigarette_century.png")
+```
+
+> **- How could one attribute lung cancer to cigarette smoking?**
+
+"The public impression of scientific and medical **uncertainty** that resulted was a crucial element in maintaining the market of current smokers as well as recruiting new ones. Industry literature, for example, frequently pointed to the fact that **nonsmokers could also develop lung cancer**. Therefore, they argued, **how could one attribute lung cancer to cigarette smoking?**"
+
+> **- Medical knowledge is provisional**
+
+medical knowledge was always provisional and **contingent**. Just as drugs deemed “effective” do not work in every case, so too **a cause of disease does not always result in disease**. As Richard Doll would later explain, the epidemiologists had identified a cause of lung cancer (and other diseases), not the cause.
+
+> **- Fisher was against the association between smoking and lung cancer**
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/fisher_smoker.png")
+```
+
+Another vocal critic of the lung cancer findings was **Sir Ronald Fisher**, the leading biometrician and geneticist in Great Britain during the first half of the twentieth century and a man deeply committed to bringing statistical analysis to genetics and agricultural experimentation. His <font size=4>**1925**</font> book, Statistical Methods for Research Workers, quickly became a classic, leading to academic appointments at University College London and Cambridge University. Fisher’s critiques were similar to Berkson’s. The ethical impossibility of conducting a randomized experiment led him to question the results of the epidemiological studies. As a **believer in genetic* notions of cancer causality, Fisher speculated that there was some constitutional factor that led individuals both to become smokers and to get lung cancer, even though smoking and lung cancer might not be causally related**. Doll and Hill repeatedly rebutted this theory, returning to the critical question of how to account for the rise in lung cancers during the twentieth century if the disease was simply “constitutional.”
+
+\* <font size=4>**1923**</font>: One of the [A. Bradford] Hill's innovations was the **first randomized, double-blind clinical trial**, designed to reduce investigator bias in the evaluation of clinical outcomes. [...] This method, which drew on Fisher's **agricultural experimentation** in genetics, became a critical new tool for evaluating medical treatments. 
+
+```{r out.width = "70%", echo=FALSE}
+knitr::include_graphics("./image/fisher_dna.png")
+```
+
+By the  <font size=4>**1930s**</font>, the relationship of smoking to cancer was a topic of uresolved debate. It was the **life insurance industry**, which like the tobacco corporations grew by leaps and bounds in the first half of the twentieth century, that **took the lead in understanding the effects of smoking on health**.
+
+By the early <font size=4>**1950s**</font>, however, it was abundantly clear that the evidence implicating cigarette smoking as a risk to health was now of a different order. First, the link between smoking and disease was **categorical**, outside the realm of individual clinical judgment.
+
+They [tobacco industry] responded with a new and unprecedent public relations strategy. Its goals was to produce and **sustain scientific skepticism and controversy** in order to disrupt the emerging consensus on the harms of cigarette smoking. This strategy required **intrusions into scientific process and procedure**. [...] So long as there appeared to be doubt, so long as the industry could assert "**not proven**". [...] The future of the cigarette would now depend on the **successful production of a scientific controversy**.
+
+## Hipótese nula para o teste qui-quadrado de Pearson de independência
+
+<div align=center>
+<table style="border:1; background-color:#F7F056; border-radius: 25px; cellpadding=25"><tr><td  style="text-align:center;">
+<font style="font-size:300%">3</font><br>
+<font style="font-size:200%">Tomada de decisão:<br>
+Hipótese nula ($H_0$)<br>
+e hipótese alternativa ($H_1$)</font>
+</td></tr></table>
+</div>
+
+### Exemplo: capacete e trauma craniano
+
+Considere um estudo que investiga a efetividade dos capacetes de segurança de bicicleta na prevenção de traumas cranianos. Os dados consistem de uma amostra aleatória de 793 indivíduos envolvidos em acidentes ciclísticos durante um certo período. Deseja-se testar, com $\alpha=0.05$, se o uso do capacete tem funcionado como um fator de proteção.
+
+Formulamos as hipóteses nula e alternativa:
+
+$$\begin{align}
+H_0&: \text{não existe associação entre uso do capacete e trauma craniano}\\
+H_1&: \text{existe associação entre uso do capacete e trauma craniano}\\
+\alpha &= 5\%
+\end{align}$$
+
+Os dados são:
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/pinoquio.png")
+```
+
+```{r comment=NA, echo=TRUE}
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+print (tabela)
+```
+
+### Operacionalização do teste qui-quadrado de Pearson
+
+Sob a hipótese nula ($H_0$), i.e., se não existe associação entre o uso de capacete e o trauma craniano nos acidentes, os valores esperados sob a hipótese nula (i.e., supondo-se que não existe associação entre o uso do capacete e o trauma craniano) são:
+
+```{r comment=NA, echo=TRUE}
+chi2 <- chisq.test(tabela, correct=FALSE)
+print(round(chi2$expected,1))
+```
+
+O teste é baseado na comparação entre os valores observados e esperados.
+
+O resultado do teste, já executado com `chisq.test` e armazenado em `chi2`, pode ser visto com:
+
+```{r comment=NA, echo=TRUE}
+print(chi2)
+```
+
+É mais fácil entender a interpretação deste teste, representando-o graficamente ([`capacetetrauma_testeX2.R`](capacetetrauma_testeX2.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("capacetetrauma_testeX2.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("capacetetrauma_testeX2.R")
+```
+
+<small>(para melhor visibilidade, computamos $0 \le X^2 \le 9$ e truncamos o eixo das ordenadas em 1.2)</small>
+
+O interesse no teste qui-quadrado é saber a partir de qual valor de $X^2$ a discrepância entre os valores observados e esperados sob $H_0$ é menos provável que o valor de $\alpha$ escolhido. Isto é encontrar o valor que separa a área de $5\%$ sob a curva de distribuição em sua cauda direita. Este valor é chamado de qui-quadrado crítico, $\chi^2_c$. 
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+O raciocínio é bicaudal, buscando associação positiva ou negativa, mas a operacionalização do teste só utiliza a cauda superior. Isto acontece porque $X^2=0$ correponde à igualdade numérica entre os valores observados e esperados sob $H_0$. Como os valores de $X^2$ aumentam com o aumento da discrepância entre os valores observados e esperados, utilizamos $\alpha=0.05$ somente na cauda direita.
+
+</td></tr></table>
+
+Podemos encontrar $\chi^2_c$ pelo complemento ($1-\alpha=0.95$) com
+
+```{r comment=NA, echo=TRUE}
+alfa <- 0.05
+chi2.critico <- qchisq(p=1 - alfa, df=1)
+cat("qui-quadrado crítico (df=1, alfa=5%): ", chi2.critico, "\n", sep="")
+```
+
+pois este é o valor de $\chi^2$ que deixa $95\%$ da área sob a curva da distribuição $\chi^2$ à sua esquerda e $\alpha=5\%$ à sua direita (área hachurada em azul). Equivalentemente, valores de $X^2$ à esquerda de $\chi^2_c$ estão na faixa de não rejeição de $H_0$ e à direita está a faixa de rejeição de $H_0$.
+
+O teste obteve a estatística de teste com o valor $X^2$=`r chi2$statistic`, com um grau de liberdade (<code>df=</code>`r chi2$parameter`), correspondendo ao valor _p_=`r chi2$p.value`. Comparando estes valores com $X^2$ ou $\alpha$, respectivamente, podemos decidir pela rejeição ou não-rejeição de $H_0$.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Os graus de liberdade em uma tabela com $L$ linhas e $C$ colunas são dados por 
+$$df = (L-1) \times (C-1)$$
+
+Portanto, uma tabela $2\text{ x }2$ tem somente um grau de liberdade, e uma tabela $4\text{ x }3$ tem seis graus de liberdade.
+
+</td></tr></table>
+
+# Decisão estatística
+
+## Decisão pela estatística de teste
+
+Para 1 grau de liberdade e $\alpha=0.05$, computamos $\chi^2_c(95\%)=$\ `r chi2.critico`. Neste exemplo rejeitamos $H_0$ porque calculamos $X^2=$\ `r chi2$statistic`, valor maior que o valor crítico.
+
+## Decisão pelo valor _p_ 
+
+À direita do valor calculado $X^2=$\ `r chi2$statistic` define-se uma área, que corresponde ao valor _p_ (área hachurada em laranja), acessível em `chi2$p.value`=`r chi2$p.value`. Como $p < \alpha$, concluimos pela rejeição de $H_0$. 
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+As duas formas de decisão, pela comparação de $X_c^2$ com $X^2$ ou pela comparação entre $\alpha$ e $p$, são igualmente válidas e equivalentes. 
+
+Exibir o valor _p_ é a forma mais moderna e recomendada atualmente.
+</td></tr></table>
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Conceitualmente, o teste qui-quadrado é um teste de proporções, no qual a estatística de teste (i.e., o valor de $X^2$) é obtida pela diferença quadrática entre as frequências absolutas observadas e esperadas sob $H_0$, dada por $$X^2 = \sum{ \dfrac{(o - e)^2}{e} }$$. 
+
+Em R, experimente calcular a estatística na "força bruta":
+
+```{r comment=NA, echo=TRUE}
+qui2 <- 0
+for(i in 1:4)
+{
+  qui2 <- qui2 + ((chi2$observed[i]-chi2$expected[i])^2)/chi2$expected[i]
+}
+cat("O valor do qui-quadrado é ",qui2,"\n",sep="")
+```
+
+Note, portanto, que o valor de $X^2$ aumenta com a discrepância crescente entre os valores observados e esperados sob $H_0$.
+
+Outra maneira de verificarmos o cálculo é, adotando a seguinte convenção para tabelas 2x2,
+
+<table id="t01" class="center">
+<tr><td></td><th>Desfecho +</th><th>Desfecho -</th></tr>
+<tr><th>Exposição +</th><td>a</td><td>b</td></tr>
+<tr><th>Exposição -</th><td>c</td><td>d</td></tr>
+</table>
+
+obtermos o valor do $X^2$ com:
+
+$$X^2 = \dfrac{(ad-bc)^2(a+b+c+d)}{(a+b)(c+d)(a+c)(b+d)}$$
+
+Quanto mais forte for a diagonal principal ($ad$) em relação à secundária ($bc$), maior é o valor de $X^2$.
+
+Obviamente, estes cálculos manuais não são necessários. A função `chisq.test` já os executa e armazena no objeto que, neste exemplo, denominamos `chi2`. 
+
+Do objeto `chi2` exibimos somente a tabela de valores esperados sob $H_0$ com <code>print(chi2$expected)</code> e o resultado geral do teste com <code>print(chi2)</code>. No entanto, este tipo de objeto contém outras informações; para mais detalhes veja o apêndice 2.
+
+</td></tr></table>
+
+# Teste qui-quadrado de Pearson robusto
+
+Há várias condições para a aplicação do teste qui-quadrado (comentadas adiante) que podem, muitas vezes, restringir seu uso. Uma alternativa é computar o teste em sua versão robusta. A função `chisq.test` pode ser utilizada com:
+
+```{r comment=NA, echo=TRUE}
+chi2.robusto <- chisq.test(tabela, simulate.p.value=TRUE, B=1e5)
+print(chi2.robusto)
+```
+
+Com os parâmetros <code>simulate.p.value=TRUE</code> e <code>B=1e5</code>, o teste foi feito com _bootstrapping_,  executando $1 \times 10^5 = 100000$ reamostragens.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Como a amostra é grande, os valores de $X^2$ e $p$ não mudam muito entre os dois métodos. Há um pequeno _bug_ na implementação da versão robusta, que não calcula os graus de liberdade (sabemos que <code>df=1</code>). 
+
+</td></tr></table>
+
+A decisão, neste caso, não mudou. Tanto pelo critério do $\chi^2_c(1-\alpha)$ quanto pelo $\alpha$ rejeita-se $H_0$.
+
+# Risco relativo
+
+Há dois tipos principais de risco relativo: _razão de riscos_ (RR, _risk ratio_) e _razão de chances_ (OR, _odds ratio_). 
+
+Vamos considerar a seguinte tabela:
+
+```{r comment=NA, echo=FALSE}
+tabela <- as.table(matrix(
+  c("a", "b", "a+b", 
+    "c", "d", "c+d",
+    "a+c", "b+d", "total"
+    ), 
+  nrow = 3, byrow = TRUE))
+colnames(tabela) <- c("Com desfecho", "Sem desfecho", "")
+rownames(tabela) <- c("Com exposição", "Sem exposição", "")
+print (tabela)
+```
+
+Esta tabela de contingência genericamente relaciona exposição (e.g., hábito de fumar) com um efeito ou desfecho (e.g., câncer de pulmão). Traz as contagens dos:
+
+* expostos que apresentaram o desfecho ($a$), 
+* expostos que não apresentaram o desfecho ($b$), 
+* não expostos que apresentaram o desfecho ($c$) e 
+* não expostos que não apresentaram o desfecho ($d$).
+
+As marginais totalizam
+
+* total de expostos ($a+b$),
+* total de não expostos ($c+d$),
+* total dos que apresentaram o desfecho ($a+c$) e
+* total dos que não apresentaram o desfecho ($b+d$).
+
+## Razão de riscos (RR, _risk ratio_)
+
+Riscos são probabilidades. A razão de riscos é dada por:
+
+$$\LARGE{\text{RR} = {\dfrac{\dfrac{a}{a+b}}{{\dfrac{c}{c+d}}}}}$$
+
+Repare que $\dfrac{a}{a+b}$ é a probabilidade de um indivíduo exposto ter o desfecho (e.g., fumante ter câncer); $\dfrac{c}{c+d}$ é a probabilidade de um indivíduo **não** exposto ter o desfecho (e.g., não-fumante ter câncer).
+
+$\text{RR}$, portanto, é um _odds_: quantas vezes mais é mais provável o desfecho (ocorrência de câncer) em quem é exposto (fumante) em comparação com quem não é exposto (não fumante). O foco do RR, portanto, está na exposição.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+<font size=4>_Odds_ e probabilidade</font>
+
+_Odds_ (traduzido habitualmente por chance) e probabilidade são formas equivalentes para expressar possibilidades e relacionadas por:
+
+$$\textit{Odds} = {{\text{Probabilidade}} \over{1-\text{Probabilidade}}}$$
+
+e
+
+$$\text{Probabilidade} = {{\textit{Odds}} \over{1+\textit{Odds}}}$$
+
+Por exemplo, uma probabilidade de $80\%$ corresponde a 
+
+$$\textit{Odds} = {\dfrac{0.8}{1-0.8}} = \dfrac{0.8}{0.2} = 4$$
+
+indicando que dizer "$80\%$ de probabilidade" é equivalente a dizer "4 vezes mais chance de ocorrer do que não ocorrer" um determinado evento.
+
+Resersamente, _Odds_ de 2 é:
+
+$$\text{Probabilidade} = \dfrac{2}{1+2} = \dfrac{2}{3} \approx 66.67\%$$
+
+e $\textit{Odds}=1$ resulta em: 
+
+$$\text{Probabilidade} = \dfrac{1}{1+1} = \dfrac{1}{2} = 50\%$$
+
+Associa-se o máximo de incerteza com probabilidade de $50\%$; por este motivo, $Odds=1$ será um valor necessário para decisões estatísticas, adiante.
+
+</td></tr></table>
+
+## Razão de chances (OR, _odds ratio_)
+
+_Odds ratio_, como diz o nome, é uma razão entre dois _odds_. Ainda considerando a tabela:
+
+```{r comment=NA, echo=FALSE}
+tabela <- as.table(matrix(
+  c("a", "b", "a+b", 
+    "c", "d", "c+d",
+    "a+c", "b+d", "total"
+    ), 
+  nrow = 3, byrow = TRUE))
+colnames(tabela) <- c("Com desfecho", "Sem desfecho", "")
+rownames(tabela) <- c("Com exposição", "Sem exposição", "")
+print (tabela)
+```
+
+$\text{OR}$ é dado por:
+
+$$\LARGE{\text{OR} =  \dfrac{ \dfrac{ \dfrac{a}{a+c} }{ \dfrac{c}{a+c} } }{ \dfrac{ \dfrac{b}{b+d} }{ \dfrac{d}{b+d} } } }$$
+
+O numerador de $\text{OR}$ 
+
+* $\dfrac{\dfrac{a}{a+c}}{\dfrac{c}{a+c}}$ é _odds_ entre os que tiveram o desfecho para quem é exposto ou não exposto, por exemplo, quantas vezes é mais provável ter câncer para quem fuma em relação a quem não fuma.
+
+e o denominador de $OR$ 
+
+* $\dfrac{\dfrac{b}{b+d}}{\dfrac{d}{b+d}}$ é _odds_  entre os não não tiveram o desfecho para quem é exposto ou não exposto, por exemplo, quantas vezes é mais provável não ter câncer para quem fuma em relação a quem não fuma.
+
+Para os dois grupos considera-se os _odds_ da exposição  (quantas vezes é mais provável ser exposto) e verifica quantas vezes maior é o _odds_ de ser exposto dos que tiveram o desfecho em relação aos que não tiveram o desfecho. O foco do OR, portanto, está nos _odds_ (nas chances) do desfecho. Sua interpretação, especialmente para quem não está acostumado a pensar em _odds_, é convoluta.
+
+No entanto, é interessante (com alguma álgebra) verificar que $\text{OR}$ reduz-se a:
+
+$$ \LARGE{\text{OR} = \dfrac{a \times d}{b \times c}}$$
+
+fácil de lembrar e assim conhecido como "produto cruzado" (com o defeito de ocultar o motivo pelo qual é um _odds ratio_). Como produto cruzado, percebe-se que é uma medida de quanto pesa a:
+
+* diagonal principal, do que é concordante: $\text{desfecho entre expostos}~~\text{E}~~\text{não desfecho entre não expostos}$
+
+em relação à 
+
+* diagonal secundária, do que é discordante: $\text{desfecho entre não expostos}~~\text{E}~~\text{não desfecho entre expostos}$.
+
+Esta é uma forma mais fácil de interpretar o $\text{OR}$.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Os valores de $\text{RR}$ e $\text{OR}$ são próximos quando menos que $5\%$ dos não expostos têm desfecho.
+
+</td></tr></table>
+
+No R nativo existe função para o cálculo de $\text{OR}$ implementado como parte do Teste Exato de Fisher. No exemplo de capacete e trauma, temos:
+
+```{r comment=NA, echo=TRUE, eval=FALSE}
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+print(tabela)
+ft <- fisher.test(tabela) # Teste de OR robusto
+print(ft)
+```
+
+```{r comment=NA, echo=FALSE}
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+print(tabela)
+ft <- fisher.test(tabela) # Teste de OR robusto
+print(ft)
+```
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+A função nativa <code>fisher.test</code> pode apresentar uma incoerência entre o teste de $H_0$ pelo valor _p_ e pelo intervalo de confiança com amostras pequenas. 
+
+Existe uma alternativa, implementada em <code>exact2x2::fisher.exact</code>:<a name="tabtrauma"><span style=""></span></a>
+
+```{r comment=NA, echo=TRUE}
+library(exact2x2)
+
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+print(tabela)
+ft <- exact2x2::fisher.exact(tabela)
+print(ft)
+```
+
+Para ver qual é o problema, usando outra tabela de valores, compare:
+
+```{r comment=NA, echo=TRUE}
+library(exact2x2)
+
+tabela <- as.table(matrix(c(2, 14, 12, 15), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+print(tabela)
+ftn <- fisher.test(tabela)
+print(ftn)
+fte <- exact2x2::fisher.exact(tabela)
+print(fte)
+```
+
+Neste caso, a função nativa produz um intervalo de confiança que inclui o valor unitário em contradição com o valor _p_ (aliás, igual nas duas funções).
+
+Como <code>exact2x2::fisher.exact</code> é coerente, sugerimos que a
+adotem no lugar da função nativa do R.
+
+</td></tr></table>
+
+## Decisão pelo intervalo de confiança
+
+A estimativa pontual de _odds ratio_ está em `ft$estimate`=`r ft$estimate`, mas para a decisão é obrigatório verificar seu intervalo de confiança de 95%, com limites inferior e superior respectivamente guardados em `ft$conf.int[1]`=`r ft$conf.int[1]` e `ft$conf.int[2]`=`r ft$conf.int[2]`, pois este é o intervalo onde confiamos estar o valor populacional (que nunca saberemos). 
+
+Como a ausência de efeito é dada por $OR=1$ (correspondendo a $H_0$) e este valor unitário está fora do intervalo, rejeita-se $H_0$. Além disto, como o intervalo de confiança de 95% está à esquerda do $1$, o uso de capacete é protetor, associado com redução dos traumas cranianos.  
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Caso a tabela fosse construída com as colunas em posições trocadas (compare com a [tabela anterior](#tabtrauma)), obter-se-ia o seguinte:
+
+```{r comment=NA, echo=TRUE}
+tabela <- as.table(matrix(c(138, 17, 508, 130), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma -","Trauma +")
+rownames(tabela) <- c("Capacete +","Capacete -")
+print(tabela)
+fti <-  exact2x2::fisher.exact(tabela) # Teste de OR robusto
+print(fti)
+```
+
+O _odds ratio_ `fti$estimate`=`r fti$estimate` é agora maior que o valor unitário, o qual está fora do intervalo (`fti$conf.int[1]`=`r fti$conf.int[1]` e `fti$conf.int[2]`=`r fti$conf.int[2]`), rejeitando-se a hipótese nula e a associação é positiva: a conclusão é a mesma, o uso de capacete está associado com o aumento de "Trauma -", portanto é protetor. 
+
+Aliás, observe que
+
+```{r comment=NA, echo=TRUE}
+print(1/fti$estimate)
+print(1/fti$conf.int[2])
+print(1/fti$conf.int[1])
+```
+
+são os mesmos valores obtidos anteriormente e guardados no objeto <code>ft</code>: `ft$estimate`=`r ft$estimate`, `ft$conf.int[1]`=`r ft$conf.int[1]` e `ft$conf.int[2]`=`r ft$conf.int[2]`.
+
+</td></tr></table>
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Lembre-se de nunca decidir a respeito de _odds ratio_ sem considerar o intervalo de confiança. Por isso, evite fazer o cálculo manualmente: use R!
+
+</td></tr></table>
+
+<!--
+### $RR$ e $OR$ em _epitools_
+
+Há outros pacotes em R que calculam _risk ratio_ e _odds ratio_, como por exemplo:
+
+```{r echo=TRUE, eval=FALSE}
+library(epitools)
+
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+
+epitools::oddsratio(tabela, method="fisher")
+```
+que produz os mesmos valores para a estimativa pontual e intervalo de confiança que o teste exato de Fisher:
+```{r echo=FALSE}
+library(epitools)
+
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+
+epitools::oddsratio(tabela, method="fisher")
+```
+Há mais três métodos disponíveis, de acordo com a documentação da função.
+
+A library _epitools_ também permite o cálculo de $RR$ com intervalo de confiança. Ainda que não seja adequada para o presente exemplo, verifiquem sua sintaxe. Há três métodos disponíveis, como por exemplo:
+
+```{r echo=TRUE}
+library(epitools)
+
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+
+epitools::riskratio(tabela, method="wald")
+```
+
+e também uma variante com bootstrapping:
+
+```{r echo=TRUE}
+library(epitools)
+
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+
+epitools::riskratio(tabela, replicates=1e5)
+```
+-->
+
+## Risco relativo em `epiR`
+
+Os cálculos feitos acima são implementados no pacote <code>epiR</code> com:
+
+```{r echo=FALSE}
+cat(readLines("demo_epiR.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_epiR.R")
+```
+
+Para chamar a função <code>epiR::epi.2by2</code> precisamos obedecer
+seu padrão, para que adote os valores de exposição e desfecho corretamente:
+
+* a primeira linha e primeira coluna são tratados como eventos positivos. Tabelas que não estão nesta ordem podem ser alteracas com o uso de 
+<code>DescTools::Rev(tabela,margin=...)</code>;
+* o parâmetro <code>outcome="as.columns"</code> indica que, nesta tabela, as colunas são as categorias do desfecho.
+* o delinamento dado por <code>method="cohort.count"</code> informa que a tabela tem contagens e, por isso, calcula $RR$ e $OR$.
+* <code>units=100</code> pede para que a saída seja dada em porcentagem (para as estimativas que forem relevantemente apresentadas em porcentagem).
+
+As duas primeiras linhas da saída desta função trazem o $\text{RR}$ (_Inc risk ratio_) e o $\text{OR}$ (_Odds ratio_).
+
+O raciocínio pode ficar confuso com a terminologia "Capacete +" e "Capacete -"; vamos simplificar pensando na falta do uso do capacete como um fator de exposição, aumentando o risco de trauma craniano em acidentes ([`demo_epiR_2.R`](demo_epiR_2.R){target="_blank"}). 
+
+```{r echo=FALSE}
+cat(readLines("demo_epiR_2.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_epiR_2.R")
+```
+
+(note o uso de <code>DescTools::Rev(tabela,margin=1)</code> para alterar a ordem das linhas, ajeitando a tabela para <code>epiR::epi.2by2</code>)
+
+Este $\text{RR}$ tradicional é o $\text{RR}_+$, visto acima. $\text{RR}_+$ refere-se ao desfecho positivo (a ocorrência do desfecho entre os expostos em comparação com a ocorrência do desfecho entre os não expostos). Podemos conceituar o $\text{RR}_-$ para o desfecho negativo (a **não** ocorrência do desfecho entre os expostos em comparação com a **não** ocorrência do desfecho entre os não expostos). Algebricamente, como  
+
+$$OR = \dfrac{RR_+}{RR_-}$$
+
+O risco relativo negativo é dado por:
+
+$$RR- = \dfrac{RR_+}{OR}$$
+
+Portanto, caso <code>epiR::epi.2by2</code> calculasse $\text{RR}_-$, obteria ([`demo_epiR_3.R`](demo_epiR_3.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_epiR_3.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_epiR_3.R")
+```
+
+## Risco relativo por regressão
+
+Há críticas sobre estas formas tradicionais para o cálculo dos riscos relativos:
+
+```{r fig.align="center", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/CMAJ01.jpeg")
+knitr::include_graphics("./image/CMAJ02.jpeg")
+```
+
+Apesar das críticas deste artigo, as estimativas de $\text{OR}$, $\text{RR}_+$ e $\text{RR}_-$ 
+com seus intervalos de confiança podem ser obtidos por meio de regressões equivalentes àquelas vistas com <code>epiR::epi.2by2</code>. Observe o código:
+
+```{r echo=FALSE}
+cat(readLines("demo_RROR.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_RROR.R")
+```
+
+Compare com os resultados obtidos com <code>epiR::epi.2by2</code>: as estimativas pontuais coincidem e os intervalos de confiança são muito similares.
+
+# Códigos úteis, com vários dos elementos apresentados neste texto
+
+<div align=center>
+<table style="border:1; background-color:#F7F056; border-radius: 25px; cellpadding=25"><tr><td  style="text-align:center;">
+<font style="font-size:300%">4</font><br>
+<font style="font-size:200%">Simulação e Gráficos</font>
+</td></tr></table>
+</div>
+
+## 1. tabelacontingencia2x2_capacetetrauma.R
+
+Em [`tabelacontingencia2x2_capacetetrauma.R`](tabelacontingencia2x2_capacetetrauma.R){target="_blank"}, que você pode adaptar para as suas necessidades, processamos o mesmo exemplo, utilizando a função <code>sink</code> que desvia o resultado da tela para um arquivo texto. Além da estatística $X^2$, computamos outros valores interessantes. Execute este script R:
+
+```{r echo=FALSE}
+cat(readLines("tabelacontingencia2x2_capacetetrauma.R"), sep = '\n')
+```
+
+```{r comment=NA, echo=TRUE, eval=FALSE}
+source("tabelacontingencia2x2_capacetetrauma.R")
+```
+
+e observe sua saída em [`tabelacontingencia2x2_capacetetrauma.txt`](tabelacontingencia2x2_capacetetrauma.txt){target="_blank"}.
+
+## 2. entrando os dados interativamente
+
+Em [`Qui2.R`](Qui2.R){target="_blank"} também podemos processar o mesmo exemplo ou qualquer outro. Veja o código para aprender a recolher respostas do usuário. Esta versão aplica bootstrapping de um jeito mais manual e produz gráficos associados aos conceitos que discutimos. 
+
+Execute com:
+
+```{r echo=FALSE}
+cat(readLines("Qui2.R"), sep = '\n')
+```
+
+```{r comment=NA, echo=TRUE, eval=FALSE}
+source("Qui2.R")
+```
+
+fornecendo os dados à medida que são pedidos, como por exemplo:
+
+<pre>
+**** TABELA DE CONTINGÊNCIA ****
+
+Considere:
+                                               
+              Coluna+      Coluna-             
+ Linha +            a            b Total lin. +
+ Linha -            c            d Total lin. -
+         Total col. + Total col. -  Total geral
+
+
+Informe:
+Nome nas linhas (ate 10 letras): <b>Capacete</b>
+Nome nas colunas (ate 10 letras): <b>Trauma</b>
+Definido:
+                                                                     
+                       Trauma +            Trauma -                  
+ Capacete +                   a                   b Total de Trauma +
+ Capacete -                   c                   d Total de Trauma -
+            Total de Capacete + Total de Capacete -       Total geral
+
+Forneca os valores de a, b, c, d:
+a: <b>17</b>
+b: <b>138</b>
+c: <b>130</b>
+d: <b>508</b>
+
+Defina alfa = prob. erro do tipo I).
+(número entre 0 e 1, default = 0.05).
+alfa: <b>0.05</b>
+
+Quantas iteracoes para simular?
+(entre um numero inteiro; default n=1e4)
+iteracoes: <b>1e4</b>
+
+Exibir tabelas? (exibir lentifica a simulacao)
+0=nao, 1=sim; default eh 0: <b>0</b>
+</pre>
+
+Observe a simulação em andamento na área de _Plots_. Quando terminar, procure os gráficos finalizados. Os principais são:
+
+- as distribuições de $\chi^2$ para a hipótese nula e para o valor observado de $H_1$:
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+O valor de $\beta$ e o poder associados, aqui, são os valores _a posteriori_ ou retrospectivos, portanto inúteis para qualquer decisão</td></tr></table>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/qui2_distribuicao.png")
+```
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+**Flashback**:
+
+Recorde a tomada de decisão com a distribuição binomial:
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/binomial.png")
+```
+
+A estatística e o formato das distribuições mudam (em função, também, do tipo de variável), mas as áreas de $\alpha$, $\beta$ e o raciocínio são os mesmos. Lembre-se, porém, que $\beta$ _a posteriori_ não tem valor para a decisão estatística.
+
+</td></tr></table>
+
+- a distribuição, com intervalo de confiança, do _odds ratio_ simulado (compare com o obtido acima), indicando a rejeição de $H_0$ (o valor 1, de referência, está fora do intervalo) e que seu efeito está entre mínimo a intermediário:
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/qui2_or.png")
+```
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+_Odds ratio_ é uma medida da intensidade de associação entre duas variáveis nominais dicotômicas de exposição e desfecho.
+
+De acordo com SHARPE (2015), OR é, também, uma medida de tamanho de efeito (não depende do tamanho da amostra, é adimensional e adirecional, mas não tem limite superior (o limite inferior é zero)). 
+
+</td></tr></table>
+
+- a distribuição do tamanho de efeito (V de Cramer), mostrando que o efeito, apesar de significante, está entre mínimo e pequeno:
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/qui2_vcramer.png")
+```
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+O programa já indica o tamanho de efeito de acordo com
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/book_effectsize.png")
+```
+
+O V de Cramer é uma medida do grau de correlação de Pearson absoluta entre duas variáveis nominais:	
+
+* não depende do total de observações independentes 
+* não depende do número de linhas e colunas da tabela de contingência
+* é adimensional e varia entre 0 (independência) e 1 (dependência)
+
+</td></tr></table>
+
+- novamente a distribuição $\chi^2$, indicando as áreas de $\alpha$ e do valor-$p$, concluindo-se pela rejeição de $H_0$:
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/qui2_p.png")
+```
+
+## 3. tabelas $L\times C$
+
+O teste qui-quadrado opera em tabelas maiores, com $L$ linhas e $C$ colunas. 
+
+Por exemplo, três quimioterápicos foram comparados quanto ao efeito colateral (náusea). Considere $\alpha=0.05$. Há associação entre náusea e drogas?
+
+Os dados obtidos foram:
+<pre>
+            Nausea   Sem_nausea
+Droga A        3         5
+Droga B        7         2
+Droga C        6         3
+</pre>
+
+Em [`Qui2_LxC.R`](Qui2_LxC.R){target="_blank"} implementamos este exemplo (versão robusta):
+
+```{r echo=FALSE}
+cat(readLines("Qui2_LxC.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("Qui2_LxC.R")
+```
+
+Observe que se rejeita $H_0$ se (os dois critérios são sempre equivalentes se o método analítico é usado):
+
+* $X^2 > \chi^2_c(1-\alpha)$
+* $p > \alpha$
+
+Estude o script R para ver como foi implementado este teste.
+
+# Análise _post hoc_
+
+Esta análise permite, quando se rejeita $H_0$, localizar quais células da tabela de contingência mais contribuíram para esta rejeição. 
+
+Por exemplo, para descobrir se existe uma relação entre tabagismo e etilismo a partir de um estudo realizado com 100 estudantes universitários, encontrou-se:
+
+<table id="t01" class="center">
+<tr><td></td><th>Tabagista</th><th>Não tabagista</th></tr>
+<tr><th>Etilista</th><td>50</td><td>15</td></tr>
+<tr><th>Não etilista</th><td>20</td><td>25</td></tr>
+</table>
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+A manipulação de dados em R é poderosa, mas nem sempre fácil. Os dados precisam ser ajustados de acordo com a forma que cada função os recebe: _dataframes_, tabelas e matrizes, por exemplo. Veja o apêndice 3 para mais detalhes.
+</td></tr></table>
+
+Neste exemplo, o objetivo é executar o teste qui-quadrado mas, no caso de rejeitar-se $H_0$, executar uma outra alternativa para análise _post hoc_, utilizando <code>MCSTAR</code>.
+
+> García-Pérez & Núñez-Antón (2003)
+
+O código de [`TabelaContingencia2x2_TabagismoEtilismo.R`](TabelaContingencia2x2_TabagismoEtilismo.R){target="_blank"} pega os dados da planilha [`tabagismo_e_etilismo_2x2.xlsx`](tabagismo_e_etilismo_2x2.xlsx) e
+que produz a seguinte saída:
+
+```{r echo=FALSE}
+cat(readLines("TabelaContingencia2x2_TabagismoEtilismo.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("TabelaContingencia2x2_TabagismoEtilismo.R")
+```
+
+A novidade está na sessão **Residuos ajustados standardizados corrigidos por momento (MCSTAR)**. Analise pelos valores positivos acima do valor assinalado como **[MCSTAR critico]**: são escores $z$ relativos a quanto cada célula contribuiu para o qui-quadrado estimado. Neste exemplo, a diagonal principal é a responsável pela rejeição de $H_0$, indicando associação concordante entre etilismo e tabagismo.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+A única "sujeira" deste código é:
+
+<code>
+New names:<br>
+* `` -> ...1<br>
+</code>
+
+Isto desaparece se colocarmos algo, que será desprezado, na célula A1 da planilha. Experimente rodar o código com a planilha [`tabagismo_e_etilismo_2x2_v2.xlsx`](tabagismo_e_etilismo_2x2_v2.xlsx). 
+
+Caso tenha interesse no código [`TabelaContingencia2x2_TabagismoEtilismo.R`](TabelaContingencia2x2_TabagismoEtilismo.R){target="_blank"}, note o uso das linhas:
+
+<code>
+options(warn=-1)<br>
+[...]<br>
+options(warn=0)<br>
+</code>
+
+que são as responsáveis por inibir os possíveis _warnings_ (só os iniba depois que seu código estiver correto; _warnings_ são importantes para evitar erros enquanto desenvolve um _script_).
+
+</td></tr></table>
+
+# Comentários sobre os métodos tradicionais
+
+<div align=center>
+<table style="border:1; background-color:#F7F056; border-radius: 25px; cellpadding=25"><tr><td  style="text-align:center;">
+<font style="font-size:300%">5</font><br>
+<font style="font-size:200%">Condições para o teste qui-quadrado<br>
+(métodos não robustos)</font>
+</td></tr></table>
+</div>
+
+Antes das implementações computacionais e a facilidade do uso do R, a partir de uma tabela 2x2 era necessário construir a tabela dos valores esperados sob $H_0$.
+
+* Valores observados:
+<pre>
+             Trauma + Trauma -
+Capacete +       17      138     155
+Capacete -      130      508     638
+                147      646     793</pre>
+
+* Valores esperados sob:
+<pre> 
+           Trauma + Trauma -
+Capacete +     28.7    126.3
+Capacete -    118.3    519.7</pre>
+
+Cada valor esperado é obtido pelo produto das marginais, dividido pelo total geral:
+
+* $(147 \times 155) / 793 \approx 28.7$
+* $(147 \times 638) / 793 \approx 118.3$
+* $(646 \times 155) / 793 \approx 126.3$
+* $(646 \times 638) / 793 \approx 519.7$
+
+## Condições para aplicar o teste qui-quadrado de Pearson
+
+Avaliando os dados observados e os valores esperados sob $H_0$, era necessário verificar se o teste qui-quadrado podia ser aplicado. Eram as seguintes condições:
+
+SIEGEL & CASTELLAN Jr., 1988, p. 123:
+
+* O teste exato de Fisher para testar independência é adequado apenas para tabela de contingência 2×2 se N < 20 
+* Se N entre 20 e 40, o teste qui-quadrado de Pearson pode ser usado se todas as frequências esperadas sob $H_0$ são maiores que 5.
+* Se N > 40, o teste qui-quadrado de Pearson com correção de Yates pode ser usado.
+
+COCHRAN, 1954:
+
+* Um valor esperado mínimo de 1 em alguma célula é permitido, desde que não mais que 20% das células tenham valor abaixo de 5
+
+Então, o valor de $X^2$ era dado por
+
+$$X^2 = \sum{ ({\text{observado}-\text{esperado}})^2 \over {\text{observado}}  }$$
+
+neste exemplo calculado por:
+
+$X^2 = { {{(17-28.7)^2} \over {28.7}} + {{(138-126.3)^2} \over {126.3}} + {{(130-118.3)^2} \over {118.3}} + {{(508-519.7)^2} \over {519.7}} } \approx 7.31$
+
+ou, em tabelas 2x2, era recomendado usar a correção de continuidade de Yates, dada por:
+
+$$X^2 = \sum{ (|{\text{observado}-\text{esperado}}|-0.5)^2 \over {\text{observado}}  }$$
+
+Neste exemplo:
+
+$X^2 = \dfrac{(|17-28.7|-0.5)^2}{28.7} + \dfrac{(|138-126.3|-0.5)^2}{126.3} + \dfrac{(|130-118.3|-0.5)^2}{118.3} + \dfrac{(|508-519.7|-0.5)^2}{519.7}  \approx 6.7$
+
+Então, era necessário consultar uma tabela com os valores críticos de $\chi^2_c$ previamente calculados para a tomada de decisão (sem obter, portanto, o valor-$p$). A tabela permitia escolher o valor de $\alpha$ e, sabendo-se os graus de liberdade (neste caso $\nu = 1$), localizar $\chi^2_c$ (neste exemplo igual a $3.841$):
+
+```{r echo=FALSE, out.width="60%"}
+knitr::include_graphics("./image/chi2tabela.png")
+```
+
+## o cálculo manual do teste exato de Fisher
+
+Caso $\chi^2$ não atendesse as exigências para ser aplicado, a alternativa (se fosse tabela 2x2) era o Teste Exato de Fisher. Este envolve calcular o valor-$p$ por fatoriais de tabelas progressivamente mais extremas. Por exemplo:
+
+```{r echo=FALSE, out.width="60%"}
+knitr::include_graphics("./image/exatofisher01.png")
+knitr::include_graphics("./image/exatofisher02.png")
+```
+
+Neste caso o valor exato de $p$ era calculado e comparado diretamente com $\alpha$ para a tomada de decisão.
+
+## O que diz a literatura mais recente sobre estes métodos tradicionais e não robustos?
+
+Conforme Ludbrook, 2011, p. 925, em seu artigo intitulado "Ainda há lugar para o teste qui-quadrado de Pearson e o teste exato de Fisher na pesquisa cirúrgica?" 
+
+"Conclusões: 
+
+Não posso concluir outra coisa senão que o teste qui-quadrado de Pearson e o teste exato de Fisher quase nunca devem ser usados para analisar os resultados de estudos cirúrgicos. Os fundamentos para essa conclusão são os seguintes:
+
+(1) Esses testes têm pré-requisitos que raramente, se é que algum dia, podem ser cumpridos em estudos da vida real (ver Tabela 3).
+
+(2) Ambos os procedimentos testam hipóteses muito não específicas (ver Tabela 3). É muito melhor usar procedimentos que são projetados para detectar desigualdade de proporções, uma razão de proporções que difere da unidade ou uma tendência nas proporções.
+
+(3) É melhor usar testes de permutação exatos em vez de testes aproximados baseados nas distribuições qui-quadrado ou normal."
+
+```{r echo=FALSE, out.width="100%"}
+knitr::include_graphics("./image/fim_literatura.png")
+```
+
+> Ludbrook, 2011
+
+# Métodos avançados: delineamento entre participantes
+
+No teste qui-quadrado de Pearson tradicional ambas as variáveis são tratadas como nominais e todos os indivíduos são distribuídos em células, de acordo com a contagem. Há situações em que informações podem ser estratificadas, ou as categorias podem ser ordinais. Os métodos descritos aqui servem para aproveitar estas informações.
+
+Como nos casos anteriores, o delineamento pode ser:
+
+* entre participantes ou
+* intraparticipantes
+
+## Teste qui-quadrado de Cochran-Mantel-Haenszel
+
+Em inglês é conhecido como _Cochran-Mantel-Haenszel Chi-Squared Test for Count Data_.
+
+Este teste utiliza uma tabela tridimensional. Neste exemplo temos a contagem de mortes entre fumantes e não fumantes estratificadas por faixa etária. Esta versão de qui-quadrado faz o teste global e, depois, estratifica pela terceira variável (faixa etária, neste exemplo).
+
+<table id="t01" class="center">
+<tr><td></td><th>Faixa Etária</th><td>18-24</td><td>25-34</td><td>35-44</td><td>45-54</td><td>55-64</td><td>65-74</td><td>75</td></tr>
+<tr><th>Tabagista</th><th>Desfecho</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+<tr><td>Sim</td><td>Morta</td><td>2</td><td>3</td><td>14</td><td>27</td><td>51</td><td>29</td><td>13</td></tr>
+<tr><td></td><td>Viva</td><td>53</td><td>121</td><td>95</td><td>103</td><td>64</td><td>7</td><td>0</td></tr>
+<tr><td>Não</td><td>Morta</td><td>1</td><td>5</td><td>7</td><td>12</td><td>40</td><td>101</td><td>64</td></tr>
+<tr><td></td><td>Viva</td><td>61</td><td>152</td><td>114</td><td>66</td><td>81</td><td>28</td><td>0</td></tr>
+</table>
+
+> APPLETON et al., 1996
+
+Caso não existisse a estratitificação por idade, poderíamos aplicar o teste qui-quadrado de Pearson ou o teste exato de Fisher em uma tabela 2x2, utilizando o Rscript [`TabelaContingencia2x2_TabagismoMorte.R`](TabelaContingencia2x2_TabagismoMorte.R){target="_blank"} e os dados em [`fumo_e_faixaetaria_total.xlsx`](fumo_e_faixaetaria_total.xlsx), obtendo
+
+```{r echo=FALSE}
+cat(readLines("TabelaContingencia2x2_TabagismoMorte.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("TabelaContingencia2x2_TabagismoMorte.R")
+```
+
+A conclusão é pela rejeição de $H_0$. Observando os MCSTAR e o $OR$ fornecidos, verificamos que o fumo tem efeito protetor: tabagismo, portanto está associado com vida e não tabagismo com morte. Algo parece estranho?
+
+Para aproveitar a estratificação por idade, os dados da tabela precisam ser reorganizados para que construamos uma tabela tridimensional requerida pela funções relacionadas a este teste. Em nossa solução, verifique como os dados foram acomodados na planilha [`fumo_e_faixaetaria.xlsx`](fumo_e_faixaetaria.xlsx).
+
+O código implementado em [`Teste qui-quadrado de Mantel-Haenszel.R`](Teste qui-quadrado de Mantel-Haenszel.R){target="_blank"} lê esta planilha, rearranja os dados em uma tabela tridimensional adequada e aplica o teste de Mantel-Haenszel obtendo:
+
+```{r echo=FALSE}
+cat(readLines("Teste qui-quadrado de Mantel-Haenszel.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Teste qui-quadrado de Mantel-Haenszel.R")
+```
+
+Procure a sessão "Qui-quadrado de Mantel-Haenszel" nesta saída. Para $\alpha=0.05$, a associação entre fumo e morte é significante ($p \approx 0.016$) mas o $\text{OR}$ generalizado (`mh$estimate`=`r mh$estimate`) deste teste deixa o valor unitário à esquerda do intervalo [`mh$conf.int[1:2]`=`r mh$conf.int[1:2]`], indicando que Tabagismo está associado com Morte, diferente do que foi obtido com o teste de Qui-quadrado tradicional em uma tabela 2x2. Esta inversão de conclusão é conhecida como _paradoxo de Simpson_. Verifique, também, o trecho da saída que mostra <code>odds ratios for factor</code>, mostrando que duas das idades têm _odds ratio_ menores que 1 (correspondendo, na saída gráfica, ao logarítmo de $\text{OR}$ abaixo de 0). O grupo de 25 a 34 anos é numeroso e o de maiores que 75 anos têm zeros; possivelmente foram estes dois grupos que distorceram o teste qui-quadrado, invertendo a conclusão quando a covariável idade não foi considerada.
+
+## Teste qui-quadrado mínimo de Serra
+
+```{r out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/Serra2018.png")
+```
+
+<div align=right><small>
+https://ebph.it/article/view/12949
+</small></div><br>
+
+Segundo este autor, a correção de Yates não deve ser usada:
+
+```{r out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/Serra2018abstract.png")
+```
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/Serra2018text.png")
+```
+
+Note a relação entre esta forma de calcular o qui-quadrado e o _odds-ratio_:
+
+```{r out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/Serra2018equation.png")
+```
+
+## Teste Gama de Goodman-Kruskal para variáveis ordinais
+
+O teste qui-quadrado de Pearson tradicional trata os dois fatores com variáveis nominais. Há muitos casos, porém, em que estes fatores são ordinais. Embora não seja incorreto utilizar o qui-quadrado de Pearson (toda variável ordinal é também nominal), alguma informação está sendo perdida. 
+
+Existe uma medida, o Gama de Goodman-Kruskal, que considera ambas as variáveis como categóricas ordinais, potencialmente melhorando o resultado do teste. É uma estatistica que mede a força de associação (também de tamanho de efeito) em tabela de contingência, com as hipóteses:
+
+$$H_0: \gamma = 0$$ 
+$$H_0: \gamma \ne 0$$ 
+
+Além disto, existe o $\text{OR}$ generalizado. 
+
+> EDWARDES & BALTZAN, 2000
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Especificamente para tabelas 2x2 existe o $Q$ de Yule, que corresponde ao Gama de Goodman-Kruskal para este caso particular, dado por
+
+$$Q = \dfrac{ad-bc}{ad+bc}$$
+
+Uma função está implementada em `psych::Yule(x, Y=FALSE)`, que devolve o $Q$ de Yule quando $x$ é uma tabela de frequências absolutas 2x2.  
+
+Assim como o Gama de Goodman-Kruskal, varia de $-1$ a $+1$, mas como se aplica a tabelas 2x2, relaciona-se com o _odds-ratio_:
+
+$$Q = \dfrac{OR-1}{OR+1}$$
+
+<div align=right><small>
+
+> [`Goodman and Kruskal's gamma`](https://en.wikipedia.org/wiki/Goodman_and_Kruskal%27s_gamma){target="_blank"}
+
+Consequentemente, $\text{OR}$ é conceitualmente ligado ao Gama de Goodman-Kruskal e, portanto, mede a associação entre variáveis ordinais dicotômicas. 
+
+A generalização nos permite tratar $OR$ como medida de associação para variáveis ordinais politômicas dispostas em tabelas de contigência com qualquer número de linhas e colunas, nem mesmo necessitando ser uma matriz quadrada:
+
+$$OR = {{1+\gamma} \over {1-\gamma}}$$
+
+</td></tr></table>
+
+Para o $\text{OR}$ generalizado as hipóteses são:
+
+$$H_0: OR = 1$$
+$$H_1: OR \ne 1$$
+
+Um exemplo de aplicação é fornecido pelo próprio autor (Goodman, 1979), desenvolvendo a análise com variáveis ordinais.
+
+```{r out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/Goodman1979.png")
+```
+
+```{r out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/Goodman1979_tab3.png")
+```
+
+Os dados desta tabela são, originalmente, de Duncan (1979).
+
+As categorias são as seguintes:
+
+1. (I) Professional and high administrative
+2. (II) Managerial and executive
+3. (III) Inspectional, supervisory, and other nonmanuar (high grade)
+4. (IV) Inspectional, supervisory, and other nonmanual (lower grade)
+5. (V)(a) Routine grades of nonmanual
+6. (V)(b) Skilled manual
+7. (VI) Semiskilled manual
+8. (VII) Unskilled manual
+
+Portanto, a variável de status ocupacional é, claramente, qualitativa ordinal.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+O repositório do R tem mais que pacotes. Há vários bancos de dados armazenados nele, para uso em exemplos. Aqui usaremos os dados deste estudo, disponíveis no pacote `datasets.`
+</td></tr></table>
+
+Implementado em [`TCrXc_StatusOcupacional.R`](TCrXc_StatusOcupacional.R){target="_blank"}, a saída é:
+
+```{r echo=FALSE}
+cat(readLines("TCrXc_StatusOcupacional.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("TCrXc_StatusOcupacional.R")
+```
+
+É praticamente o mesmo código utilizado para o exemplo de tabagismo e etilismo, com algumas diferenças:
+
+- para efeito de comparação, exibimos o resultado do qui-quadrado de Pearson que trata as variáveis como nominais. 
+- em uma tabela com `r nrow(tcrxc)` linhas e  `r ncol(tcrxc)` colunas não existe definição para o _odds ratio_. No lugar deste, aparecem o gama de Goodman-Kruskal e o $\text{OR}$ generalizado, aqui aproveitando a informação de ordem das variáveis. As decisões são tomadas com base nos respectivos intervalos de confiança; neste caso, as $H_0$ são rejeitadas e, portanto, há associação entre a categoria profissionais de pais e filhos.
+- a análise post hoc e de tamanho de efeito tratam as variáveis como nominais. A função implementada em `eiras.show.MCSTAR` exibe a matriz resultante de MCSTAR com menor número de casas decimais e símbolos adicionais ("#") para que os valores acima de $z$ crítico sejam mais facilmente localizados. Alternativamente, utilizamos <code>corrplot::corrplot</code> para exibir o gráfico correspondente.
+
+## Teste qui-quadrado de Mantel-Haenszel para variáveis ordinais
+
+A seguir é apresentado um exemplo com o uso de funções do R para testar a dissociação (independência) entre duas variáveis ordinais. 
+
+O qui-quadrado de Mantel-Haenszel para variáveis ordinais utiliza a implementação disponível em <code>DescTools::MHChisqTest</code>. Existe uma alternativa, o _Approximative Linear-by-Linear Association Test_ feito com _bootstrapping_ e implementado em <code>coin::chisq_test</code>. 
+
+Também comparamos o resultado do teste qui-quadrado de Pearson por _bootstrapping_ mas que considera as duas variáveis como nominais. 
+
+Ambos estão implementados em [`Teste_2Ordinais.R`](Teste_2Ordinais.R){target="_blank"}. A saída é:
+
+```{r echo=FALSE}
+cat(readLines("Teste_2Ordinais.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Teste_2Ordinais.R")
+```
+
+Observe que a consequência do aproveitamento da informação de ordinalidade das variáveis reflete-se no valor _p_ dos dois primeiros testes em comparação com o obtido através do qui-quadrado tradicional.
+
+## Teste qui-quadrado para tendência de Cochran-Armitage
+
+Para situações em que uma variável é ordinal e a outra é nominal, por exemplo quando há um modelo de dose-resposta com um desfecho dicotômico associado a uma exposição que tem mais que dois níveis, é preferível utilizar o teste conhecido como _Cochran-Armitage test for trend_.
+
+### exemplo: espessura da dobra cutânea e menarca
+
+Os pesquisadores Beckles et al. (1985) estudaram a associação entre a variável de a faixa etária da menarca ($<$ 12 anos e $\ge$ 12 anos) e o fator a espessura da dobra cutânea do tríceps (pequena, intermediária e grande). 
+
+> Beckles et al. (1985) International Journal of Obesity 9:127-35, _apud_ Kirkwood & Sterne (2003): Chapter 17: Chi-squared tests for 2x2 and larger contingency tables. 
+
+<table id="t02" class="center">
+<tr><td>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/dobracutanea_table.png")
+```
+
+</td><td>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/dobracutanea_image.png")
+```
+
+</td></tr>
+</table>
+
+Caso ambas as variáveis sejam consideradas nominais, o teste adequado é o qui-quadrado de Pearson. Caso a variável considerada como exposição seja ordinal e o desfecho seja dicotômico (tabela $k$x$2$), o teste qui-quadrado de Cochran-Armitage pode ser usado.
+
+Para comparação, ambos os testes são executados em [`Teste qui-quadrado de Cochran-Armitage.R`](Teste qui-quadrado de Cochran-Armitage.R){target="_blank"}, usando a planilha [`menarca.xlsx`](menarca.xlsx), que produz:
+
+```{r echo=FALSE}
+cat(readLines("Teste qui-quadrado de Cochran-Armitage.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Teste qui-quadrado de Cochran-Armitage.R")
+```
+
+Compare os valores $p$ de ambos os testes. Cochran-Armitage, ao considerar a espessura da prega cutânea como "dose", ordinal, indica significância estatística onde o teste convencional não detectava.
+
+## Teste de Cochran-Armitage generalizado
+
+Para desfecho com três ou mais categorias (os desfechos são tratados como variáveis nominais) a função no pacote <code>coin::chisq.test</code> pode ser parametrizada. Apresenta-se a opção de teste _post hoc_ com <code>rcompanion::pairwiseOrdinalIndependence</code>.
+
+Um exemplo é investigar se o salário e a satisfação dos empregados com o trabalho estão associados (neste exemplo optamos por tratar apenas o nível salarial como ordinal, mas deixamos o grau de satisfação como nominal - caso queira tratar as duas como ordinais, veja Mantel-Haenszel para variáveis ordinais, acima). O exemplo está implementado em [`Teste qui-quadrado de Cochran-Armitage generalizado.R`](Teste qui-quadrado de Cochran-Armitage generalizado.R){target="_blank"}, que produz:
+
+```{r echo=FALSE}
+cat(readLines("Teste qui-quadrado de Cochran-Armitage generalizado.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Teste qui-quadrado de Cochran-Armitage generalizado.R")
+```
+
+## Teste qui-quadrado de Agresti para variáveis ordinais estratificado por variável nominal
+
+Esta é uma generalização do teste de Mantel-Haenszel estratificado, aqui aproveitando a informação de ordem das duas variáveis principais, analisadas em estratos (apenas esta variável é nominal).
+
+São usadas as funções `coin::lbl_test` e `coin::cmh_test`.
+
+> Agresti, 2002.
+
+Usaremos o exemplo de associação entre renda e satisfação com o trabalho, estratificando por sexo.
+
+O exemplo está implementado em [`Teste qui-quadrado de Agresti.R`](Teste qui-quadrado de Agresti.R){target="_blank"}, que produz:
+
+```{r echo=FALSE}
+cat(readLines("Teste qui-quadrado de Agresti.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Teste qui-quadrado de Agresti.R")
+```
+
+No script abaixo é mostrado o efeito da codificação do parâmetro `scores` das funções `coin::lbl_test` e `coin::cmh_test`. Note que os valores relativos atribuídos aos níveis dos fatores ordinais afetam o valor _p_, pois o que importa são as distâncias relativas entre os níveis. Os valores absolutos atribuídos aos níveis dos fatores ordinais não afetam o valor _p_. Portanto, se o fator ordinal tiver dois níveis apenas, há apenas uma distância entre estes níveis, não importando assim os valores absolutos distintos atribuídos aos dois níveis do fator ordinal. Desta forma, o valor _p_ será o mesmo se os dois fatores são considerados como nominais ou ordinais (com qualquer codificação em `scores`).
+
+```{r}
+library(coin)
+TC <- coin::jobsatisfaction
+ftable(TC)
+str(TC)
+# Exemplo do Help da funcao coin::lbl_test
+# Asymptotic linear-by-linear association test (Agresti, p. 297)
+
+# Note: coin::lbl_test: 'Job.Satisfaction' and 'Income' sempre são ordinais
+cat("\ncoin::lbl_test\n")
+print(lt <- coin::lbl_test(TC, 
+                           scores=list("Job.Satisfaction"=c(1,3,4,5),
+                                       "Income"=c(3,10,20,35))))
+print(lt <- coin::lbl_test(TC, 
+                           scores=list("Job.Satisfaction"=c(1,2,3,4),
+                                       "Income"=c(3,10,20,35))))
+print(lt <- coin::lbl_test(TC, 
+                           scores=list("Job.Satisfaction"=c(1,2,3,4),
+                                       "Income"=c(1,2,3,4))))
+print(lt <- coin::lbl_test(TC, 
+                           scores=list("Job.Satisfaction"=c(1,2,3,4))))
+print(lt <- coin::lbl_test(TC)) 
+print(lt <- coin::lbl_test(TC, 
+                           scores=list("Job.Satisfaction"=c(0.1,0.2,0.3,0.4),
+                                       "Income"=c(1,2,3,4))))
+print(lt <- coin::lbl_test(TC, 
+                           scores=list("Job.Satisfaction"=c(-2,-1,0,1),
+                                       "Income"=c(1,2,3,4))))
+# Note: coin::cmh_test: 'Job.Satisfaction' and 'Income' podem ser ordinais
+cat("\ncoin::cmh_test\n")
+print(lt <- coin::cmh_test(TC, 
+                           scores=list("Job.Satisfaction"=c(1,3,4,5),
+                                       "Income"=c(3,10,20,35))))
+print(lt <- coin::cmh_test(TC, 
+                           scores=list("Job.Satisfaction"=c(1,2,3,4),
+                                       "Income"=c(3,10,20,35))))
+print(lt <- coin::cmh_test(TC, 
+                           scores=list("Job.Satisfaction"=c(1,2,3,4),
+                                       "Income"=c(1,2,3,4))))
+# Income: nominal
+print(lt <- coin::cmh_test(TC, 
+                           scores=list("Job.Satisfaction"=c(1,2,3,4))))
+print(lt <- coin::cmh_test(TC)) # duas nominais
+print(lt <- coin::cmh_test(TC, 
+                           scores=list("Job.Satisfaction"=c(0.1,0.2,0.3,0.4),
+                                       "Income"=c(1,2,3,4))))
+print(lt <- coin::cmh_test(TC, 
+                           scores=list("Job.Satisfaction"=c(-2,-1,0,1),
+                                       "Income"=c(1,2,3,4))))
+```
+
+# Análise loglinear
+
+"OK, tudo isso é muito bom, mas o título desta seção realmente insinuava que eu mostraria **como o teste qui-quadrado pode ser conceituado como um modelo linear**. Bem, basicamente, o teste qui-quadrado verifica se duas variáveis são independentes; portanto, não tem interesse no efeito combinado das duas variáveis, apenas no seu efeito único. Assim, podemos conceituar o qui-quadrado de maneira muito semelhante ao modelo saturado, exceto que não incluímos o termo de interação."
+
+> Field, 2012, p. 833.
+
+```{r out.width='100%', echo=FALSE}
+knitr::include_graphics("./image/Streiner1998.png")
+```
+
+> Streiner & Lin, 1998
+
+<br>
+
+Por mais de quatro décadas, a Pesquisa Social Geral (GSS)
+estudou a crescente complexidade da sociedade americana.
+É a única pesquisa de probabilidade total com entrevista pessoal
+projetado para monitorar mudanças em ambas as características sociais
+e atitudes que estão sendo conduzidas atualmente nos Estados Unidos.
+
+> The General Social Survey (https://gss.norc.org/)
+
+Como exemplo usaremos alguns dados obtidos em 2000. O arquivo está em formato <code>*.sav</code> (do SPSS). O SPSS guarda a codificação e o rótulo correspondente em cada entrada ([`demo_GSS2000_01_data.R`](demo_GSS2000_01_data.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_01_data.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_01_data.R")
+```
+
+Neste exemplo podemos começar verificando se existe associação entre sexo (categorias: Homem e Mulher) e felicidade (categorias: Feliz e Infeliz). 
+
+Para comparação, executamos o teste qui-quadrado para a tabela 2x2 ([`demo_GSS2000_00_x2.R`](demo_GSS2000_00_x2.R){target="_blank"}), 
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_00_x2.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_00_x2.R")
+```
+
+O gráfico de mosaico representa este tipo de situação ([`demo_GSS2000_06_mosaic.R`](demo_GSS2000_06_mosaic.R){target="_blank"}): 
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_06_mosaic.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_06_mosaic.R")
+```
+
+Este gráfico é obtido com <code>mosaicplot</code>. Para ser interpretado:
+
+* o tamanho de cada retângulo representa o número de ocorrências. 
+* a cor e o limite de cada retângulo nos informa sobre os resíduos padronizados. 
+  * um retângulo com borda sólida representa resíduo positivo; borda tracejada para negativo.
+  * um retângulo azul representa resíduo maior que 2 e vermelho para menor que -2 (heurística de significância estatística).
+
+Na forma de uma regressão linear múltipla podemos incluir o efeito de interação ($\text{sexo:feliz}$) tornando o modelo saturado:
+
+$$\ln(O_{ij}) = { \beta_0 + \beta_1 \;\text{sexo}_i + \beta_2 \;\text{feliz}_j + \beta_3 \;\text{sexo:feliz}_{ij} }$$
+
+em que $O_{ij}$ é a frequência absoluta observada em uma casela da tabela de contingência. 
+
+Note que usaremos o logaritmo das frequências observadas (a análise adotada aqui é loglinear).
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Usamos no Rscript, abaixo, a função <code>lm</code> com a sintaxe
+
+<code>lm(LnObserved ~ sexo*feliz, data=dt_gss)</code>
+
+Esta forma de escrever é economica; em sua forma mais explícita é o mesmo que
+
+<code>lm(LnObserved ~ sexo + feliz + sexo:feliz, data=dt_gss)</code>
+
+em que <code>sexo:feliz</code> é o termo de interação entre o sexo e a felicidade.
+
+Esta interação representa a dependência entre as duas variaveis nominais. 
+
+Há, ainda, outra possibilidade (com resultado idêntico):
+
+<code>lm(LnObserved ~ (sexo + feliz)^2, data=dt_gss)</code>
+
+</td></tr></table>
+
+O modelo fica não saturado quando não consideramos o efeito de interação:
+
+$$\ln\left(O_{ij}\right) = { \beta_0 + \beta_1\; \text{sexo}_i + \beta_2 \;\text{feliz}_j + \varepsilon_{ij} }$$
+
+Veremos adiante como o modelo saturado se comporta, pois ele será o modelo referência para os testes estatísticos do efeito de interação entre sexo e felicidade que  investigamos neste exemplo. A ideia é aninhar o modelo não saturado no modelo saturado, de forma que, a partir da diferença entre os dois, restará o que é relativo ao efeito de interação entre sexo e felicidade sob investigação (i.e., a hipótese nula é a ausência do efeito de interação destas duas variáveis), o que corresponde à hipótese nula do teste qui-quadrado de Pearson.
+
+Observe que a felicidade foi codificada como:
+
+* 1 ... Feliz
+* 2 ... Infeliz
+
+e sexo como:
+
+* 1 ... Homem
+* 2 ... Mulher
+
+O efeito de interação é o produto destas variáveis nominais. Criamos uma nova coluna com ([`demo_GSS2000_02_interacao.R`](demo_GSS2000_02_interacao.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_02_interacao.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_02_interacao.R")
+```
+
+Para a execução da regressão linear múltipla que será feita adiante, precisamos criar uma tabela de contingência e, com base nela, repetir a contagem das combinações possíveis de <code>sexo</code> e <code>feliz</code> como a variável dependente, e, então, calcular seu valor em logaritmo, o que se obtém com ([`demo_GSS2000_03_vd.R`](demo_GSS2000_03_vd.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_03_vd.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_03_vd.R")
+```
+
+Com este procedimento, o valor `r tb[1,1]` e seu logaritmo `r round(log(tb[1,1]),2)` são repetidos `r tb[1,1]` vezes, em todas as colunas nas quais sexo tem o valor `r rownames(tb)[1]` e feliz tem o valor `r colnames(tb)[1]`, o valor `r tb[1,2]` e seu logaritmo `r round(log(tb[1,2]),2)` são repetidos `r tb[1,2]` vezes, em todas as colunas nas quais sexo tem o valor `r rownames(tb)[1]` e feliz tem o valor `r colnames(tb)[2]`, o valor `r tb[2,1]` e seu logaritmo `r round(log(tb[2,1]),2)` são repetidos `r tb[2,1]` vezes, em todas as colunas nas quais sexo tem o valor `r rownames(tb)[2]` e feliz tem o valor `r colnames(tb)[1]` e o valor `r tb[2,2]` e seu logaritmo `r round(log(tb[2,2]),2)` são repetidos `r tb[2,2]` vezes, em todas as colunas nas quais sexo tem o valor `r rownames(tb)[2]` e feliz tem o valor `r colnames(tb)[2]`.
+
+O modelo saturado é computado com a função <code>lm</code> desta maneira ([`demo_GSS2000_04_sat.R`](demo_GSS2000_04_sat.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_04_sat.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_04_sat.R")
+```
+
+Inicia-se com o modelo saturado, que é um modelo completo, consegue-se o ajuste perfeito. 
+
+Note que a regressão linear múltipla forneceu os coeficientes:
+
+```{r echo=TRUE}
+print(out_s$coefficients)
+```
+
+e, portanto, a coluna <code>SaturatedHat</code> foi computada com a equação
+
+$\ln(\hat{O_{ij}^{s}}) =$
+`r round(as.numeric(out_s$coefficients[1]),5)`
+`r round(as.numeric(out_s$coefficients[2]),5)`
+$\text{sexo}_i$
+`r round(as.numeric(out_s$coefficients[3]),5)`
+$\text{feliz}_j +$
+`r round(as.numeric(out_s$coefficients[4]),5)`
+$\text{interacao}_{ij}$
+
+mostrando que o modelo saturado faz o ajuste perfeito aos dados, tanto que
+os resíduos calculados na coluna <code>SaturatedRes</code> (dada pela diferença entre <code>LnObserved</code> e <code>SaturatedHat</code>) são praticamente nulos.
+
+Observe, ainda, na saída da regressão, que $R^2$ é igual a $1$ porque 
+$\ln\left(O_{ij}\right) =\ln\left(\hat{O}_{ij}^{s}\right)$.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+A forma como calculamos a coluna <code>SaturatedHat</code> é arriscada, pois exigiu a captura manual de todos os coeficientes estimados e a escrita da equação. 
+
+Existe uma forma mais automatizada, usando a função <code>predict</code>. Esta
+função utiliza o objeto devolvido por <code>lm</code> e se encarrega de calcular os valores preditos da VD. No entanto, como <code>predict</code> devolverá o resultado do cálculo somente para os valores válidos das variáveis explicativas, e como o _data frame_ <code>dt_gss</code> tem a ocorrência de valores <code>NA</code> nas colunas <code>sexo</code> e/ou <code>feliz</code>, o número de linhas do _data frame_ e do objeto devolvido por <code>predict</code> não terão o mesmo comprimento. Também não adianta usar <code>na.omit(dt_gss)</code> porque pode haver <code>NA</code>
+nas colunas com variáveis não utilizadas no modelo. 
+
+Uma solução possível para usar <code>predict</code> é excluir explicitamente apenas as linhas que têm <code>NA</code> em <code>sexo</code> e/ou <code>feliz</code>:
+
+```{r echo=TRUE}
+dt_gss <- dt_gss[!(is.na(dt_gss$feliz)|is.na(dt_gss$sexo)),]
+dt_gss$SaturatedHat <- predict(out_s)
+print(head(dt_gss))
+```
+
+Outra alternativa é preparar o _data frame_ deixando apenas as colunas de interesse (neste exemplo, descartando as colunas <code>id</code>, <code>renda</code> e <code>casado</code>) e aplicar <code>na.omit</code> antes de iniciar o processamento.
+
+O que fizemos até aqui é equivalentemente obtido com:
+
+```{r echo=TRUE}
+dt_gss <- haven::read_sav("GSS2000.sav")
+# fica apenas com as variaveis explicativas de interesse
+dt_gss <- dt_gss[,c("feliz","sexo")]
+# elimina as linhas que tem NA
+dt_gss <- na.omit(dt_gss)
+# cria a coluna interacao
+dt_gss$interacao <- dt_gss$sexo * dt_gss$feliz
+# tabela de contingencia
+tb <- xtabs(~sexo+feliz,data=dt_gss)
+# contagem dos valores observados (VD)
+dt_gss$Observed <- NA
+rnames <- rownames(tb) # Training
+cnames <- colnames(tb) # Dance
+for (r.aux in 1:length(rnames))
+{
+  for (c.aux in 1:length(cnames))
+  {
+    dt_gss$Observed[as.character(dt_gss$sexo)==rnames[r.aux]&
+                      as.character(dt_gss$feliz)==cnames[c.aux]] <- tb[r.aux,c.aux]
+  }
+}
+dt_gss$LnObserved <- log(dt_gss$Observed)
+# regressao linear (modelo saturado)
+out_s <- lm(LnObserved~sexo*feliz,data=dt_gss)
+dt_gss$SaturatedHat <- predict(out_s)
+print(head(dt_gss))
+```
+
+</td></tr></table>
+
+O modelo não saturado é computado com ([`demo_GSS2000_05_naosat.R`](demo_GSS2000_05_naosat.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_05_naosat.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_05_naosat.R")
+```
+
+Observe no código a sintaxe do modelo, que agora utiliza 
+
+<code>lm(LnObserved~sexo + feliz,data=dt_gss)</code>
+
+fazendo com que a regressão múltipla tenha uma linha a menos e o ajustamento do modelo não seja mais perfeito. Como há quatro valores diferentes na coluna
+<code>LnObserved</code>, quatro valores diferentes aparecem nos resíduos.
+
+Para conferência, vamos verificar uma ocorrência de cada combinação existente
+de sexo e felicidade:
+
+```{r echo=TRUE}
+for (s in sort(unique(dt_gss$sexo)))
+{
+  for (f in sort(unique(dt_gss$feliz)))
+  {
+    dt_tmp <- na.omit(dt_gss[dt_gss$sexo==s & dt_gss$feliz==f,
+                             c("sexo","feliz",
+                               "LnObserved",
+                               "SaturatedHat","NotSaturatedHat")])
+    prmatrix(dt_tmp[1,],rowlab = "")
+  }
+}
+```
+
+A coluna <code>NotSaturatedHat</code> foi computada a partir dos coeficientes 
+obtidos pela função <code>lm</code> com o modelo não saturado com a equação:
+
+$\ln\left(\hat{O}_{ij}^{ns}\right) =$
+`r round(as.numeric(out_ns$coefficients[1]),5)`$\;+\;$
+`r round(as.numeric(out_ns$coefficients[2]),5)`
+$\text{sexo}_i\;$
+`r round(as.numeric(out_ns$coefficients[3]),5)`
+$\text{feliz}_j$
+
+O pacote MASS tem a função <code>MASS::loglm</code> que resolve e calcula o teste estatístico para estas regressões loglineares trabalhosas que fizemos acima. O modelo saturado é escrito como ([`demo_GSS2000_07_mass.R`](demo_GSS2000_07_mass.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_07_mass.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_07_mass.R")
+```
+
+Observe a linha "Pearson", a qual (correspondendo ao ajuste perfeito do modelo
+saturado que obtivemos com <code>lm</code>) verifica se todas as inclinações 
+($\beta_i$, exceto $i=0$) são nulas.
+
+O modelo não saturado é feito com ([`demo_GSS2000_08_mass.R`](demo_GSS2000_08_mass.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_08_mass.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_08_mass.R")
+```
+
+Caso subtraíssemos este resultado do modelo saturado (análise hieráquica loglinear), o qual mostrou $X^2=0$ e $df=0$, a diferença são os próprios valores do modelo não saturado neste caso simples. Compare com o resultado que vimos, acima, com o teste qui-quadrado de Pearson:
+
+```{r}
+print(out_x2)
+```
+
+Mais formalmente, a comparação entre os dois modelos (subtrair o modelo saturado do modelo não saturado) utiliza a função nativa <code>anova</code> que, executada desta forma ([`demo_GSS2000_09_mass.R`](demo_GSS2000_09_mass.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_GSS2000_09_mass.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_GSS2000_09_mass.R")
+```
+
+mostra a diferença entre os modelos saturado e não saturado (exceto que usa os valores de usando LR em vez de Pearson, próximos neste caso; LR é mais robusto para amostras pequenas).
+
+<big>**Portanto, o teste qui-quadrado de Pearson pode ser expresso na forma de um teste paramétrico**.</big>
+
+A vantagem desta abordagem paramétrica é que podemos adicionar mais variáveis nominais dicotômicas e politômicas.
+
+## Descrição do modelo
+
+* Análise de associações entre 3 ou mais variáveis nominais: extensão do teste qui-quadrado de Pearson
+* Análise hierárquica de dependências (interações)
+* Modelo linear geral (GLM):
+    * VD: logaritmo da frequência observada da casela = $\ln(O)$
+    * VI:  3 ou mais variáveis nominais
+    * UE: observações independentes
+    * Efeitos: principais e interações
+* Suposições: as mesmas do teste qui-quadrado de Pearson
+* Modelo saturado (inicial) tem ajuste perfeito: $ln(O)$ é perfeitamente explicado por todos os efeitos principais e de interação de todas as ordens; $\text{#efeitos}=2^{\text{#VI}}-1$.
+
+## Análise hierárquica de dependências
+
+* Efeitos de interação inferior só podem ser testados se os de nível superior não são significativos: a interação de ordem mais alta não deve ser significativa
+* Interpretar apenas os efeitos de interação de ordem mais alta significativos
+* Classe geradora: conjunto de efeitos de interação de maior ordem candidatos a serem removidos no próximo passo para garantir que o modelo seja hierárquico; no próximo passo os efeitos da classe geradora com valor p maior que o nível de significância estabelecido pelo pesquisador são removidos do modelo; o modelo resultante é adequado se o valor p associado à razão de verossimilhança é maior que o nível de significância estabelecido pelo pesquisador (e.g., 5%)
+
+## Modelo saturado
+
+Teste LR de qualidade de ajuste: $X^2(0)=0,\; p=1$ (ajuste perfeito!)
+
+## Lógica da análise loglinear
+
+Quando nossos dados são categóricos e incluímos todos os termos disponíveis (efeitos principais e interações), não erramos: nossos previsores podem perfeitamente prever nossa saída (os valores esperados). 
+
+Assim, se começarmos com o modelo mais complexo possível, não erramos. 
+
+A tarefa da análise loglinear é tentar ajustar um modelo mais simples aos dados sem uma perda substancial do poder preditivo. 
+
+Portanto, a análise loglinear tipicamente trabalha num princípio de eliminação de trás para frente. 
+
+Assim, começamos com o modelo saturado e, depois, removemos um previsor do modelo e usando esse novo modelo prevemos nossos dados (calculando as frequências esperadas como no teste do qui-quadrado). 
+
+Então, verificamos quão bem o modelo se ajusta aos dados (i.e., se as frequências esperadas estão próximas das frequências observadas). 
+
+Se a aderência do novo modelo não for muito diferente do modelo complexo, abandonamos o modelo complexo em favor do novo. 
+
+Colocando de outra maneira, presumimos que o termo que removemos não estava tendo um impacto significativo na habilidade do nosso modelo para prever os dados observados.
+
+Entretanto, a análise não apenas remove os termos ao acaso, ela faz isso de forma hierárquica. Assim, começamos com o modelo saturado e, depois, removemos a interação da ordem mais alta e avaliamos o efeito que ela tinha. 
+
+Se a remoção desse termo de interação não afetou o modelo, ele obviamente não estava sendo muito útil. 
+
+Portanto, nos livramos dele e continuamos removendo outras interações de ordem mais baixa agora.
+
+Se a remoção dessas interações não tem impacto, continuamos com os efeitos principais até encontrarmos um efeito que realmente afete a adequação do modelo se for removido.
+
+```{r out.width='80%', echo=FALSE}
+knitr::include_graphics("./image/Loglinear_logica.png")
+```
+
+# Análise de concordância
+
+Estes procedimentos avaliam concordância entre dois métodos que avaliam dicotomicamente as mesmas unidades observacionais.
+
+[Silveira & Siqueira (2022)](https://doi.org/10.3758/s13428-022-01950-0){target="_blank"} avaliaram e compararam 11 medidas estatísticas de concordância (supostamente!). Mostramos que das 11 medidas apenas duas são verdadeiramente medidas de concordância: $G$ de Holley-Guilford (1964) e $AC_1$ de Gwet (2008). Portanto, $\kappa$ de Cohen$ não é uma medida de concordância; é uma medida de associação.
+
+```{r out.width='90%', echo=FALSE}
+knitr::include_graphics("./image/Agreement2022.png")
+```
+
+O resumo do artigo é o seguinte:
+
+"Avaliamos vários coeficientes de concordância aplicados em tabelas de contingência 2x2, que são comumente utilizados em pesquisas devido à dicotomização. Aqui, não apenas estudamos alguns estimadores específicos, mas também desenvolvemos um método geral para o estudo de qualquer candidato a estimador para ser uma medida de concordância. Este método foi desenvolvido em códigos de R de código aberto e está disponível para os pesquisadores. Testamos este método verificando o desempenho de vários estimadores tradicionais em todas as configurações possíveis com tamanhos variando de 1 a 68 (total de 1.028.789 tabelas). O kappa de Cohen mostrou um comportamento prejudicado similar ao r de Pearson, Q de Yule e Y de Yule. O $\pi$ de Scott e o B de Shankar e Bangdiwala parecem avaliar melhor as situações de discordância do que de concordância entre avaliadores. O alfa de Krippendorff emula, sem qualquer vantagem, o $\pi$ de Scott em casos com variáveis nominais e dois avaliadores. O F1 de Dice e o qui-quadrado de McNemar avaliam de forma incompleta as informações da tabela de contingência, mostrando o pior desempenho entre todos. Concluímos que o kappa de Cohen é uma medida de associação e o qui-quadrado de McNemar não avalia nem associação nem concordância; os únicos dois estimadores de concordância autênticos são o G de Holley e Guilford e o AC1 de Gwet. Estes dois últimos estimadores também mostraram o melhor desempenho ao longo da gama de tamanhos de tabelas e devem ser considerados como as primeiras escolhas para medição de concordância em tabelas de contingência 2x2."
+
+```{r out.width='90%', echo=FALSE}
+knitr::include_graphics("./image/T3.png")
+knitr::include_graphics("./image/T4.png")
+knitr::include_graphics("./image/F2.png")
+knitr::include_graphics("./image/T7.png")
+```
+
+## $AC_1$ de Gwet
+
+O _Agreement Coefficient_ do tipo 1 assume que a variável de mensuração é nominal dicotômica (tabela 2 $\times$ 2).
+
+Por exemplo, na análise de 315 amostras de fezes, verifica-se a concordância para a detecção **P**ositiva ou **N**egativa de ovos de _Schistosoma mansoni_ usando os métodos Bell e Kato-Katz.
+
+> Sleigh et al., 1982
+
+A hipótese nula é
+
+$$\begin{align}
+H_0&: \text{ausência de concordância}\\
+H_1&: \text{presença de concordância}
+\end{align}$$
+
+O exemplo está implementado em [`TC2x2_Gwet_concord.R`](TC2x2_Gwet_concord.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("TC2x2_Gwet_concord.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("TC2x2_Gwet_concord.R")
+```
+
+Neste exemplo, $H_0$ é rejeitada e, portanto, conclui-se que os dois métodos para a detecção de ovos são concordantes.
+
+Uma forma de expressar este coeficiente (adotando a notação para tabelas 2x2 que usamos acima) é:
+
+$$\text{AC}_1 = { {a^2+d^2- {{(b+c)^2}\over{2}} }\over{ a^2 + d^2 + {{(b+c)^2}\over{2}}} + (a+d)(b+c)}$$
+
+na qual podemos ver que existe tensão entre as diagonais pois aparece a soma dos quadrados de $a$ e $d$ da qual é subtraída a soma de $b$ e $c$ ao quadrado. O denominador da fórmula faz com que esta medida, convenientemente, fique entre 0 e 1.
+
+### Fórmulas adpatadas de Gwet (2008)
+
+* **Sample size:** $n = a + b + c + d$
+
+* **Probabilities:**
+
+$$p_{11} = \dfrac{a}{n}, \quad p_{12} = \dfrac{b}{n}, \quad p_{21} = \dfrac{c}{n}, \quad p_{22} = \dfrac{d}{n}$$
+
+* **Overall agreement probability:**
+
+$$p_a = p_{11} + p_{22} = \dfrac{a + d}{n}$$
+
+* **Marginal probabilities:**
+
+$$p_{R1} = \dfrac{a + b}{n}, \quad p_{R2} = \dfrac{c + d}{n}, \quad p_{C1} = \dfrac{a + c}{n}, \quad p_{C2} = \dfrac{b + d}{n}$$
+
+* **Average marginal probabilities:**
+
+$$\bar{p}_{1} =\dfrac{p_{R1}+p_{C1}}{2} = \dfrac{2a + b + c}{2n}, \quad  \bar{p}_{2} =\dfrac{p_{R2}+p_{C2}}{2} = \dfrac{b + c + 2d}{2n}$$
+
+* **Chance-agreement probabilities:**
+
+$$p_{c}^{\kappa} = p_{R1}p_{C1}+p_{R2}p_{C2} = \dfrac{(a + b)(a + c) + (c + d)(b + d)}{n^2}$$
+
+$$p_{c}^{\text{AC}_{1}} = \bar{p}_{1}(1 - \bar{p}_{1}) + \bar{p}_{2}(1 - \bar{p}_{2})$$
+
+$$p_{c}^{G}=\dfrac{1}{2}$$
+
+* **Agreement measures:**
+
+$$\kappa = \dfrac{p_{a}-p_{c}^{\kappa}}{1-p_{c}^{\kappa}}=\dfrac{2(ad - bc)}{(a + c)(c + d) + (a + b)(b + d)}$$
+
+$$\text{AC}_{1} = \dfrac{p_{a}-p_{c}^{\text{AC}_{1}}}{1-p_{c}^{\text{AC}_{1}}} = \dfrac{a^2 + d^2 - \dfrac{(b + c)^2}{2}}{a^2 + d^2 + \dfrac{(b + c)^2}{2} + (a + d)(b + c)}$$
+
+$$G = \dfrac{p_{a}-p_{c}^{G}}{1-p_{c}^{G}}=\dfrac{(a + d) - (b + c)}{n}$$
+
+* **Standard error:**
+
+$$\text{se}_{\kappa}^2 = \dfrac{1}{n(1 - p_{c}^{\kappa})^2} \left(p_a(1 - p_a) \\
+- 4(1 - \kappa)(p_{11}\bar{p}_{1} + p_{22}\bar{p}_{2} - p_a p_{c}^{\kappa}) \\
++ 4(1 - \kappa)^2\left(p_{11}\left(\dfrac{p_{R1}+p_{C1}}{2}\right)^2 + p_{12}\left(\dfrac{p_{R1}+p_{C2}}{2}\right)^2 \\
++ p_{21}\left(\dfrac{p_{R2}+p_{C1}}{2}\right)^2 + p_{22}\left(\dfrac{p_{R2}+p_{C2}}{2}\right)^2 - (p_{c}^{\kappa})^2\right)\right)$$
+
+$$\text{se}_{\text{AC}_{1}}^2 = \dfrac{1}{n\left(1 - p_{c}^{\text{AC}_{1}}\right)^2} \left(p_a(1 - p_a) \\
+- 4\left(1 - \text{AC}_{1}\right)\left(p_{11}\left(1 - \bar{p}_{1}\right) + p_{22}\left(1 - \bar{p}_{2}\right) - p_a p_{c}^{\text{AC}_{1}}\right) \\
++ 4(1 - \text{AC}_{1})^2\left(p_{11}\left(1 - \dfrac{\bar{p}_{1}+\bar{p}_{1}}{2}\right)^2 + p_{12}\left(1 - \dfrac{\bar{p}_{1}+\bar{p}_{2}}{2}\right)^2 \\
++ p_{21}\left(1 - \dfrac{\bar{p}_{2}+\bar{p}_{1}}{2}\right)^2 + p_{22}\left(1 - \dfrac{\bar{p}_{2}+\bar{p}_{2}}{2}\right)^2 - \left(p_{c}^{\text{AC}_{1}}\right)^2\right)\right)$$
+
+$$\text{se}_{G}^2 = \dfrac{4}{n}p_a(1 - p_a) = \dfrac{4(a + d)(b + c)}{n^3}$$
+  
+# Cálculo dos Testes t para Medidas de Concordância
+
+Para conduzir testes _t_ para cada medida de concordância (kappa, $\text{AC}_1$ e G), precisamos calcular os valores _t_ e seus respectivos valores p. O valor _t_ é baseado na medida de concordância e seu erro-padrão. Podemos então usar uma distribuição _t_ para calcular os valores _p_.
+
+\[ t = \dfrac{\text{medida de concordância}}{\text{erro-padrão}} \]
+
+\[ p = 2 \times \left(1 - \Phi(|t|)\right) \]
+
+em  que \(\Phi\) é a função de distribuição cumulativa da distribuição _t_ com \(n - 1\) graus de liberdade.
+
+  
+```{r}
+# Define the input variables
+a <- 118 
+b <- 5 # Number of disagreements in the first category
+c <- 2  # Number of disagreements in the second category
+d <- 0 # Number of agreements in the second category
+
+# Sample size
+n <- a + b + c + d
+df <- n - 1
+
+# Probabilities
+p11 <- a / n
+p12 <- b / n
+p21 <- c / n
+p22 <- d / n
+
+# Overall agreement probability
+pa <- p11 + p22
+
+# Marginal probabilities
+pR1 <- (a + b) / n
+pR2 <- (c + d) / n
+pC1 <- (a + c) / n
+pC2 <- (b + d) / n
+
+# Average marginal probabilities
+p_bar1 <- (pR1 + pC1) / 2
+p_bar2 <- (pR2 + pC2) / 2
+
+# Chance-agreement probabilities
+pc_kappa <- (pR1 * pC1) + (pR2 * pC2)
+pc_AC1 <- p_bar1 * (1 - p_bar1) + p_bar2 * (1 - p_bar2)
+pc_G <- 0.5
+
+# Agreement measures
+kappa <- (pa - pc_kappa) / (1 - pc_kappa)
+AC1 <- (a^2 + d^2 - (b + c)^2 / 2) / (a^2 + d^2 + (b + c)^2 / 2 + (a + d) * (b + c))
+G <- ((a + d) - (b + c)) / n
+
+# Standard errors
+se_kappa2 <- (1 / (n * (1 - pc_kappa)^2)) * (pa * (1 - pa)
+							 - 4 * (1 - kappa) * (p11 * p_bar1 +
+																	  p22 * p_bar2 -
+							 										 	pa * pc_kappa) +
+							 +	4 * (1 - kappa)^2 * (p11 * (pR1 + pC1)^2 / 4
+							 											 + p12 * (pR1 + pC2)^2 / 4
+							 											 + p21 * (pR2 + pC1)^2 / 4
+							 											 + p22 * (pR2 + pC2)^2 / 4
+							 											 - pc_kappa^2))
+se_kappa <- sqrt(se_kappa2)
+
+se_AC12 <- (1 / (n * (1 - pc_AC1)^2)) * (pa * (1 - pa)
+							 - 4 * (1 - AC1) * (p11 * (1 - p_bar1) +
+            	 									 	p22 * (1 - p_bar2) -
+							 									 	pa * pc_AC1)
+						   +	4 * (1 - AC1)^2 * (p11 * (1 - (p_bar1 + p_bar1) / 2)^2
+						   										 + p12 * (1 - (p_bar1 + p_bar2) / 2)^2
+						   										 + p21 * (1 - (p_bar2 + p_bar1) / 2)^2
+						   										 + p22 * (1 - (p_bar2 + p_bar2) / 2)^2
+						   										 - pc_AC1^2))
+se_AC1 <- sqrt(se_AC12)
+
+se_G2 <- (4 / n) * pa * (1 - pa)
+se_G <- sqrt(se_G2)
+
+# t-values
+t_kappa <- kappa / se_kappa
+t_AC1 <- AC1 / se_AC1
+t_G <- G / se_G
+
+# p-values (two-tailed)
+p_kappa <- 2 * (1 - pt(abs(t_kappa), df = n - 1))
+p_AC1 <- 2 * (1 - pt(abs(t_AC1), df = n - 1))
+p_G <- 2 * (1 - pt(abs(t_G), df = n - 1))
+
+# Print the results
+# cat("Kappa: ", kappa, "\n")
+# cat("AC1: ", AC1, "\n")
+# cat("G: ", G, "\n")
+# cat("Standard Error (Kappa): ", se_kappa, "\n")
+# cat("Standard Error (AC1): ", se_AC1, "\n")
+# cat("Standard Error (G): ", se_G, "\n")
+# cat("Degrees of Freedom: ", df, "\n")
+# cat("t-value (Kappa): ", t_kappa, "\n")
+# cat("p-value (Kappa): ", p_kappa, "\n")
+# cat("t-value (AC1): ", t_AC1, "\n")
+# cat("p-value (AC1): ", p_AC1, "\n")
+# cat("t-value (G): ", t_G, "\n")
+# cat("p-value (G): ", p_G, "\n")
+```
+
+| Measure                  | Value         | SE  | _t_       | _p_       | df |
+|-------------------------:|--------------:|----------------:|--------------:|---------------:|--------------------:|
+| Kappa                    | -0.0234       | 0.0812          | -0.2880       | 0.7738        | 124                |
+| AC1                      | 0.9408        | 0.0230          | 40.9665       | 0.0000        | 124                |
+| G                        | 0.8880        | 0.0411          | 21.5903       | 0.0000        | 124                |
+
+
+<!-- ### Fórmulas de Gwet (2008) -->
+
+<!-- * sample size: $n = a+b+c+d$ -->
+
+<!-- * probability: $p_{11}=\dfrac{a}{n}$, $p_{12}=\dfrac{b}{n}$, $p_{21}=\dfrac{c}{n}$, $p_{22}=\dfrac{d}{n}$ -->
+
+<!-- * overall agreement probability: $p_a=p_{11}+p_{22}=\dfrac{a+d}{n}$$ -->
+
+<!-- * marginal probability: $p_{A1}=\dfrac{a+b}{n}$, $p_{A2}=\dfrac{c+d}{n}$, $p_{B1}=\dfrac{a+c}{n}$, $p_{B2}=\dfrac{b+d}{n}$ -->
+
+<!-- * average marginal probability: $\hat{\pi}_{1}=\dfrac{p_{A1}+p_{B1}}{2}=\dfrac{2a+b+c}{2n}$, $\hat{\pi}_{2}=\dfrac{p_{A2}+p_{B2}}{2}=\dfrac{b+c+2d}{2n}$ -->
+
+<!-- * chance-agreement probability: -->
+
+<!-- $$p_{e}^{\kappa}=p_{A1}p_{B1}+p_{A2}p_{B2}$$ -->
+
+<!-- $$p_{e}^{\text{AC}_{1}}=\hat{\pi}_{1}\left(1-\hat{\pi}_{1}\right)+\hat{\pi}_{2}\left(1-\hat{\pi}_{2}\right)$$ -->
+
+<!-- $$p_{e}^{G}=\dfrac{1}{2}$$ -->
+
+<!-- * Cohen's $\kappa$: $\hat{\gamma}_{\kappa}=\dfrac{p_{a}-p_{e}^{\kappa}}{1-p_{e}^{\kappa}}=\dfrac{2(ad - bc)}{(a + c)(c + d) + (b + d)(a + b)}$, where $p_{e}^{\kappa}=p_{A1}p_{B1}+p_{A2}p_{B2}=\dfrac{(a+b)(a+c)+(c+d)(b+d)}{n^2}$ -->
+
+<!-- * Gwet's $\text{AC}_{1}$: $\hat{\gamma}_{\text{AC}_{1}}=\dfrac{p_{a}-p_{e}^{\text{AC}_{1}}}{1-p_{e}^{\text{AC}_{1}}}= \dfrac{a^2 + d^2 - \dfrac{(b + c)^2}{2}}{a^2 + d^2 + \dfrac{(b + c)^2}{2} + (a + d)(b + c)}$, where $p_{e}^{\text{AC}_{1}}=\hat{\pi}_{1}\left(1-\hat{\pi}_{1}\right)+\hat{\pi}_{2}\left(1-\hat{\pi}_{2}\right)=\dfrac{2a+b+c}{2n}\left(1-\dfrac{2a+b+c}{2n}\right)+\dfrac{b+c+2d}{2n}\left(1-\dfrac{b+c+2d}{2n}\right)$ -->
+
+<!-- * $G$-index of Holley and Guilford: $\hat{\gamma}_{G}=\dfrac{p_{a}-p_{e}^{G}}{1-p_{e}^{G}}=\dfrac{(a + d) - (b + c)}{a + b + c + d}$, where $p_{e}^{G}=\dfrac{1}{2}$ -->
+
+<!-- * standard error: Cohen's $\kappa$: -->
+
+<!-- $$\text{se}_{\kappa}^2=\dfrac{1}{n\left(1-p_{e}^{\kappa}\right)^2}\left(p_{a}\left(1-p_{a}\right)\\ -->
+<!-- -4\left(1-\hat{\gamma}_{\kappa}\right)\left(p_{11}\hat{\pi}_{1}+p_{22}\hat{\pi}_{2}-p_{a}p_{e}^{\kappa}\right)\\ -->
+<!-- +4\left(1-\hat{\gamma}_{\kappa}\right)^2\left(p_{11}\left(\dfrac{p_{A1}+p_{B1}}{2}\right)^2+p_{12}\left(\dfrac{p_{A1}+p_{B2}}{2}\right)^2\\ -->
+<!-- +p_{21}\left(\dfrac{p_{A2}+p_{B1}}{2}\right)^2+p_{22}\left(\dfrac{p_{A2}+p_{B2}}{2}\right)^2-\left(p_{e}^{\kappa}\right)^2\right)\right)$$ -->
+
+<!-- * standard error: Gwet's $\text{AC}_{1}$: -->
+
+<!-- $$\text{se}_{\text{AC}_{1}}^2=\dfrac{1}{n\left(1-p_{e}^{\text{AC}_{1}}\right)^2}\left(p_{a}\left(1-p_{a}\right)\\ -->
+<!-- -4\left(1-\hat{\gamma}_{\text{AC}_{1}}\right)\left(p_{11}\left(1-\hat{\pi}_{1}\right)+p_{22}\left(1-\hat{\pi}_{2}\right)-p_{a}p_{e}^{\text{AC}_{1}}\right)\\ -->
+<!-- +4\left(1-\hat{\gamma}_{\text{AC}_{1}}\right)^2\left(p_{11}\left(1-\dfrac{\hat{\pi}_{1}+\hat{\pi}_{1}}{2}\right)^2+p_{12}\left(1-\dfrac{\hat{\pi}_{1}+\hat{\pi}_{2}}{2}\right)^2\\ -->
+<!-- +p_{21}\left(1-\dfrac{\hat{\pi}_{2}+\hat{\pi}_{1}}{2}\right)^2+p_{22}\left(1-\dfrac{\hat{\pi}_{2}+\hat{\pi}_{2}}{2}\right)^2-\left(p_{e}^{\text{AC}_{1}}\right)^2\right)\right)$$ -->
+
+<!-- * standard error: $G$-index of Holley and Guilford: -->
+
+<!-- $$\text{se}_{G}^2=\dfrac{4}{n}p_{a}\left(1-p_{a}\right)=\dfrac{4(a+d)(b+c)}{n^3}$$ -->
+
+## Teste de homogeneidade marginal em tabela $k\times k$ para dois avaliadores
+
+Aplicável para a comparação de dois métodos de avaliação com desfecho ordinal politômico, como por exemplo na avaliação de estadiamento tumoral submetido à apreciação de dois patologistas.
+
+> Agresti (1990), _apud_ Mehta & Patel, 1996, p. 72. Pap-Smear Classification by Two Pathologists.
+
+<br>
+
+O objetivo é analisar a concordância de diagnóstico entre 2 patologistas 
+que classificaram conforme a sereridade de uma determinada 
+lesão uterina de 118 lâminas de diferentes mulheres:
+
+* N: Negativo
+* HEA: Hiperplasia escamosa atipica
+* CIS: carcinoma in situ
+* CE: Carcinoma escamoso
+* CI: Carcinoma invasivo
+
+Formulamos:
+
+$$\begin{align}
+H_0&: \text{Concordância}\\
+H_1&: \text{Discordância}
+\end{align}$$
+
+Este teste está implementado em <code>coin::mh_test</code> que já foi utilizado antes.
+
+A parametrização, no entanto, para medidas repetidas, tem que ser modificada. O teste para medidas repetidas com desfechos ordinais é obtido por causa de <code>scores = list(response = 1:nrow(TC))</code>, indicando que a ordem está expressa na própria tabela, a qual precisa ser organizada nas linhas e colunas respeitando o nível de gravidade da lesão neoplásica.
+
+Em complemento a este teste, o coeficiente de concordância $\text{AC}_1$ de Gwet fornece uma medida de tamanho de efeito entre as duas variáveis nominais politômicas.
+
+O conjunto está implementado em  [`MHOrdinal.R`](MHOrdinal.R){target="_blank"}
+
+```{r echo=FALSE}
+cat(readLines("MHOrdinal.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("MHOrdinal.R")
+```
+
+No teste estatístico, não rejeitamos $H_0$ (presume-se concordância entre os patologistas). O valor de $AC_1$ pode ser usado como medida de tamanho de efeito da concordância. 
+
+## Kappa de Fleiss para vários avaliadores
+
+Suponha três ou mais avaliadores para os mesmos sujeitos com desfecho nominal politômico.
+
+Por exemplo, seis psiquiatras avaliam os pacientes identificando:
+
+* Depressão
+* Desordem de personalidade
+* Esquizofrenia
+* Neurose
+* Outros diagnósticos
+
+Formulamos:
+
+$$H_0: \text{presença de concordância entre os avaliadores}$$
+$$H_1: \text{ausência de concordância entre os avaliadores}$$
+
+Neste código <code>irr::kappam.fleiss</code> verifica a concordância global e, depois, verifica a concordância para cada um dos diagnósticos. 
+
+Esta função precisa de dados completos. Qualquer valor faltante faz com que todos as observações do indivíduo sejam desconsideradas.
+
+Os dados fazem parte do pacote <code>irr</code> e são usados em 
+[`Fleiss Kappa for m raters.R`](Fleiss Kappa for m raters.R){target="_blank"}
+
+```{r echo=FALSE}
+cat(readLines("Fleiss Kappa for m raters.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Fleiss Kappa for m raters.R")
+```
+
+Sendo $H_0$ rejeitada, conclui-se que não há concordância entre os avaliadores, globalmente ou para cada diagnóstico em particular.
+
+## ICC: _intraclass correlation_
+
+Este coeficiente de correlação intraclasse é aplicável quando a variável de desfecho é intervalar e precisamos verificar a concordância entre vários avaliadores.
+
+Um exemplo bastante utilizado é o treinamento que o IOC (_International Olympic Commitee_) utiliza para que os juizes das competições de ginástica sejam concordantes.
+
+> SPSS Base 10: Applications Guide, 1999.
+
+Optar pela análise de concordância absoluta significa que está interessado na igualdade das avaliações dos juízes/métodos, i.e., se eles usam a mesma escala para avaliar as mesmas unidades observacionais. As hipóteses são: 
+
+$$\begin{align}
+H_0&: r_0=0~\text{(ou ICC=0, ausência de concordância entre os juízes)}\\
+H_1&: r_0>0~\text{(ou ICC>0, concordância positiva entre os juízes)}
+\end{align}$$
+
+Neste exemplo, 7 juízes são verificados com a implementação em [ICC_IOC.R](ICC_IOC.R){target="_blank"}.
+
+O oitavo juíz é removido porque é um entusiasta: 
+
+```{r echo=FALSE}
+cat(readLines("ICC_IOC.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("ICC_IOC.R")
+```
+
+O modelo _Two-Way Random_ (parâmetro `model="twoway"`) precisa ser utilizado e significa que os juízes e unidades observacionais (avaliados) no estudo constituem amostras aleatórias de suas respectivas populações de juízes e de unidades observacionais. Portanto, nesse modelo, as conclusões são extensíveis para a população dos juízes.
+
+Neste exemplo, `ICC(A,1) = 0.723` representa o grau de concordância geral entre os sete juízes. Esta é uma medida de tamanho de efeito associada à correlação alta entre as notas dadas pelos juízes (para comparação, exibimos a matriz de correlações e sua média). Note que $H_0$ foi rejeitada e, portanto, existe concordância entre as notas dadas pelos juízes.
+
+# Delineamento intraparticipantes
+
+## Teste qui-quadrado de mudança de McNemar
+
+O teste de McNemar (1947) é utilizado para testar a igualdade das proporções de resposta binária de duas populações nas quais os dados consistem em respostas pareadas e dependentes, uma de cada população. É tipicamente usado em situações de medidas repetidas, onde a resposta de cada sujeito é solicitada duas vezes, uma antes e outra depois de um evento especificado (tratamento) ocorrer. O teste então determina se a proporção de resposta inicial (antes do evento) é igual à proporção de resposta final (após o evento).
+
+O teste de McNemar para a significância das mudanças é particularmente aplicável aos projetos "antes-depois“ de intervenção, nos quais cada sujeito é usado como seu próprio controle e em que as medidas são feitas em escala nominal dicotômica.
+
+As condições podem ser usadas para testar a eficácia de um tratamento específico (reuniões, editoriais de jornais, discursos, visitas pessoais etc.) sobre as preferências dos eleitores sobre candidatos a cargos públicos ou para testar o efeito de migração do campo para a cidade pela afiliação política de pessoas.
+
+Observe que nesses estudos as pessoas podem servir como seu próprio controle e que a escala nominal (ou categorização) é usada adequadamente para avaliar a mudança "antes-depois".
+
+Assim, $b + c$ é o total de pessoas cujas respostas foram alteradas.
+
+A hipótese nula é que o número de mudanças em cada direção é o mesmo na população.
+
+Portanto, dos indivíduos com $b + c$ que mudaram, esperamos que $(b + c) / 2$ indivíduos mudem de $+$ para $-$ e $(b + c) / 2$ pessoas mudem de $-$ para $+$.
+
+Em outras palavras, quando $H_0$ é verdadeira, a frequência esperada em cada uma das duas caselas é $(b + c) / 2$.
+
+```{r fig.align="center", out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/preposMcNemar.png")
+```
+
+No teste de McNemar para a significância das mudanças, estamos interessados apenas nas caselas nas quais as mudanças podem ocorrer.
+
+Assim, se $b$ é o número de casos observados cujas respostas mudaram de $+$ para $-$, $c$ é o número observado de casos que mudaram de $-$ para $+$ e $(b + c) / 2$ é o número esperado de casos nas caselas $b$ e $c$.
+
+$$X^2 = \sum_{i=1}^{2}{{(o_i - e_i)^2} \over{e_i}} = {{\left(b-{{b+c}\over{2}}\right)^2} \over {{b+c}\over{2}}} + {{\left(c-{{b+c}\over{2}}\right)^2} \over {{b+c}\over{2}}}={{(b - c)^2} \over{b+c}}$$
+
+A distribuição amostral de $X^2$ quando $H_1$ é verdadeira, é distribuída assintoticamente como qui-quadrado com graus de liberdade iguais a um.
+
+$$\begin{align}
+H_0&: P(+ \to  \, – ) = P(– \, \to   +) \\
+H_1&: P(+ \to  \, – ) \ne P(– \, \to   +)
+\end{align}$$
+
+Um exemplo é dado por Siegel & Castellan (1988, p. 77). Neste exemplo verificou-se a intenção de votos antes e depois de um debate eleitoral. 
+
+> SIEGEL & CASTELLAN Jr., 1988
+
+Quando há um debate eleitoral, se houver manutenção do carregamento da diagnonal principal, não se rejeitando a hipótese nula, significa que as intenções de voto não mudaram. 
+
+Este teste está implementado em <code>coin::mh_test</code> que já foi utilizado antes, aqui com a opção `distribution = "exact"`. 
+
+No exemplo do debate eleitoral ([`TC2x2_MN_concord2.R`](TC2x2_MN_concord2.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("TC2x2_MN_concord2.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("TC2x2_MN_concord2.R")
+```
+
+Como $H_0$ não foi rejeitada, conclui-se que o debate não provocou desigualdade nas mudanças de intenções de voto.
+
+```{r out.width = '80%', echo=FALSE}
+knitr::include_graphics("./image/cartoon_squares.png")
+```
+
+# Apêndices
+
+## Apêndice 1: distribuição qui-quadrado
+
+O teste Qui-quadrado usa as propriedades da distribuição de mesmo nome. Esta distribuição, diferente da distribuição normal que têm domínio de $[- \infty, + \infty]$, estas são distribuições assimétricas, iniciadas em zero, que tendem assintoticamente a zero com o valor crescente de $\chi^2$, $[0, + \infty]$.
+
+O comando para calcular a densidade de probabilidade para cada valor de qui-quadrado é:
+
+`dchisq(x, df, ncp = 0, log = FALSE)`
+
+em que <code>x</code> é o valor de $\chi^2$, <code>df</code> são os graus de liberdade (_degrees of freedom_) e <code>ncp</code> é o parâmetro de não centralidade (_non-centrality parameter_\ =\ 0, por _default_, correspondente à distribuição centrada de $H_0$; voltaremos ao <code>ncp</code> adiante). O parâmetro <code>log</code>, desligado por _default_ é para a possibilidade de devolver o logarítmo do valor (não o exploraremos neste texto).
+
+Pode-se gerar curvas desta distribuição com o seguinte código, mostrando seu aspecto entre 1 e 6  e 50 graus de liberdade:
+
+```{r comment=NA, echo=TRUE}
+chi2.valor <- seq(from=0, to=40, by=0.01)
+graus.liberdade <- 1:6
+for(g in c(1:length(graus.liberdade)))
+{
+  p <- dchisq(chi2.valor, df=graus.liberdade[g])
+  plot(chi2.valor, p, type="l", 
+       main=paste("Distribuição Qui-quadrado, df=",
+                  graus.liberdade[g],sep=""),
+       xlab="qui-quadrado", ylab="Densidade")
+}
+```
+
+ou, caso prefira ver todas as curvas no mesmo gráfico (o eixo das ordenadas foi truncado em 0.8 por causa da curva com <code>df=1</code> para melhor visualização), sugere-se:
+
+```{r comment=NA, echo=TRUE}
+source("friendlycolor.R")
+cor <- 3
+padrao <- 1
+leg.txt <- c()
+leg.cor <- c()
+chi2.valor <- seq(from=0, to=40, by=0.01)
+graus.liberdade <- 1:8
+for (g in 1:length(graus.liberdade))
+{
+  p <- dchisq(chi2.valor, df=graus.liberdade[g])
+  if (g==1)
+  {
+    plot(chi2.valor, p, type="l", lty=padrao,
+         col=friendlycolor(cor), lwd=2,
+         ylim=c(0, 0.8),
+         main="Distribuição Qui-quadrado",
+         xlab="qui-quadrado", ylab="Densidade")
+    
+  } else
+  {
+    lines(chi2.valor, p, lty=padrao,
+         col=friendlycolor(cor), lwd=2)
+  }
+  # guarda para a legenda
+  leg.txt <- c(leg.txt, paste("df = ",graus.liberdade[g],sep=""))
+  leg.cor <- c(leg.cor, friendlycolor(cor))
+  cor <- cor+6
+  padrao <- padrao+1
+}
+legend("topright",
+       leg.txt, 
+       col=leg.cor,
+       lwd=2, 
+       lty=1:6, 
+       bty="n")  
+```
+
+A função `qchisq` faz parte do conjunto:
+
+- `pchisq`: dado um valor $X^2$ fornece a probabilidade acumulada, i.e., a área sob a curva. Por default (com `lower.tail=TRUE`), computa a área que vai de zero ao valor $X^2$ solicitado.
+- `qchisq`: faz o contrário de `pchisq`, dado um valor de probabilidade fornece o valor de $X^2$ correspondente.
+- `dchisq`: dado um valor $X^2$ fornece a densidade de probabilidade para aquele ponto; é a que usamos para a construção dos gráficos da distribuição $\chi^2$, fornecendo a altura, no eixo das ordenadas, para cada valor de $X^2$ solicitado.
+- `rchisq`: fornece números pseudo-aleatórios sorteados com distribuição $\chi^2$.
+
+O seguinte código gera 4 gráficos, mostrando o comportamento das 4 variantes para 3 graus de liberdade:
+
+```{r echo=TRUE}
+graus.liberdade = 3
+
+# densidade de probabilidade
+# mostra a distribuicao X^2
+X2 <- seq(from=0, to=15, by=0.01)
+dX2 <- dchisq(X2,df=graus.liberdade)
+plot(X2,dX2,main="Distribuição X^2\nobtida com dchisq",type="l")
+
+# da probabilidade para X^2
+pX2 <- pchisq(X2,df=graus.liberdade)
+plot(X2,pX2,main="Probabilidade acumulada\nobtida com pchisq",type="l")
+
+# de X^2 para probabilidade
+p <- seq(from=0, to=1, length.out = 1000)
+X2 <- qchisq(p,df=graus.liberdade)
+plot(X2,p,main="Valores de X^2\nobtidos com qchisq",type="l")
+
+# 1000 valores rand com distribuicao X^2
+r <- rchisq(1000,df=graus.liberdade)
+density.r <- density(r)
+plot(density.r,main="Distribuição de números aleatórios\nobtidos com rchisq")
+```
+
+Observe que as distribuições disponíveis no R-base, por convenção, sempre estão em conjuntos iniciados pelas letras `p`, `q`, `d` e `r`. Por exemplo, a distribuição normal tem `pnorm`, `qnorm`, `dnorm` e `rnorm`, a distribuição binomial tem  `pbinom`, `qbinom`, `dbinom` e `rbinom`, a distribuição _t_ tem `pt`, `qt`, `dt` e `rt` e assim por diante. 
+
+## Apêndice 2: objeto de <code>chisq.test</code>
+
+Quando executamos
+
+```{r comment=NA, echo=TRUE}
+tabela <- as.table(matrix(c(17, 138, 130, 508), nrow = 2, byrow = TRUE))
+colnames(tabela) <- c("Trauma +","Trauma -")
+rownames(tabela) <- c("Capacete +","Capacete -")
+print(tabela)
+chi2 <- chisq.test(tabela,correct=FALSE)
+```
+
+a variável `chi2` armazena tudo que a função `chisq.test` retorna. É comum obtermos conjuntos de variáveis como este a partir de muitas funções. São objetos dos quais podemos obter dados para uso nos passos seguintes de um Rscript.
+
+Neste exemplo, podemos ver seu conteúdo e os tipos das variáveis contidas em `chi2` com:
+
+```{r comment=NA, echo=TRUE}
+str(chi2)
+sapply(chi2, typeof)
+```
+
+Assim, o resultado principal do teste é exibido por:
+
+```{r comment=NA, echo=TRUE}
+print(chi2)
+```
+
+Mas podemos acessar mais detalhes. Por exemplo em `chi2\$expected` está a tabela dos valores esperados sob $H_0$.
+
+```{r comment=NA, echo=TRUE}
+print(chi2$expected)
+```
+
+O valor _p_ isolado do teste está em 
+
+```{r comment=NA, echo=TRUE}
+print(chi2$p.value)
+```
+
+Localize estas variáveis na saída de `str` e explore o objeto para encontrar mais de seus detalhes.
+
+## Apêndice 3: transformando planilhas em matrizes
+
+Há várias formas de fornecer uma tabela para uma função em R.  
+
+Para a entrada de dados na forma de uma matriz 2x2 o seguinte código funciona:
+
+```{r echo=TRUE, eval=FALSE}
+Tabela <- ("
+ TC2x2       Tabagista NaoTabagista
+ Etilista    50        15
+ NaoEtilista 20        25  
+")
+TC <- as.matrix(read.table(textConnection(Tabela), 
+                               header=TRUE, row.names=1))
+print(TC)
+```
+
+Obtendo-se:
+
+```{r echo=FALSE}
+Tabela <- ("
+ TC2x2       Tabagista NaoTabagista
+ Etilista    50        15
+ NaoEtilista 20        25  
+")
+TC <- as.matrix(read.table(textConnection(Tabela), 
+                               header=TRUE, row.names=1))
+print(TC)
+```
+
+O problema está na entrada de dados. Somente espaços em branco podem ser usados para a montagem da tabela. O alinhamento é visual, mas não necessário para o R. Funciona igualmente
+
+```{r echo=TRUE}
+Tabela <- ("
+Tabagista NaoTabagista
+Etilista 50 15
+NaoEtilista 20  25  
+")
+TC <- as.matrix(read.table(textConnection(Tabela), 
+                                 header=TRUE, row.names=1))
+print(TC)
+```
+
+Portanto, pode ser ruim a visualização de sua entrada.
+
+Uma opção mais "limpa" é sempre colocar os dados em planilhas no formato `.xls` ou `.xlsx` e usar a função `readxl::read_excel` para utilizá-los em R:
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/tabagismo_etilismo_xls.png")
+```
+
+Esta planilha é [tabagismo_e_etilismo_2x2.xlsx](tabagismo_e_etilismo_2x2.xlsx), lida por
+
+```{r echo=TRUE}
+TCnew <- read_excel("tabagismo_e_etilismo_2x2.xlsx")
+print(TCnew)
+```
+
+A função `read_excel` avisa que teve que suprir um nome (por causa da célula A1 que está vazia), mas esta célula será desprezada adiante. 
+
+No entanto, temos um problema a resolver. A função `read_excel` produz um _data frame_ e a função `chisq.test` precisa de uma matriz para sua entrada:
+
+```{r echo=TRUE}
+is.data.frame(TCnew)
+is.matrix(TCnew)
+```
+
+Temos, portanto, que converter `TCnew` para a representação em `matrix`. Existe uma função para isto:
+
+```{r echo=TRUE}
+TCmatrix <- data.matrix(TCnew)
+is.matrix(TCmatrix)
+print(TCmatrix)
+```
+
+Ainda não é o desejado. `TCmatrix` tem 2 linhas mas 3 colunas, além de ter perdido os nomes das linhas que `TCnew` trazia em sua primeira coluna:
+
+```{r echo=TRUE}
+nrow(TCmatrix)
+ncol(TCmatrix)
+rownames(TCmatrix)
+print(TCnew[,1])
+```
+
+A solução, portanto, é transferir o conteúdo de `TCnew` como nomes das linhas de `TCmatrix` e, então, deletar a coluna 1 de `TCmatrix` que contém valores `NA`.
+
+```{r echo=TRUE}
+rownames(TCmatrix) <-as.character(unlist(TCnew[1:2,1]))
+TCmatrix <- TCmatrix[,-1]
+print(TCmatrix)
+```
+
+Colocando tudo junto, para terminar com uma matriz chamada `TC` (como era originalmente), podemos ler a planilha em uma variável (e.g., `TCtmp`), reorganizar seu conteúdo em `TC` e remover `TCtmp` da memória com a função `remove`. O código enxuto é:
+
+```{r echo=TRUE}
+TCtmp <- read_excel("tabagismo_e_etilismo_2x2.xlsx")
+TC <- data.matrix(TCtmp)
+rownames(TC) <-as.character(unlist(TCtmp[1:2,1]))
+TC <- TC[,-1]
+remove(TCtmp)
+print(TC)
+```
+
+Mensagens como:
+
+<code>
+New names:
+* `` -> ...1
+</code>
+
+e
+
+<code>
+Warning in data.matrix(TCnew): NAs introduced by coercion
+</code>
+
+podem aparecer aqui. _Warnings_ são avisos do R que não impedem o funcionamento do programa (avalie, caso a caso, se precisa corrigir algo; aqui não é necessário). Neste caso, o motivo é a célula **A1** na planilha estar vazia. Preencha com algo (um ponto, uma palavra, qualquer coisa - esta célula será desprezada) e ambas as mensagens desaparecem. 
+
+A primeira acontece porque `read_excel` lê uma planilha contando com a primeira linha para nomear as colunas de um _data frame_. Como a célula está em branco, avisa que fez a atribuição de um novo nome. A segunda mensagem, lidando com uma célula vazia, avisa que utiliza `NA`, uma constante do R que assinala valor faltante (do inglês, `N`ot `A`vailable, não disponível).
+
+# Referências
+
+* Agresti, A (2002) _Categorical Data Analysis_. 2nd ed. Hoboken, New Jersey: Wiley.
+* APPLETON, DR et al. (1996) Ignoring a covariate: an example of Simpson's paradox. _The American Statistician_ 50(4): 340-1.
+* Catania, AC (1999) _Aprendizagem: Comportamento, Linguagem, Cognição_. 4a ed. Porto Alegre: Artes Médicas.
+* COCHRAN, WG (1954) Some Methods for Strengthening the Common $\chi^2$ Tests. _Biometrics_ 10(4): 417-51.
+* Duncan, OD (1979) How Destination Depends on Origin in the
+Occupational Mobility Table. _American Journal of Sociology_
+84: 793-803.
+* EDWARDES, MD & BALTZAN, M (2000) The generalization of the odds ratio,
+risk ratio and risk difference to rxk tables. _Statistics in Medicine_ 19: 1901-14.
+* Field, A et al. (2012) _Discovering statistics using R_. London: Sage.
+* García-Pérez, MA & Núñez-Antón, V (2003) Cellwise Residual Analysis in Two-Way Contingency Tables. _Educational and Psychological Measurement_ 63(5): 825–39. https://doi.org/10.1177/0013164403251280
+* Gudziunaite, S & Moshammer, H (2022) Temporal patterns of weekly births and conceptions predicted by meteorology, seasonal variation, and lunar phases. _Wien Klin Wochenschr_ 134(13-14):538-545. doi: 10.1007/s00508-022-02038-7. 
+* Gwet, KL (2008) Computing inter-rater reliability and its variance in the presence of high agreement. _The British journal of mathematical and statistical psychology_ 61(1): 29–48. https://doi.org/10.1348/000711006X126600
+* Kirkwood, BR & Sterne, JAC (2003) _Essential Medical Statistics_. 2nd Edition, Blackwell Science, Oxford.
+* Ludbrook, J (2011) Is there still a place for Pearson's chi-squared test and Fisher's exact test in surgical research? _ANZ Journal of Surgery_ 81(12): 923-6. https://doi.org/10.1111/j.1445-2197.2011.05906.x
+* Mehta, CR & Patel, NR (1996) _SPSS Exact Tests 7 for  Windows_. IL: SPSS.
+* SIEGEL, S & CASTELLAN Jr., NJ (1988) _Nonparametric statistics for the behavioral sciences_. 2ª ed. NY: McGraw-Hill.
+* Silveira, PSP & Siqueira, JO (2023) Better to be in agreement than in bad company: A critical analysis of many kappa-like tests. _Behavior research methods_ 55(7): 3326–47.  https://doi.org/10.3758/s13428-022-01950-0
+* SHARPE, D. (2015) Your chi-square test is statistically significant: now what? _Practical Assessment: Research & Evaluation_  20(8).
+* Sleigh, A et al. (1982) Comparison of filtration staining (Bell) and thick smear (Kato) for the detection of quantitation of Schistosoma mansoni eggs in faeces. _Transactions of the Royal Society of Tropical Medicine and Hygiene_ 76(3):403-6. doi: 10.1016/0035-9203(82)90201-2.
+* _SPSS Base 10: Applications Guide_ (1999) IL: SPSS.
+* STABOULIDOU, I., SOERGEL, P., VASKE, B. and HILLEMANNS, P. (2008), The influence of lunar cycle on frequency of birth, birth complications, neonatal outcome and the gender: A retrospective analysis. Acta Obstetricia et Gynecologica Scandinavica, 87: 875-879. https://doi.org/10.1080/00016340802233090
+* Streiner, DL & Lin, E (1998) Life after chi-squared: An introduction to log-linear analysis. _Canadian Journal of Psychiatry_, 43(8) https://doi.org/10.1177/070674379804300809
+* Wake R, Misugi T, Shimada K, Yoshiyama M. The effect of the gravitation of the moon on frequency of births. Environ Health Insights. 2010 Sep 23;4:65-9. doi: 10.4137/ehi.s5525. PMID: 20981136; PMCID: PMC2956479.
+* Wongpakaran N, Wongpakaran T, Wedding D, Gwet KL (2013) A comparison of Cohen’s Kappa and Gwet’s AC1 when calculating inter-rater reliability coefficients: a study conducted with personality disorder samples. _BMC Med Res Methodol_ 13:61. https://doi.org/10.1186/1471-2288-13-61

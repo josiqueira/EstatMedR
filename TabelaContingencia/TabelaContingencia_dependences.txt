@@ -1,0 +1,71 @@
+
+# Pacotes, funções e arquivos necessários
+
+* packages
+```{r, echo=FALSE, class.source="bgcodigo", class.output="bgsaida"}
+options(warn=-1)
+suppressMessages(library(coin, warn.conflicts=FALSE))
+suppressMessages(library(corrplot, warn.conflicts=FALSE))
+suppressMessages(library(datasets, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(epiR, warn.conflicts=FALSE))
+suppressMessages(library(exact2x2, warn.conflicts=FALSE))
+suppressMessages(library(gplots, warn.conflicts=FALSE))
+suppressMessages(library(haven, warn.conflicts=FALSE))
+suppressMessages(library(irr, warn.conflicts=FALSE))
+suppressMessages(library(irrCAC, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(rcompanion, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(RVAideMemoire, warn.conflicts=FALSE))
+suppressMessages(library(tidyr, warn.conflicts=FALSE))
+suppressMessages(library(tidyverse, warn.conflicts=FALSE))
+suppressMessages(library(vcd, warn.conflicts=FALSE))
+suppressMessages(library(vcdExtra, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+
+* scripts
+
+    * [capacetetrauma_testeX2.R](capacetetrauma_testeX2.R)
+    * [eiras.bartitle.R](eiras.bartitle.R)
+    * [eiras.chisqgof.R](eiras.chisqgof.R)
+    * [eiras.cramerV.R](eiras.cramerV.R)
+    * [eiras.matrix2dataframe.R](eiras.matrix2dataframe.R)
+    * [eiras.show.MCSTAR.R](eiras.show.MCSTAR.R)
+    * [Fleiss Kappa for m raters.R](Fleiss Kappa for m raters.R)
+    * [friendlycolor.R](friendlycolor.R)
+    * [ICC_IOC.R](ICC_IOC.R)
+    * [MHOrdinal_kappa.R](MHOrdinal_kappa.R)
+    * [Qui2.R](Qui2.R)
+    * [Qui2_LxC.R](Qui2_LxC.R)
+    * [tabelacontingencia2x2_capacetetrauma.R](tabelacontingencia2x2_capacetetrauma.R)
+    * [TabelaContingencia2x2_TabagismoEtilismo.R](TabelaContingencia2x2_TabagismoEtilismo.R)
+    * [TabelaContingencia2x2_TabagismoMorte.R](TabelaContingencia2x2_TabagismoMorte.R)
+    * [TC2x2_Gwet_concord.R](TC2x2_Gwet_concord.R)
+    * [TC2x2_Gwet_concord2.R](TC2x2_Gwet_concord2.R)
+    * [TC2x2_MN_concord.R](TC2x2_MN_concord.R)
+    * [TC2x2_MN_concord2.R](TC2x2_MN_concord2.R)
+    * [TCrXc_StatusOcupacional.R](TCrXc_StatusOcupacional.R)
+    * [Teste qui-quadrado de Agresti.R](Teste qui-quadrado de Agresti.R)
+    * [Teste qui-quadrado de Cochran-Armitage generalizado.R](Teste qui-quadrado de Cochran-Armitage generalizado.R)
+    * [Teste qui-quadrado de Cochran-Armitage.R](Teste qui-quadrado de Cochran-Armitage.R)
+    * [Teste qui-quadrado de Mantel-Haenszel.R](Teste qui-quadrado de Mantel-Haenszel.R)
+    * [Teste_2Ordinais.R](Teste_2Ordinais.R)
+    * [TesteQuiQuadradoAderencia_Chocolate.R](TesteQuiQuadradoAderencia_Chocolate.R)
+    * [TesteQuiQuadradoAderencia_Flores.R](TesteQuiQuadradoAderencia_Flores.R)
+
+
+* files
+
+    * [chocolate.xlsx](chocolate.xlsx)
+    * [flores.xlsx](flores.xlsx)
+    * [fumo_e_faixaetaria.xlsx](fumo_e_faixaetaria.xlsx)
+    * [fumo_e_faixaetaria_total.xlsx](fumo_e_faixaetaria_total.xlsx)
+    * [judges.sav](judges.sav)
+    * [menarca.xlsx](menarca.xlsx)
+    * [tabagismo_e_etilismo_2x2.xlsx](tabagismo_e_etilismo_2x2.xlsx)
+    * [tabagismo_e_etilismo_2x2_v2.xlsx](tabagismo_e_etilismo_2x2_v2.xlsx)
+    * [tabelacontingencia2x2_capacetetrauma.txt](tabelacontingencia2x2_capacetetrauma.txt)
+    * [TC2x2_Gwet.txt](TC2x2_Gwet.txt)

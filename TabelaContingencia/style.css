@@ -1,0 +1,98 @@
+/* https://bookdown.org/yihui/rmarkdown-cookbook/html-scroll.html */
+/* Whole document: */
+  body {
+    font-family: Times New Roman;
+    font-size: 16pt;
+    background-color: #f6fafd;
+  }
+  a:link {
+    color: #1965B0;
+  }
+  a:visited {
+    color: #994F88;
+  }
+  a:hover {
+    color: #F4A736;
+  }
+  a:active {
+    color: #f4332;
+  }
+  
+/* Headers */
+  h1 {
+    font-family: Times New Roman;
+    font-size: 26pt;
+  }
+  h2 {
+    font-family: Times New Roman;
+    font-size: 24pt;
+  }
+  h3,h4,h5,h6 {
+    font-family: Times New Roman;
+    font-size: 22pt;
+  }
+  
+/* Bulleted paragraph style */
+.customlist {
+  font-family: Serif
+  font-size: 16pt;
+  color: black;
+  background-color: #d4dfeb;
+  border: 0px solid black;
+  padding: 10px;
+  padding-left: 50px;
+  margin: 20px;
+}
+
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  font-size: 20px;
+}
+  
+td {
+  text-align: left;
+}
+th {
+  font-weight: bold;
+  background-color: lightgray;
+    opacity: 1;
+  text-align: center;
+}
+table#t01 {
+background-color: #f1f1c1;
+  }
+table#t02 {
+width: 100%;
+background-color: #dddddd;
+  }
+table.center {
+  margin-left:auto; 
+  margin-right:auto;
+}
+
+table#t01 {
+background-color: #f1f1c1;
+  }
+table#t02 {
+width: 100%;
+background-color: #dddddd;
+  }
+
+.main-container {
+  max-width: none !important;
+}
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
