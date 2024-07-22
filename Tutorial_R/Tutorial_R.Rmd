@@ -7,7 +7,7 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document:
     css: style.css
-    footer: "RStudio.Rmd"
+    footer: "Tutorial_R.Rmd"
     font_adjustment: 1
     df_print: tibble
     highlight: pygments
@@ -21,7 +21,7 @@ output:
       smooth_scroll: no
   slidy_presentation:
     css: style.css
-    footer: "RStudio.Rmd"
+    footer: "Tutorial_R.Rmd"
     font_adjustment: -1
     df_print: tibble
     highlight: pygments
