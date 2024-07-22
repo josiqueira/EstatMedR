@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg920"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   sodipodi:docname="Causacao.svg">
+  <defs
+     id="defs914">
+    <marker
+       inkscape:isstock="true"
+       style="overflow:visible;"
+       id="marker3718"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Lend">
+      <path
+         transform="scale(0.8) rotate(180) translate(12.5,0)"
+         style="fill-rule:evenodd;stroke:#999999;stroke-width:1pt;stroke-opacity:1;fill:#999999;fill-opacity:1"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path3716" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker3407"
+       style="overflow:visible;"
+       inkscape:isstock="true">
+      <path
+         id="path3405"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) rotate(180) translate(12.5,0)" />
+    </marker>
+    <marker
+       inkscape:isstock="true"
+       style="overflow:visible;"
+       id="marker2339"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Lend"
+       inkscape:collect="always">
+      <path
+         transform="scale(0.8) rotate(180) translate(12.5,0)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path2337" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lstart"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Lstart"
+       style="overflow:visible"
+       inkscape:isstock="true">
+      <path
+         id="path1487"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#999999;stroke-width:1pt;stroke-opacity:1;fill:#999999;fill-opacity:1"
+         transform="scale(0.8) translate(12.5,0)" />
+    </marker>
+    <marker
+       inkscape:isstock="true"
+       style="overflow:visible;"
+       id="marker2093"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Lend">
+      <path
+         transform="scale(0.8) rotate(180) translate(12.5,0)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path2091" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker2053"
+       style="overflow:visible;"
+       inkscape:isstock="true">
+      <path
+         id="path2051"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) rotate(180) translate(12.5,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="marker1975"
+       style="overflow:visible;"
+       inkscape:isstock="true"
+       inkscape:collect="always">
+      <path
+         id="path1973"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) rotate(180) translate(12.5,0)" />
+    </marker>
+    <marker
+       inkscape:isstock="true"
+       style="overflow:visible;"
+       id="marker1909"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow1Lend"
+       inkscape:collect="always">
+      <path
+         transform="scale(0.8) rotate(180) translate(12.5,0)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         id="path1907" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Lend"
+       style="overflow:visible;"
+       inkscape:isstock="true"
+       inkscape:collect="always">
+      <path
+         id="path1490"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1;fill:#000000;fill-opacity:1"
+         transform="scale(0.8) rotate(180) translate(12.5,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.695"
+     inkscape:cx="196.06839"
+     inkscape:cy="562.85714"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="2488"
+     inkscape:window-height="1021"
+     inkscape:window-x="72"
+     inkscape:window-y="22"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata917">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       ry="5.3982978"
+       y="21.13563"
+       x="128.00244"
+       height="22.942762"
+       width="64.874565"
+       id="rect1483"
+       style="fill:#ffeeaa;fill-opacity:1;stroke:#000000;stroke-width:0.37603357;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <rect
+       style="fill:#ffeeaa;fill-opacity:1;stroke:#000000;stroke-width:0.37603357;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect1481"
+       width="51.400269"
+       height="22.994856"
+       x="13.499035"
+       y="21.109583"
+       ry="5.4105549"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:7.52067089px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.18801677"
+       x="18.325251"
+       y="29.712362"
+       id="text1467"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         sodipodi:role="line"
+         id="tspan1465"
+         x="18.325251"
+         y="29.712362"
+         style="stroke-width:0.18801677">Ansiedade</tspan><tspan
+         sodipodi:role="line"
+         x="18.325251"
+         y="39.113197"
+         style="stroke-width:0.18801677"
+         id="tspan1469">estatística</tspan></text>
+    <text
+       id="text1475"
+       y="29.712362"
+       x="132.8026"
+       style="font-style:normal;font-weight:normal;font-size:7.52067089px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.18801677"
+       xml:space="preserve"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         id="tspan1473"
+         style="stroke-width:0.18801677"
+         y="29.712362"
+         x="132.8026"
+         sodipodi:role="line">Procrastinação</tspan><tspan
+         style="stroke-width:0.18801677"
+         y="39.113197"
+         x="132.8026"
+         sodipodi:role="line"
+         id="tspan1479">acadêmica</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.42333332;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+       d="M 70.725599,32.226316 H 122.50019"
+       id="path1485"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <rect
+       style="fill:#ffeeaa;fill-opacity:1;stroke:#000000;stroke-width:0.37603357;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect1889"
+       width="64.874565"
+       height="22.942762"
+       x="128.00244"
+       y="95.218956"
+       ry="5.3982978"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <rect
+       ry="5.4105549"
+       y="95.192909"
+       x="13.499035"
+       height="22.994856"
+       width="51.400269"
+       id="rect1891"
+       style="fill:#ffeeaa;fill-opacity:1;stroke:#000000;stroke-width:0.37603357;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <text
+       id="text1897"
+       y="103.79568"
+       x="18.325251"
+       style="font-style:normal;font-weight:normal;font-size:7.52067089px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.18801677"
+       xml:space="preserve"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         style="stroke-width:0.18801677"
+         y="103.79568"
+         x="18.325251"
+         id="tspan1893"
+         sodipodi:role="line">Ansiedade</tspan><tspan
+         id="tspan1895"
+         style="stroke-width:0.18801677"
+         y="113.19653"
+         x="18.325251"
+         sodipodi:role="line">estatística</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:7.52067089px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.18801677"
+       x="132.8026"
+       y="103.79568"
+       id="text1903"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         sodipodi:role="line"
+         x="132.8026"
+         y="103.79568"
+         style="stroke-width:0.18801677"
+         id="tspan1899">Procrastinação</tspan><tspan
+         id="tspan1901"
+         sodipodi:role="line"
+         x="132.8026"
+         y="113.19653"
+         style="stroke-width:0.18801677">acadêmica</tspan></text>
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path1905"
+       d="M 70.725599,103.66382 H 122.50019"
+       style="fill:none;stroke:#000000;stroke-width:0.42333332;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker1909)"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.42333332;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker1975)"
+       d="M 122.50019,108.95549 H 70.725599"
+       id="path1971"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <rect
+       ry="5.3982978"
+       y="195.76067"
+       x="128.00244"
+       height="22.942762"
+       width="64.874565"
+       id="rect2031"
+       style="fill:#ffeeaa;fill-opacity:1;stroke:#000000;stroke-width:0.37603357;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <rect
+       style="fill:#ffeeaa;fill-opacity:1;stroke:#000000;stroke-width:0.37603357;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect2033"
+       width="51.400269"
+       height="22.994856"
+       x="13.499035"
+       y="195.73463"
+       ry="5.4105549"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:7.52067089px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.18801677"
+       x="18.325251"
+       y="204.33742"
+       id="text2039"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         sodipodi:role="line"
+         id="tspan2035"
+         x="18.325251"
+         y="204.33742"
+         style="stroke-width:0.18801677">Ansiedade</tspan><tspan
+         sodipodi:role="line"
+         x="18.325251"
+         y="213.73825"
+         style="stroke-width:0.18801677"
+         id="tspan2037">estatística</tspan></text>
+    <text
+       id="text2045"
+       y="204.33742"
+       x="132.8026"
+       style="font-style:normal;font-weight:normal;font-size:7.52067089px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.18801677"
+       xml:space="preserve"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         id="tspan2041"
+         style="stroke-width:0.18801677"
+         y="204.33742"
+         x="132.8026"
+         sodipodi:role="line">Procrastinação</tspan><tspan
+         style="stroke-width:0.18801677"
+         y="213.73825"
+         x="132.8026"
+         sodipodi:role="line"
+         id="tspan2043">acadêmica</tspan></text>
+    <rect
+       ry="11.477829"
+       y="158.71254"
+       x="71.726967"
+       height="22.955658"
+       width="62.781933"
+       id="rect2319"
+       style="fill:#ffeeaa;fill-opacity:1;stroke:#000000;stroke-width:0.41523197;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <text
+       id="text2325"
+       y="172.99411"
+       x="78.126762"
+       style="font-style:normal;font-weight:normal;font-size:7.52067089px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.18801677"
+       xml:space="preserve"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         id="tspan2323"
+         style="stroke-width:0.18801677"
+         y="172.99411"
+         x="78.126762"
+         sodipodi:role="line">Neuroticismo</tspan></text>
+    <path
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path2335"
+       d="M 71.726967,181.66821 39.889268,194.04095"
+       style="fill:none;stroke:#000000;stroke-width:0.42333332;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker2339)"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.42333332;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker3407)"
+       d="m 133.92076,181.66821 31.83772,12.37274"
+       id="path3403"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="13.499035"
+       y="15.817916"
+       id="text3666"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         sodipodi:role="line"
+         id="tspan3664"
+         x="13.499035"
+         y="15.817916"
+         style="stroke-width:0.26458332">Relação assimétrica</tspan></text>
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3668"
+       style="fill:black;fill-opacity:1;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;line-height:1.25;letter-spacing:0px;word-spacing:0px"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><flowRegion
+         id="flowRegion3670"><rect
+           id="rect3672"
+           width="994.24463"
+           height="202.8777"
+           x="-97.841728"
+           y="46.260693" /></flowRegion><flowPara
+         id="flowPara3674"></flowPara></flowRoot>    <text
+       id="text3702"
+       y="74.026253"
+       x="13.499035"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       xml:space="preserve"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         style="stroke-width:0.26458332"
+         y="74.026253"
+         x="13.499035"
+         id="tspan3700"
+         sodipodi:role="line">Relação recíproca alternada</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.58333302px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332"
+       x="13.499035"
+       y="150.22623"
+       id="text3706"
+       inkscape:export-xdpi="60"
+       inkscape:export-ydpi="60"><tspan
+         sodipodi:role="line"
+         id="tspan3704"
+         x="13.499035"
+         y="150.22623"
+         style="stroke-width:0.26458332">Relação simétrica</tspan></text>
+    <path
+       inkscape:export-ydpi="60"
+       inkscape:export-xdpi="60"
+       sodipodi:nodetypes="cc"
+       inkscape:connector-curvature="0"
+       id="path3714"
+       d="M 70.725599,206.32222 H 122.50019"
+       style="fill:#999999;stroke:#999999;stroke-width:0.42333331;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1.26999992, 1.26999992000000006;stroke-opacity:1;marker-end:url(#marker3718);stroke-dashoffset:0;marker-start:url(#Arrow1Lstart)" />
+  </g>
+</svg>
