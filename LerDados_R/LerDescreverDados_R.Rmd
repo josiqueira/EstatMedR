@@ -1,0 +1,2134 @@
+---
+title: "Ler e descrever arquivo de dados em R"
+author: | 
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+subtitle: ""
+date: "`r format(Sys.time(), '%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    css: style.css
+    font_adjustment: 1 
+    df_print: tibble
+    footer: "LerDescreverDados_R.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  slidy_presentation:
+    css: style.css
+    font_adjustment: -1
+    footer: "LerDescreverDados_R.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+.pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r eval=TRUE, echo=FALSE}
+# Linux
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+# Carregar pacotes
+
+```{r}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(finalfit, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(GGally, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(MVN, warn.conflicts=FALSE))
+suppressMessages(library(ggpubr, warn.conflicts=FALSE))
+suppressMessages(library(sjPlot, warn.conflicts=FALSE))
+suppressMessages(library(Hmisc, warn.conflicts=FALSE))
+suppressMessages(library(summarytools, warn.conflicts=FALSE))
+suppressMessages(library(reshape2, warn.conflicts=FALSE))
+suppressMessages(library(data.table, warn.conflicts=FALSE))
+suppressMessages(library(gplots, warn.conflicts=FALSE))
+suppressMessages(library(lubridate, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts=FALSE))
+suppressMessages(library(FSA, warn.conflicts=FALSE))
+suppressMessages(library(lattice, warn.conflicts=FALSE))
+suppressMessages(library(htmltools, warn.conflicts=FALSE))
+# devtools::install_github("kupietz/kableExtra")
+suppressMessages(library(kableExtra, warn.conflicts=FALSE))
+suppressMessages(library(devtools, warn.conflicts=FALSE))
+# devtools::install_github("danicat/read.dbc")
+suppressMessages(library(read.dbc, warn.conflicts=FALSE))
+suppressMessages(library(read.dbc, warn.conflicts=FALSE))
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r,eval=TRUE,echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+# Pensamento
+
+## Vídeo: Clima “atípico” em Angola deixa menina do tempo preocupada: temperaturas mínimas mais altas que as máximas!
+
+<div align=center>
+<video width="800" height="600" controls>
+<source src="./image/Minimo e maximo em Angola.mp4" type="video/mp4"> 
+</video>
+<div align=right>
+https://www.youtube.com/watch?v=Jp0jJMPWl6g&t=2s
+</div>
+</div>
+
+# R
+
+A linguagem R é uma linguagem de programação e ambiente de desenvolvimento voltado principalmente para análise estatística, manipulação de dados, visualização e criação de gráficos. Ela foi desenvolvida inicialmente por Ross Ihaka e Robert Gentleman na Universidade de Auckland, Nova Zelândia, em 2000.
+
+O R é uma linguagem interpretada e de código aberto, o que significa que seu código-fonte está disponível livremente para que os usuários possam visualizar, modificar e distribuir. Essa característica da linguagem R encoraja uma comunidade colaborativa, levando a um grande ecossistema de pacotes e extensões criados por diversos desenvolvedores em todo o mundo.
+
+Principais características da linguagem R:
+
+1. **Análise Estatística:** R é amplamente utilizado em análise estatística e fornece uma grande variedade de funções e bibliotecas estatísticas para realizar cálculos, testes de hipóteses, regressão, análise de séries temporais e muitos outros procedimentos estatísticos.
+
+2. **Manipulação de Dados:** O R oferece recursos avançados para importar, exportar e manipular dados, incluindo a capacidade de trabalhar com estruturas de dados como vetores, matrizes, _data frames_ e listas.
+
+3. **Visualização de Dados:** A linguagem R possui bibliotecas gráficas poderosas para criação de gráficos e visualizações estáticas e interativas, permitindo representar os dados de forma eficiente e atraente.
+
+4. **Programação Funcional:** R é uma linguagem funcional, o que significa que ela suporta funções de primeira classe e operações de alto nível em funções.
+
+5. **Extensibilidade:** Como mencionado anteriormente, R é altamente extensível por meio de pacotes. Há milhares de pacotes disponíveis para diferentes finalidades, permitindo que os usuários ampliem as funcionalidades da linguagem de acordo com suas necessidades.
+
+6. **Comunidade Ativa:** A comunidade de usuários e desenvolvedores do R é ativa e vibrante. Fóruns online, grupos de discussão e conferências são realizadas regularmente para compartilhar conhecimentos, problemas e soluções.
+
+A sintaxe do R é baseada em comandos em estilo inglês e é relativamente fácil de aprender, mesmo para pessoas que não têm uma formação em programação. Sua versatilidade e a ampla gama de pacotes disponíveis tornam o R uma das linguagens mais populares para análise de dados e estatística em diferentes campos, como ciência de dados, pesquisas acadêmicas, finanças, bioinformática, entre outros.
+
+Até setembro de 2021, o Comprehensive R Archive Network (CRAN), o repositório oficial de pacotes R, continha mais de 17.000 pacotes disponíveis para download e uso. No entanto, é importante observar que a quantidade de pacotes R pode mudar ao longo do tempo, pois novos pacotes são desenvolvidos e adicionados regularmente, enquanto outros podem ser descontinuados ou removidos do repositório.
+
+Além do CRAN, também existem outros repositórios de pacotes R, como o Bioconductor (especializado em bioinformática) e o GitHub, onde muitos desenvolvedores disponibilizam seus pacotes. Portanto, a quantidade total de pacotes R disponíveis pode ser ainda maior do que o número presente no CRAN.
+
+# Uma (muito) breve introdução ao R
+
+O R é uma linguagem de programação especialmente desenvolvida para análise estatística e visualização de dados. É muito utilizado por estatísticos, cientistas de dados e pesquisadores para realizar análises complexas e gerar gráficos informativos a partir de conjuntos de dados.
+
+## Operador de Atribuição
+O operador de atribuição no R é representado pelo símbolo <code><-</code>. Ele é usado para atribuir valores a variáveis. Por exemplo:
+```{r}
+x <- 8
+nome <- "João"
+```
+
+Isso cria duas variáveis, <code>x</code> e <code>nome</code>, com os valores atribuídos a elas. O valor 8 é numérico. Palavras são escritas entre aspas, indicando que são _strings_ (algo como um cordão, uma fita, uma corrente, um conjunto encadeado de letras); 8 não é "8"- este último é a _string_ "8" (uma corrente com apenas um elo), tratável como "a", "b" ou "c".
+
+Nomes de variáveis precisam iniciar com uma letra, seguidas de outras letras (melhor não usar letras acentuadas ou cedilha), dígitos e ou separadores como '.' e '_'. São nomes válidos <code>valor</code>, <code>codigo.carro</code>, <code>desvio_padrao</code>. Letras maiúsculas e minúsculas são distinguidas: <code>idade</code>, e <code>Idade</code> são variáveis diferentes. Use nomes que tenham significado para você.
+
+Para ver os conteúdos das variáveis criadas acima, basta usar seu nome seguido de [enter] (na Console):
+```{r}
+x
+nome
+```
+
+## vetores
+Variáveis de um mesmo tipo podem ser agrupadas em vetores, criados com a função <code>c</code> (para lembrar de **c**ombine; voltaremos às funções adiante):
+```{r}
+numeros <- c(1,2,3)
+numeros
+nomes <- c("João","Pedro","Alberto","José","Paulo")
+nomes
+```
+Quando você usa o mesmo nome de uma variável, o novo conteúdo substitui o antigo. Neste exemplo todos os números de 1 a 100 são armazenados na variável <code>numeros</code>
+```{r}
+numeros <- 1:100
+numeros
+```
+
+Esta propriedade de substituição permite que o valor de uma variável seja atualizada a qualquer momento. Por exemplo, para incrementar o valor de x de 1 unidade:
+```{r}
+x
+x <- x + 1
+x
+```
+A linha <code>x <- x + 1</code> (lida como $x=x+1$) não faz sentido matemático. Isto é computação, e este comando deve ser lido como (compute $x+1$ e atribua o resultado a $x$).
+
+## operadores
+No exemplo que acabamos de ver, + é um operador de soma. Existem muitos outros, incluindo os mais fundamentais: - (subtração), * (multiplicação) e / (divisão). Operam, também, sobre vetores. Se quiséssemos a metade dos valores que estão no vetor <code>numeros</code>:
+```{r}
+numeros <- numeros / 2
+```
+o que atualiza cada um de seus valores:
+```{r}
+numeros
+```
+
+## _data frames_
+
+Um _data frame_ é uma estrutura de dados fundamental no R, similar a uma planilha no Excel. Ele é usado para armazenar dados tabulares, com linhas e colunas. Cada coluna em um _data frame_ pode ter um tipo de dado diferente. Para criar um _data frame_ (a função é <code>data.frame</code>):
+```{r}
+Nome <- c("Ana", "Carlos", "Maria", "Pedro", "Maristela")
+Idade <- c(25, 30, 28, 25, 32)
+Nota <- c(8.5, 7.2, 9.0, 4.5, 3.0)
+dados <- data.frame(Nome, Idade, Nota)
+```
+Nesse exemplo, dados é um _data frame_ com três colunas: "Nome", "Idade" e "Nota". Observe:
+```{r}
+dados
+```
+
+### endereçamento de linha e coluna
+Para acessar elementos específicos em um _data frame_, você pode utilizar o índice da linha e o nome da coluna. Por exemplo:
+```{r}
+primeira_nota <- dados[1, "Nota"]
+idade_carlos <- dados[2, "Idade"]
+```
+A variável <code>primeira_nota</code> recebeu o valor da coluna <code>Nota</code> que existia na primeira linha e <code>idade_carlos</code> o conteúdo da coluna <code>Idade</code> da segunda linha. Confira:
+```{r}
+primeira_nota
+idade_carlos
+```
+
+Como colocamos o Carlos na segunda linha, o nome da variável <code>idade_carlos</code> está ok. Cuidado para escolher nomes de variáveis; o computador não o critica se fizer o seguinte:
+```{r}
+idade_carlos <- dados[3, "Idade"]
+idade_carlos
+```
+O que faz com que o conteúdo de <code>idade_carlos</code> seja a idade da Maria. O computador não ficará confuso (mas você tem grande chance de se atrapalhar).
+
+### endereçamento de linha ou coluna inteiras
+Para ver uma linha (e.g., a segunda linha), basta não informar as colunas:
+```{r}
+dados[2,]
+```
+e para ver uma coluna inteira (e.g., a segunda coluna), basta não informar as linhas:
+```{r}
+dados[,2]
+```
+uma alternativa é usar o nome da coluna, com `$`:
+```{r}
+dados$Idade
+```
+é também possível atribuir o conteúdo desta coluna a uma variável (que será um vetor)
+```{r}
+idades <- dados$Idade
+idades
+```
+
+## funções
+
+As funções são blocos de código que realizam ações específicas. O R oferece muitas funções embutidas e você também pode criar as suas próprias. Por exemplo, a função `mean()` calcula a média de um vetor numérico, que lhe é fornecida como um parâmetro:
+
+```{r}
+notas <- c(7.5, 8.0, 6.8, 9.2, 5.5)
+media <- mean(x=notas)
+media
+media <- mean(notas)
+media
+```
+
+Muitas vezes, quando coletamos dados, há valores faltantes (_missing values_) que são denotados em R como NA (_not available_, não disponível). Por exemplo, não conseguiremos ver a média se fizermos o seguinte:
+
+```{r}
+notas <- c(7.5, 8.0, 6.8, NA, 5.5)
+media <- mean(notas)
+media
+```
+
+Isto faz sentido. A média de um conjunto de números contendo um ou mais deles desconhecidos é, também, desconhecida.
+
+No entanto, funções em R recebem parâmetros que você pode consultar lendo a documentação. Neste exemplo, digite <code>?mean</code> ou `help(mean)` na Console. Verá que existe o parâmetro <code>na.rm</code> (nome do parâmetro escolhido para fazer lembrar de **NA** **r**e**m**ove), cujo default é <code>FALSE</code>. Para calcular a média removendo NA, caso algum exista, experimente:
+
+```{r}
+media <- mean(x=notas, na.rm=TRUE)
+media
+media <- mean(na.rm=TRUE, x=notas)
+media
+media <- mean(notas, na.rm=TRUE)
+media
+```
+
+Cada função tem seus parâmetros. No exemplo de <code>dados</code>, suponha que eu quisesse pegar a nota e a idade do Carlos, mas não soubesse em que linha do _data frame_ ele está registrado. Para isso usaremos a função <code>which</code> ('em qual' para quem fala português) e a função <code>cat</code> (con**cat**enating) para exibir o resultado na tela com um formato mais bonito:
+
+```{r}
+# o operador == é para comparar
+# guardo em linha o resultado de em qual linha o Nome é igual a Carlos?
+alguem <- "Carlos"
+linha <- which(dados$Nome==alguem)
+nota_indiv <- dados$Nota[linha]
+idade_indiv <- dados$Idade[linha]
+cat(alguem," obteve nota ", nota_indiv,
+    " quando tinha ",idade_indiv," anos de idade.\n",
+    sep="")
+```
+Note que os parâmetros de uma função ficam entre parênteses, separados por vírgulas. Troque <code>alguem <- "Carlos"</code> por <code>alguem <- "Maria"</code> ou por qualquer outro nome existente em <code>dados$Nome</code> para relatar suas respectivas notas e idades.
+
+No caso de <code>cat</code>, para melhor legibilidade do código, a escrevemos em várias linhas. As strings e as variáveis são concatenadas antes de exibir e as **sep**arações foram feitas com vazio (`sep=""`). Para ver o efeito deste parâmetro, veja as diferenças aproveitando nosso vetor <code>numeros</code>:
+
+```{r}
+numeros
+cat(numeros)
+cat(numeros, sep=",")
+cat(numeros, sep=", ")
+```
+
+Outro detalhe é a sequência especial <code>\\n</code> para quebra de linha. 
+```{r}
+cat("Esta é uma string","\n","e esta é outra, após a quebra de linha\n", sep="")
+```
+Convém terminar com uma quebra para garantir que o próximo comando não fique grudado no anterior. Observe:
+```{r class.source="code", eval=FALSE}
+cat("Esta é uma string qualquer")
+x <- 9
+cat("A raiz quadrada de ",x," = ",sqrt(x), sep="")
+```
+```{r class.source="code", echo=FALSE}
+source("demosep1.R")
+```
+e compare o bom hábito de marcar onde as linhas devem quebrar com: 
+```{r class.source="code", eval=FALSE}
+cat("Esta é uma string qualquer\n")
+x <- 9
+cat("A raiz quadrada de ",x," = ",sqrt(x),"\n", sep="")
+```
+```{r class.source="code", echo=FALSE}
+source("demosep2.R")
+```
+
+## gráficos
+Existem muitas funções para criar gráficos em R (voltaremos a isso adiante). (quando chamadas, no ambiente do RStudio, aparecem na aba **Plots**). Uma função do r-base muito usada é <code>plot</code> Por exemplo:
+
+```{r}
+# Criação de um gráfico de dispersão das idades em relação às notas
+plot(dados$Idade, dados$Nota, main="Idade vs. Nota", xlab="Idade", ylab="Nota")
+```
+
+
+## comentários
+Comentários em R são linhas que não são executadas, mas servem para você anotar o que está fazendo para referência futura. Basta iniciar a linha com `#` para que o R não a interprete. Por exemplo:
+```{r}
+# Criação de um data frame com informações pessoais
+Nome <- c("Ana", "Carlos", "Maria", "Pedro", "Maristela")
+Idade <- c(25, 30, 28, 25, 32)
+Nota <- c(8.5, 7.2, 9.0, 4.5, 3.0)
+dados <- data.frame(Nome, Idade, Nota)
+# Exibe o conteúdo de dados
+print(dados)
+```
+
+## um exemplo 
+Vamos juntar tudo em um exemplo simples. Digamos que você queira calcular a média das idades das pessoas aprovadas (com nota igual ou acima de 5) e reprovadas (abaixo de 5) no nosso _data frame_ <code>dados</code>:
+
+```{r}
+# Criação de um data frame com informações pessoais
+Nome <- c("Ana", "Carlos", "Maria", "Pedro", "Maristela")
+Idade <- c(25, 30, 28, 25, 32)
+Nota <- c(8.5, 7.2, 9.0, 4.5, 3.0)
+dados <- data.frame(Nome, Idade, Nota)
+# Exibe o conteúdo de dados
+print(dados)
+# separa as notas acima e abaixo de 5
+notas_aprov <- dados$Nota[dados$Nota >= 5]
+media_aprov <- mean(notas_aprov)
+notas_reprov <- dados$Nota[dados$Nota < 5]
+media_reprov <- mean(notas_reprov)
+cat("Entre os ",length(notas_aprov),
+    " aprovados com nota maior ou igual a 5, a nota média foi ",
+    round(media_aprov,3),"\n", sep="")
+cat("Entre os ",length(notas_reprov),
+    " reprovados com nota inferior a 5, a nota média foi ",
+    round(media_reprov,3),"\n", sep="")
+# Criação de um gráfico de dispersão das idades em relação às notas
+plot(dados$Idade, dados$Nota, 
+     main="Idade vs. Nota", xlab="Idade", ylab="Nota",
+     xlim=c(20,35), ylim=c(0,10))
+# linha horizontal pontilhada em y=5
+abline(h=5, lty=2)
+# color em azul para aprovados e vermelho para reprovados
+points(dados$Idade[dados$Nota>=5],dados$Nota[dados$Nota>=5],pch=19,col="blue")
+points(dados$Idade[dados$Nota<5],dados$Nota[dados$Nota<5],pch=19,col="red")
+# percorremos linha a linha do data frame, colocando os nomes das pessoas
+for(linha in 1:nrow(dados))
+{
+  text(x=dados$Idade[linha],y=dados$Nota[linha],
+       dados$Nome[linha], pos=3)
+}
+```
+Neste exemplo, primeiro filtramos as idades das pessoas com nota igual ou acima de 5 e depois calculamos a média dessas idades. Depois fizemos o mesmo para quem teve nota abaixo de 5. Finalmente, criamos um gráfico relacionando suas idades com suas notas. 
+
+Aqui usamos mais parâmetros e mais funções (algumas ainda não tinham sido apresentadas): <code>print</code>, <code>length</code>, <code>round</code>, <code>abline</code>, <code>points</code>, <code>for</code>, <code>nrow</code> e <code>text</code>. 
+
+## para saber mais
+
+Isso é uma introdução básica ao R, abordando os conceitos de atribuição, _data frames_, endereçamento de linha e coluna, e funções. A partir desses fundamentos, você pode explorar mais recursos avançados e complexos da linguagem à medida que avança no aprendizado.
+
+Além de ter o hábito de consultar a documentação dos pacotes (vistos adiante) e funções no próprio R, que trazem exemplos, explore a Web. Há vários tutoriais disponíveis. Ache exemplos e repita-os passo a passo, para ganhar familiaridade com a linguagem.
+
+ChatGPT e GPTs específicos para R da versão ChatGPT 4o  auxiliam na produção de script R.
+  
+# Sumário
+
+* Leitura e gravação de arquivo de dados
+* Tipo de variável  
+* Estatística descritiva gráfica e numérica
+* Estrutura do arquivo de dados com medidas repetidas: _wide_ e _long_
+
+# Quatro problemas
+
+1. Ler e descrever [`Biometria_FMUSP.xlsx`](Biometria_FMUSP.xlsx){target="_blank"};
+1. Ler e transformar a estrutura de dados de [`NewDrug.xlsx`](NewDrug.xlsx){target="_blank"} de formato _wide_ para _long_ e vice-versa;
+1. Ler dados em colunas e tabelas em script R;
+1. Ler e descrever arquivo de dados grande `DOBR2020.rds` (documentação em [`Estrutura_SIM_para_CD.pdf`](Estrutura_SIM_para_CD.pdf){target="_blank"}).
+
+# Ler arquivo de dados em planilha Excel 
+
+Os dados da planilha [`Biometria_FMUSP.xlsx`](Biometria_FMUSP.xlsx){target="_blank"} foram coletados pelos docentes dos estudantes do segundo ano de uma mesma disciplina do curso de Medicina da FMUSP em três anos consecutivos.
+
+As variáveis do arquivo são:
+
+* ID: idenficador do(a) estudante	
+* Ano da coleta dos dados: 1, 2, 3	
+* Turma: A, B	
+* Sexo: Feminino, Masculino	
+* Mao: Destro, Canhoto, Ambidestro	
+* TipoSang: A+, A-, ...	
+* ABO: A, B, AB, O
+* Rh: +, -
+* AtivFisica: nível de atividade física	
+* Sedentarismo: Não, Sim	
+* MCT: massa corporal total (kg)
+* Estatura: cm	
+
+```{r}
+Dados <- readxl::read_excel(path="Biometria_FMUSP.xlsx",
+                            sheet="dados",
+                            na=c("NA","na","nA","Na"))
+```
+
+## Dados 
+
+```{r}
+tabela <- knitr::kable(head(Dados), format="html", caption="Biometria FMUSP")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+
+tabela <- knitr::kable(tail(Dados), format="html", caption="Biometria FMUSP")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+```
+
+## Estrutura de dados
+
+```{r}
+str(Dados)
+```
+
+## Pré-processamento
+
+Em análise estatística de dados, o pré-processamento refere-se às etapas iniciais e fundamentais que os dados brutos passam antes de serem utilizados para análise estatística propriamente dita. Essas etapas são cruciais para garantir que os dados estejam limpos, organizados e em um formato adequado para que as análises subsequentes sejam precisas e confiáveis.
+
+As principais etapas de pré-processamento incluem:
+
+1. **Coleta:** Esta é a primeira etapa, onde os dados brutos são obtidos a partir de fontes diversas, como pesquisas, sensores, bancos de dados, etc.
+
+2. **Limpeza:** Nesta etapa, os dados são revisados em busca de erros, valores ausentes ou inconsistentes. Dados ausentes podem ser tratados preenchendo-os com valores adequados ou removendo as observações afetadas, dependendo do caso. Outliers (valores extremos que não seguem o padrão dos demais dados) podem ser tratados ou removidos, caso tenham um efeito indesejado na análise.
+
+3. **Transformação e recodificação:** Aqui, os dados podem ser transformados para atender aos requisitos de certos métodos estatísticos. Por exemplo, aplicar logaritmos a dados assimétricos ou normalizar dados para escala comparável.
+
+4. **Integração:** Quando os dados vêm de várias fontes, é necessário combiná-los em um único conjunto de dados coerente e consistente.
+
+5. **Redução de dimensionalidade:** Se os dados tiverem muitas variáveis, é possível utilizar técnicas de redução de dimensionalidade para simplificar a análise e visualização.
+
+6. **Discretização:** Às vezes, é necessário transformar variáveis contínuas em categorias discretas para melhorar a interpretação ou usar certos métodos estatísticos específicos.
+
+7. **Normalização e padronização:** Essas técnicas são aplicadas para garantir que as variáveis estejam em escalas comparáveis, especialmente quando diferentes variáveis têm unidades diferentes.
+
+8. **Seleção de características:** Selecione as variáveis mais relevantes ou informativas para a análise, eliminando as menos relevantes.
+
+Após o pré-processamento, os dados estarão prontos para serem utilizados em análises estatísticas, como regressão, análise de variância, análise de componentes principais, clustering, entre outras. O processo de pré-processamento pode variar dependendo da natureza dos dados e das questões de pesquisa específicas em análise estatística.
+
+```{r}
+print(summary(Dados))
+```
+
+```{r}
+print(sapply(Dados, class))
+Dados <- dplyr::mutate_if(Dados, is.character, as.factor)
+Dados <- dplyr::mutate_at(Dados, dplyr::vars(ID), as.factor)
+print(summary(Dados))
+print(sapply(Dados, class))
+print(labelled::look_for(Dados[,-1]))
+tabela <- knitr::kable(head(Dados), format="html", caption="Biometria FMUSP")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+tabela <- knitr::kable(tail(Dados), format="html", caption="Biometria FMUSP")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+
+print(class(Dados$AtivFisica))
+print(levels(Dados$AtivFisica))
+print(summary(subset(Dados, select=c(AtivFisica))))
+Dados$AtivFisica <- factor(Dados$AtivFisica,
+                           levels=c("sempre_inativo",
+                                    "atualmente_inativo",
+                                    "baixa_intensidade",
+                                    "media_intensidade",
+                                    "alta_intensidade"))
+print(class(Dados$AtivFisica))
+print(levels(Dados$AtivFisica))
+print(table(subset(Dados, select=AtivFisica)))
+
+Dados$ABO <- factor(Dados$ABO,
+                   levels=c("A",
+                            "O",
+                            "B",
+                            "AB"))
+print(class(Dados$ABO))
+print(levels(Dados$ABO))
+print(table(subset(Dados, select=ABO)))
+
+Dados$TipoSang <- factor(Dados$TipoSang,
+                           levels=c("A+","O+","B+","AB+",
+                                    "A-","O-","B-","AB-"))
+print(class(Dados$TipoSang))
+print(levels(Dados$TipoSang))
+print(table(subset(Dados, select=TipoSang)))
+
+# print(sjPlot::view_df(subset(Dados, select=c(-ID))))
+print(summary(subset(Dados, select=-ID)))
+Dados$MCT[Dados$MCT==658] <- NA
+Dados$Estatura[Dados$Estatura==120] <- NA
+Dados$IMC <- Dados$MCT/((Dados$Estatura/100)^2)
+print(summary(subset(Dados, select=c(MCT, Estatura, IMC))))
+# summarytools::view(summarytools::dfSummary(Dados))
+
+saveRDS(Dados, "Biometria_FMUSP.rds")
+```
+
+### Estratificação da amostra por sexo
+
+```{r}
+Dados <- readRDS("Biometria_FMUSP.rds")
+Dados.F <- subset(Dados, Sexo=="F")
+Dados.M <- subset(Dados, Sexo=="M")
+```
+
+### Análise de dados faltantes
+
+```{r}
+n.total <- nrow(Dados)
+n.completo <- nrow(na.omit(Dados))
+n.incompleto <- n.total - n.completo
+cat("Numero de casos total = ", n.total, "\n", sep="")
+cat("Numero de casos completos = ", n.completo, 
+    " (",round(100*n.completo/n.total,2),"%)\n", sep="")
+cat("Numero de casos incompletos = ", n.incompleto, 
+    " (",round(100*n.incompleto/n.total,2),"%)\n", sep="")
+obs.falt <- sum(is.na(Dados))
+obs.valid <- sum(!is.na(Dados))
+obs.tot <- obs.falt + obs.valid
+cat("Numero de observacoes validas = ", obs.valid, 
+    " (",round(100*obs.valid/obs.tot,2),"%)\n", sep="")
+cat("Numero de observacoes faltantes = ", obs.falt, 
+    " (",round(100*obs.falt/obs.tot,2),"%)\n", sep="")
+```
+
+### Análise de dados faltantes com `finalfit::missing_pattern`
+
+```{r}
+finalfit::missing_pattern(subset(Dados,select=-ID))
+```
+
+## Análise exploratória de dados (EDA)
+
+A análise estatística exploratória (ou EDA - _Exploratory Data Analysis_) é uma abordagem de investigação de dados que visa entender a estrutura, padrões e características de um conjunto de dados, antes de realizar análises mais formais ou modelagem estatística. Ela é uma etapa essencial no processo de análise de dados, pois ajuda a obter insights preliminares, identificar tendências, detectar anomalias e formular hipóteses iniciais.
+
+As principais características da análise estatística exploratória são:
+
+1. **Sumarização de dados:** A EDA envolve a utilização de técnicas estatísticas descritivas para resumir os dados em estatísticas como média, mediana, desvio padrão, mínimo, máximo, quartis, histogramas e outras medidas relevantes. Essas estatísticas ajudam a entender a distribuição dos dados e suas principais características.
+
+2. **Visualização de dados:** A EDA faz amplo uso de gráficos e visualizações para representar os dados de maneira compreensível. Gráficos como histogramas, box plots, gráficos de dispersão, gráficos de linha e gráficos de barras são usados para identificar padrões, relacionamentos e tendências nos dados.
+
+3. **Detecção de outliers e dados faltantes:** Durante a análise exploratória, é essencial identificar valores extremos (outliers) e dados ausentes, entender suas possíveis causas e decidir como tratá-los, se necessário.
+
+4. **Análise de correlação:** Explorar correlações entre variáveis ajuda a entender a relação entre diferentes características do conjunto de dados e pode fornecer insights valiosos sobre como elas estão relacionadas.
+
+5. **Análise de distribuição:** Através de gráficos de distribuição, é possível verificar se os dados seguem uma distribuição específica, como normal, uniforme ou exponencial, por exemplo.
+
+6. **Identificação de padrões e tendências:** A EDA permite identificar tendências temporais, sazonalidades, padrões cíclicos e outras estruturas nos dados que podem ser úteis na formulação de perguntas e hipóteses para análises posteriores.
+
+A análise estatística exploratória é frequentemente conduzida usando ferramentas de software estatístico, como o R e Python. Essa etapa é fundamental para estabelecer uma base sólida para a análise posterior e para garantir que a interpretação dos resultados seja feita de forma mais informada e precisa.
+
+### `psych::describe` e `table`
+
+```{r eval=TRUE,echo=TRUE, warning=FALSE, error=FALSE}
+# item name ,item number, nvalid, mean, sd,
+# median, mad (Median Absolute Deviation), 
+# min, max, skew, kurtosis, se
+print(psych::describe(subset(Dados, select=c(MCT, Estatura))))
+
+table(Dados$TipoSang)
+round(prop.table(table(Dados$TipoSang)),2)
+```
+
+### `tapply`
+
+```{r}
+# mean,median,25th and 75th quartiles,min,max
+tapply(Dados$MCT, Dados$Sexo, summary)
+```
+
+### `psych::describeBy`
+
+```{r}
+# item name, item number, nvalid, mean, sd,
+# median, mad (Median Absolute Deviation), 
+# min, max, skew, kurtosis, se
+print(psych::describeBy(subset(Dados,select=c(MCT, Estatura)),
+                        group=list(Dados$Sexo),
+                        mat=TRUE,
+                        digits=2))
+print(psych::describeBy(subset(Dados,select=c(MCT, Estatura)),
+                        group=list(Dados$Sexo, Dados$ABO),
+                        mat=TRUE,
+                        digits=2))
+print(psych::describeBy(subset(Dados, select=c(MCT, Estatura)),
+                        group=list(Dados$ABO, Dados$Sexo),
+                        mat=TRUE,
+                        digits=2))
+```
+
+### `aggregate`
+
+```{r}
+print(aggregate(subset(Dados, select=c(MCT, Estatura)),
+                by=list(Dados$Sexo),
+                FUN=mean,
+                na.rm=TRUE))
+print(aggregate(subset(Dados, select=c(MCT, Estatura)),
+                by=list(Dados$Sexo, Dados$ABO),
+                FUN=mean,
+                na.rm=TRUE))
+print(aggregate(subset(Dados, select=c(MCT, Estatura)),
+                by=list(Dados$ABO, Dados$Sexo),
+                FUN=mean,
+                na.rm=TRUE))
+```
+
+### `aggregate` por fórmula
+
+```{r}
+print(aggregate(MCT ~ Sexo,
+                FUN=median,
+                na.rm=TRUE,
+                data=Dados))
+print(aggregate(MCT ~ Sexo + ABO,
+                FUN=median,
+                na.rm=TRUE,
+                data=Dados))
+```
+
+## Média e desvio-padrão: Parte A
+
+Baseado em
+
+Higgins JPT, Li T, Deeks JJ (editors). Chapter 6: Choosing effect measures and computing estimates of effect. In: Higgins JPT, Thomas J, Chandler J, Cumpston M, Li T, Page MJ, Welch VA (editors). Cochrane Handbook for Systematic Reviews of Interventions version 6.3 (updated February 2022). Cochrane, 2022. Available from https:www.training.cochrane.org/handbook. 
+
+* ver Table 6.5.a em https://training.cochrane.org/handbook/current/chapter-06
+
+* Suponha que não temos acesso aos dados brutos de MCT. Os dados disponíveis são apresentados na tabela abaixo: 
+
+group |   n |  mean |    sd|
+-----:|----:|------:|-----:|
+F     | 230 | 57.63 |  9.05|     
+M     | 312 | 71.59 | 12.09| 
+
+* Como temos acesso aos dados brutos de MCT do arquivo [Biometria_FMUSP.rds](Biometria_FMUSP.rds) podemos obter a média (função <code>mean</code>) e o desvio-padrão  (função <code>sd</code>, de **s**tandard **d**eviation) dos indivíduos de cada um dos dois sexos que geraram essa tabela:
+
+```{r}
+Dados <- readRDS("Biometria_FMUSP.rds")
+
+Dados.F <- subset(Dados, Sexo=="F")
+Dados.M <- subset(Dados, Sexo=="M")
+
+n.F <- sum(!is.na(Dados.F$MCT))
+mean.F <- mean(Dados.F$MCT,na.rm=TRUE)
+sd.F <- sd(Dados.F$MCT,na.rm=TRUE)
+n.M <- sum(!is.na(Dados.M$MCT))
+mean.M <- mean(Dados.M$MCT,na.rm=TRUE)
+sd.M <- sd(Dados.M$MCT,na.rm=TRUE)
+cat("Sexo F: média=",mean.F,", desvio-padrão=",sd.F," (n=",n.F,")\n",sep="")
+cat("Sexo M: média=",mean.M,", desvio-padrão=",sd.M," (n=",n.M,")\n",sep="")
+```
+
+* Quais são os valores da média e desvio-padrão amostrais dos 542 estudantes?
+
+A média global é facilmente obtida fazendo-se uma média ponderada
+
+```{r}
+m <- (230*57.63 + 312*71.59)/542
+cat("Média = ", round(m,2), "\n", sep="")
+```
+Como temos os dados brutos, podemos conferir nosso resultado:
+```{r}
+print(mean.All <- mean(Dados$MCT,na.rm=TRUE))
+```
+
+Podemos fazer o mesmo para o desvio-padrão?
+```{r}
+s <- (230*9.05 + 312*12.09)/542
+cat("Desvio-padrão = ", round(s,2), "\n", sep="")
+```
+Conferindo nosso resultado, obtemos:
+```{r}
+print(sd.All <- sd(Dados$MCT,na.rm=TRUE))
+```
+Onde está o erro? Repare que 12.9 é maior do que os dois desvios-padrão dos grupos (F: 9.05; M: 12.09).
+
+## Média e desvio-padrão: Parte B
+
+* MCT
+
+   n |  mean |    sd 
+----:|------:|------:
+ 542 | 65.67 |  12.9 
+
+group |   n |  mean |    sd 
+:----:|----:|------:|-----:
+F     | 230 | 57.63 |  9.05     
+M     | 312 | 71.59 | 12.09
+
+A média foi bem resolvida:
+
+$$\Large \bar{x} = \dfrac{n_F \, \bar{x}_F + n_M \, \bar{x}_M}{n_F + n_M}$$
+
+implementada em R como:
+```{r}
+m <- (230*57.63 + 312*71.59)/542
+cat("Media = ", round(m,2), "\n", sep="")
+```
+
+O desvio-padrão é mais complexo. Há algumas maneiras equivalentes para obtê-lo quando não dispomos dos dados brutos:
+
+$$\Large s=\sqrt{\dfrac{(n_F-1)\,s_F^2+(n_M-1)\,s_M^2+\dfrac{n_F\;n_M}{n_F+n_M}\left(\bar{x}_F-\bar{x}_M\right)^2}{n_F+n_M-1}}\\
+\large \dfrac{n_F\;n_M}{n_F+n_M}=\text{ média harmônica/2}$$
+
+$$\Large s=\sqrt{\frac{n_F\,s_F^2+n_M\,s_M^2+n_F\,\left(\bar{x}_F-\bar{x}\right)^2+n_M\,\left(\bar{x}_M-\bar{x}\right)^2}{n_F+n_M}}$$
+
+$$\Large s=\sqrt{\frac{n_F\,\left(s_F^2+\left(\bar{x}_F-\bar{x}\right)^2\right)+n_M\,\left(s_M^2+\left(\bar{x}_M-\bar{x}\right)^2\right)}{n_F+n_M}}$$
+
+implementados em R, respectivamente, como:
+```{r}
+dp <- sqrt(((230-1)*9.05^2 + (312-1)*12.09^2 + 
+            (230*312/542)*(57.63-71.59)^2)/(542-1))
+cat("Desvio-padrao = ", round(dp,2), "\n", sep="")
+```
+
+```{r}
+dp <- sqrt((230*9.05^2 + 312*12.09^2 + 
+           230*(57.63-65.67)^2 + 312*(71.59-65.67)^2)/542)
+cat("Desvio-padrao = ", round(dp,2), "\n", sep="")
+```
+
+```{r}
+dp <- sqrt( (230*(9.05^2+(57.63-65.67)^2)+
+             312*(12.09^2+(71.59-65.67)^2)) / 542)
+cat("Desvio-padrao = ", round(dp,2), "\n", sep="")
+```
+
+Como pode o desvio-padrão global ser maior que os de cada grupo? Podemos ver graficamente:
+
+```{r}
+# obtem os dados brutos
+Dados <- readRDS("Biometria_FMUSP.rds")
+Dados.F <- subset(Dados, Sexo=="F")
+Dados.M <- subset(Dados, Sexo=="M")
+# tamanho dos grupos
+n.All <- sum(!is.na(Dados$MCT))
+n.F <- sum(!is.na(Dados.F$MCT))
+n.M <- sum(!is.na(Dados.M$MCT))
+# distribuicao densidade de probabilidade
+d.All <- density(Dados$MCT,na.rm=TRUE)
+d.F <- density(Dados.F$MCT,na.rm=TRUE)
+d.M <- density(Dados.M$MCT,na.rm=TRUE)
+# escala a densidade pelo tamanho dos grupos
+d.All$y <- d.All$y * n.All
+d.F$y <- d.F$y * n.F
+d.M$y <- d.M$y * n.M
+# exibe o grafico
+x.min <- min(c(d.All$x,d.F$x,d.M$x),na.rm=TRUE)
+x.max <- max(c(d.All$x,d.F$x,d.M$x),na.rm=TRUE)
+y.min <- min(c(d.All$y,d.F$y,d.M$y),na.rm=TRUE)
+y.max <- max(c(d.All$y,d.F$y,d.M$y),na.rm=TRUE)
+plot(NA, main="Distribuição do MCT",
+     xlab="MCT", ylab="Densidade * n",
+     xlim=c(x.min,x.max), ylim=c(y.min,y.max),
+     bty="n")
+lines(d.All, lwd=2)
+lines(d.F, col="red", lwd=2, lty=2)
+lines(d.M, col="blue", lwd=2, lty=3)
+legend("topright", 
+       c("Global","Feminino","Masculino"), 
+       col=c("black","red","blue"),
+       lwd=2, 
+       lty=c(1,2,3), 
+       box.lwd=0, bg="transparent")  
+```
+
+## Gráficos
+
+### Dotplot por `plot` & `table`
+
+```{r}
+plot(Dados$Sexo, xlab="Sexo", ylab="Freq")
+plot(Dados$TipoSang, xlab="Tipo Sanguineo", ylab="Freq")
+plot(Dados$Sedentarismo, xlab="Sedentarismo", ylab="Freq")
+plot(table(Dados$MCT), xlab="Massa corporal total (kg)", ylab="Freq")
+plot(table(Dados$Estatura), xlab="Estatura (cm)", ylab="Freq")
+```
+
+### Gráfico de setores
+
+```{r}
+table(Dados$Sexo)
+pie(table(Dados$Sexo), 
+    xlab="Sexo")
+table(Dados$ABO)
+pie(table(Dados$ABO), 
+    xlab="ABO")
+```
+
+### Tabela de contingência 2x2
+
+```{r}
+print(Sedentarismo.Sexo <- xtabs(~Sedentarismo+Sexo, data=Dados))
+# total por linha (1)
+margin.table(Sedentarismo.Sexo,1)
+# total por coluna (2)
+margin.table(Sedentarismo.Sexo,2)
+# proporção de cada célula em relação ao total
+round(proportions(Sedentarismo.Sexo),3)
+# proporção por linha
+round(proportions(Sedentarismo.Sexo,1),3)
+# proporção por coluna
+round(proportions(Sedentarismo.Sexo,2),3)
+plot(Dados$Sedentarismo~Dados$Sexo, xlab="Sexo", ylab="Sedentarismo")
+mosaicplot(~Sexo+Sedentarismo, data=Dados, color=FALSE)
+gplots::balloonplot(t(Sedentarismo.Sexo), 
+                    main ="Estudantes de Medicina\nFMUSP", 
+                    xlab ="Sexo", 
+                    ylab="Sedentarismo",
+                    label=TRUE, 
+                    show.margins=TRUE, 
+                    show.zeros=TRUE, 
+                    dotcolor="gray45")
+barplot(Sedentarismo.Sexo,
+        beside=TRUE, 
+        legend.text=rownames(Sedentarismo.Sexo),
+        ylab="Freq",
+        xlab="Sexo x Sedentarismo")
+barplot(proportions(Sedentarismo.Sexo),
+        beside=TRUE, 
+        legend.text=rownames(Sedentarismo.Sexo),
+        ylab="Freq",
+        xlab="Sexo x Sedentarismo")
+sexo.ABO.freq <- as.data.frame(table(Dados$Sexo, Dados$ABO))
+names(sexo.ABO.freq) <- c("Sexo", "ABO", "Freq")
+ggpubr::ggbarplot(sexo.ABO.freq, 
+                  x="ABO", 
+                  y="Freq",
+                  color="Sexo",
+                  palette=c("gray45", "black"),
+                  order=c("A", "O", "B", "AB"),
+                  width=.7)
+ggpubr::ggbarplot(sexo.ABO.freq, 
+                  x="ABO", 
+                  y="Freq",
+                  color="Sexo",
+                  palette=c("gray45", "black"),
+                  order=c("A", "O", "B", "AB"),
+                  position = ggplot2::position_dodge(),
+                  width=.7)
+```
+
+### Tabela de contingência 2x4
+
+```{r}
+print(ABO.Sexo <- xtabs(~ABO+Sexo, data=Dados))
+round(proportions(ABO.Sexo),2)
+round(proportions(ABO.Sexo,1),2)
+round(proportions(ABO.Sexo,2),2)
+mosaicplot(~Sexo+ABO, data=Dados, color=FALSE)
+gplots::balloonplot(t(ABO.Sexo), 
+                    main ="Estudantes de Medicina\nFMUSP", 
+                    xlab ="Sexo", 
+                    ylab="ABO",
+                    label=TRUE, show.margins=TRUE, 
+                    show.zeros=TRUE, 
+                    dotcolor="gray45")
+barplot(ABO.Sexo,
+        beside=TRUE, 
+        legend.text=rownames(ABO.Sexo),
+        ylab="Freq",
+        xlab="Sexo x ABO")
+barplot(proportions(ABO.Sexo),
+        beside=TRUE, 
+        legend.text=rownames(ABO.Sexo),
+        ylab="Freq",
+        xlab="Sexo x ABO")
+```
+
+### Tabelas multidimensionais: três ou mais variáveis categóricas
+
+```{r}
+ftable(Sexo + Sedentarismo ~ ABO, data=Dados)
+print(xtabs(~Sexo + Sedentarismo + ABO, data=Dados))
+mosaicplot(xtabs(~Sexo + Sedentarismo + ABO, data=Dados))
+```
+
+### Boxplot
+
+```{r fig.align="center", echo=FALSE}
+knitr::include_graphics("image/IQR.png")
+```
+
+```{r}
+boxplot(Dados$MCT, horizontal=TRUE, 
+        xlab="MCT (kg)")
+rug(jitter(Dados$MCT))
+boxplot(MCT~Sexo, data=Dados, horizontal=TRUE, 
+        xlab="MCT (kg)")
+boxplot(MCT~Sexo+Sedentarismo, data=Dados, horizontal=TRUE, 
+        xlab="MCT (kg)")
+boxplot(MCT~Sexo+Sedentarismo+Mao, data=Dados, horizontal=TRUE, 
+        xlab="MCT (kg)", cex=0.6)
+ggpubr::ggboxplot(data=Dados, 
+                  y="MCT")
+ggpubr::ggboxplot(data=Dados,
+                  x="Sexo",
+                  y="MCT", 
+                  add="",
+                  orientation="horizontal",
+                  width=.7,
+                  order=c("F", "M"))
+ggpubr::ggboxplot(data=Dados,
+                  x="Sexo",
+                  y="MCT", 
+                  add="",
+                  orientation="horizontal",
+                  width=.7,
+                  order=c("M", "F"))
+ggpubr::ggboxplot(data=Dados,
+                  x="Sexo",
+                  y="MCT", 
+                  add="jitter",
+                  orientation="horizontal",
+                  width=.7,
+                  order=c("F", "M"))
+ggpubr::ggboxplot(data=Dados,
+                  x="ABO",
+                  y="MCT", 
+                  add="",
+                  orientation="horizontal",
+                  width=.7,
+                  select=c("A", "B", "O"),
+                  order=c("O", "B", "A"))
+```
+
+### Bagplot: boxplot bidimensional
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+bgp.F <- DescTools::PlotBag(Dados.F$Estatura, 
+                            Dados.F$MCT,
+                            main=paste("Feminino"),
+                            xlab="Estatura (cm)",
+                            ylab="Massa Corporal Total (kg)",
+                            na.rm=TRUE,
+                            show.bagpoints=FALSE,
+                            show.looppoints=FALSE,
+                            show.whiskers=FALSE,
+                            show.baghull=TRUE,
+                            col.loophull="white",
+                            col.looppoints="black", 
+                            col.baghull="white",
+                            col.bagpoints="black",
+                            add=FALSE,
+                            cex=1)
+print(outliers.F <- as.data.frame(bgp.F$pxy.outlier))
+for (o in 1:nrow(outliers.F))
+{
+  r.F <- which(Dados.F$Estatura==outliers.F$x[o] & 
+               Dados.F$MCT==outliers.F$y[o])
+  text(outliers.F$x[o],outliers.F$y[o], r.F, pos=1, cex=0.7)
+}
+
+bgp.M <- DescTools::PlotBag(Dados.M$Estatura, 
+                          Dados.M$MCT,
+                          main=paste("Masculino"),
+                          xlab="Estatura (cm)",
+                          ylab="Massa Corporal Total (kg)",
+                          na.rm=TRUE,
+                          show.bagpoints=FALSE,
+                          show.looppoints=FALSE,
+                          show.whiskers=FALSE,
+                          show.baghull=TRUE,
+                          col.loophull="white",
+                          col.looppoints="black", 
+                          col.baghull="white",
+                          col.bagpoints="black",
+                          add=FALSE,
+                          cex=1)
+print(outliers.M <- as.data.frame(bgp.M$pxy.outlier))
+for (o in 1:nrow(outliers.M))
+{
+  r.M <- which(Dados.M$Estatura==outliers.M$x[o] & 
+                 Dados.M$MCT==outliers.M$y[o])
+  text(outliers.M$x[o], outliers.M$y[o], r.M, pos=1, cex=0.7)
+}
+```
+
+### Histograma
+
+* Silveira, PSP & Siqueira, JO (2022) Histogram lies about distribution shape and Pearson’s coefficient of variation lies about relative variability.  [_The Quantitative Methods for Psychology_](https://www.tqmp.org/RegularArticles/vol18-1/p091/p091.pdf){target="_blank"} 18(1). [DOI 10.20982/tqmp.18.1.p091](https://www.tqmp.org/RegularArticles/vol18-1/p091/){target="_blank"}
+
+* How to Lie with Histograms
+  * https://www.rossidata.com/LinLog
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+hist(Dados$MCT)
+rug(jitter(Dados$MCT))
+```
+
+### Gráfico de densidade
+
+```{r}
+car::densityPlot(~MCT, data=Dados)
+```
+```{r}
+car::densityPlot(MCT~Sexo, data=Dados, 
+                 col=c("black","black"))
+```
+Note que a área de cada _density plot_ é idêntica (igual a 1). Caso queiramos refletir o tamanho de cada grupo, uma alternativa é multiplicar os valores das ordenadas pelo tamanho do grupo (a área ficará igual ao tamanho do grupo).
+```{r}
+# tamanho dos grupos
+n.F <- sum(!is.na(Dados.F$MCT))
+n.M <- sum(!is.na(Dados.M$MCT))
+# distribuicao densidade de probabilidade
+d.F <- density(Dados.F$MCT,na.rm=TRUE)
+d.M <- density(Dados.M$MCT,na.rm=TRUE)
+# escala a densidade pelo tamanho dos grupos
+d.F$y <- d.F$y * n.F
+d.M$y <- d.M$y * n.M
+# exibe o grafico
+x.min <- min(c(d.F$x,d.M$x),na.rm=TRUE)
+x.max <- max(c(d.F$x,d.M$x),na.rm=TRUE)
+y.min <- min(c(d.F$y,d.M$y),na.rm=TRUE)
+y.max <- max(c(d.F$y,d.M$y),na.rm=TRUE)
+plot(NA, main="Distribuição do MCT",
+     xlab="MCT", ylab="Densidade * n",
+     xlim=c(x.min,x.max), ylim=c(y.min,y.max),
+     bty="n")
+lines(d.F, col="violetred3", lwd=2, lty=1)
+lines(d.M, col="dodgerblue2", lwd=3, lty=2)
+legend("topright", 
+       c("Feminino","Masculino"), 
+       col=c("violetred3","dodgerblue2"),
+       lwd=c(2,3), 
+       lty=c(1,2), 
+       box.lwd=0, bg="transparent")  
+```
+
+```{r}
+car::densityPlot(MCT~Sedentarismo, data=Dados.F, 
+                 col=c("black","black"),
+                 main="Feminino")
+```
+```{r}
+car::densityPlot(MCT~Sedentarismo, data=Dados.M, 
+                 col=c("black","black"),
+                 main="Masculino")
+```
+```{r}
+car::densityPlot(MCT~ABO, data=Dados.F,
+                 main="Feminino")
+```
+```{r}
+car::densityPlot(MCT~ABO, data=Dados.M,
+                 main="Masculino")
+```
+
+### Gráfico de distribuição de probabilidade: ECDF plot
+
+```{r}
+ggpubr::ggecdf(data=Dados,
+               x="MCT",
+               linetype="Sexo")
+```
+               
+### Gráfico de dispersão com `sunflowerplot`
+
+Considere um scatterplot convencional:
+
+```{r}
+pairs.total <- nrow(na.omit(data.frame(Dados.F[,c("MCT","Estatura")])))
+cat("Existem ",pairs.total," pares de valores (Estatura,MCT) em Dados.F\n",sep="")
+plot(MCT~Estatura,
+     main="Estatura x MCT: Feminino",
+     data=Dados.F, 
+     pch=19,
+     cex=0.6,
+     col="black", 
+     xlim=c(145,190),
+     ylim=c(30,127),
+     bty="n")
+uniestaturas <- sort(unique(Dados.F$Estatura))
+points.per.mct <- c()
+for (e in uniestaturas)
+{
+  m <- sort(unique(Dados.F$MCT[Dados.F$Estatura==e]))
+  text(e,m[1],length(m),pos=1,col="blue",cex=0.8)
+  points.per.mct <- c(points.per.mct,length(m))
+}
+points.total <- sum(points.per.mct)
+cat("Contamos ",points.total," pontos distintos no gráfico.\n",sep="")
+```
+
+Para facilitar, usei um loop com <code>for</code> para contar quantos valores distintos de MCT aparecem associados a cada Estatura, e coloquei os números em azul no próprio gráfico. Você pode conferir (se tiver paciência) que 
+
+`r paste(points.per.mct,collapse="+")` = `r points.total`. 
+
+Os `r pairs.total`-`r points.total`=`r pairs.total-points.total` pontos faltantes correspondem a indivíduos com pares de valores (Estatura,MCT) coincidentes, mas os deixamos de visualizar graficamente. Há duas maneiras para contornar este problema. O sunflowerplot é uma delas:
+
+```{r}
+sunflowerplot(MCT~Estatura,
+              main="Estatura x MCT: Feminino",
+              data=Dados.F, 
+              rotate=TRUE, 
+              pch=1,
+              size=.1,
+              col="black", 
+              seg.col="black",
+              xlim=c(145,190),
+              ylim=c(30,127),
+              seg.lwd=.8)
+sunflowerplot(MCT~Estatura,
+              main="Estatura x MCT: Masculino",
+              data=Dados.M, 
+              rotate=TRUE, 
+              pch=2,
+              size=.1,
+              col="black", 
+              seg.col="black", 
+              xlim=c(150,200),
+              ylim=c(30,127),
+              seg.lwd=.8)
+
+sunflowerplot(MCT~Estatura,
+              main="Estatura x MCT: Feminino & Masculino",
+              data=Dados.F, 
+              rotate=TRUE, 
+              pch=1,
+              size=.1,
+              col="black", 
+              seg.col="black", 
+              xlim=c(145,200),
+              ylim=c(30,127),
+              seg.lwd=.8)
+sunflowerplot(MCT~Estatura,
+              data=Dados.M, 
+              rotate=TRUE, 
+              pch=2,
+              size=.1,
+              col="black", 
+              seg.col="black", 
+              seg.lwd=.8,
+              add=TRUE)
+```
+
+### Gráfico de dispersão com `car::scatterplot`
+
+```{r}
+car::scatterplot(MCT~Estatura,
+                 group=Dados$Sexo,
+                 jitter=list(x=1, y=1),
+                 regLine=FALSE, 
+                 smooth=FALSE, 
+                 ellipse=FALSE,
+                 grid=FALSE,
+                 col="black",
+                 xlim=c(145,200),
+                 ylim=c(30,127),
+                 data=Dados)
+```
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+<table style="border:1; background-color:#e0eee0"><tr><td>
+<big>Uma palavra sobre cores</big>
+
+Observe que aparece um _warning_
+<pre>
+number of groups exceeds number of available colors
+colors are recycled
+</pre>
+Isto é causado por <code>col="black"</code>, uma única cor, mas temos dois grupos, Feminino e Masculino. Se quiséssemos tudo em preto, como está, isto seria resolvido com
+<pre>
+col=c("black","black") 
+</pre>
+No entanto, R pode usar todos os $256^3=16777216$ (mais que 16 milhões de cores) disponíveis no sistema RGB ("red", "green", "blue") utilizando a notação hexadecimal. Há 256 níveis de vermelho, verde ou azul, indo da ausência (0) à intensidade máxima (255, denotado como ff em hexadecimal). Preto é ausência das três cores e corresponde a <code>"#000000"</code> na sintaxe do R, que usa os três pares de valores para definir as intensidade com <code>"#rrggbb"</code>.
+Além de você poder colocar a cor que quiser, há algumas centenas de cores já disponíveis no R. Consulte <code>?colors</code> para mais detalhes. Esta função fornece o seguinte:
+```{r}
+colors()
+```
+Nos gráficos seguintes vou utilizar <code>"orangered3"</code> (o mesmo que <code>"#cd3700"</code>) para o sexo Feminino e <code>"turquoise4"</code> (<code>"#00868b"</code>) para Masculino.
+</td></tr></table>
+
+
+```{r}
+car::scatterplot(MCT~Estatura,
+                 group=Dados$Sexo, 
+                 jitter=list(x=1, y=1),
+                 regLine=FALSE, 
+                 smooth=FALSE, 
+                 boxplots=TRUE, 
+                 ellipse=list(levels=c(0.68), 
+                              robust=TRUE, 
+                              fill=FALSE, 
+                              fill.alpha=0.2),
+                 grid=FALSE,
+                 col=c("orangered3","turquoise4"), 
+                 xlim=c(145,200),
+                 ylim=c(30,127),
+                 data=Dados)
+```
+```{r}
+car::scatterplot(MCT~Estatura,
+                 group=Dados$Sexo, 
+                 jitter=list(x=1, y=1),
+                 regLine=FALSE, 
+                 smooth=FALSE, 
+                 ellipse=list(levels=c(0.68,0.999), 
+                              robust=TRUE, 
+                              fill=FALSE, 
+                              fill.alpha=0.2),
+                 grid=FALSE,
+                 col=c("orangered3","turquoise4"), 
+                 xlim=c(145,200),
+                 ylim=c(30,127),
+                 data=Dados)
+```
+```{r}
+car::scatterplot(MCT~Estatura,
+                 group=Dados$Sexo, 
+                 jitter=list(x=1, y=1),
+                 regLine=TRUE, 
+                 smooth=FALSE, 
+                 ellipse=FALSE,
+                 grid=FALSE,
+                 col=c("orangered3","turquoise4"), 
+                 xlim=c(145,200),
+                 ylim=c(30,127),
+                 data=Dados)
+```
+
+### Gráfico de dispersão matricial
+
+```{r}
+car::scatterplotMatrix(Dados[,c("Estatura",
+                                "MCT")], 
+                       groups=Dados$Sexo,
+                       lower.panel=NULL,
+                       regLine=TRUE, 
+                       smooth=FALSE, 
+                       by.groups=TRUE,
+                       ellipse=list(levels=c(0.5), 
+                                    robust=TRUE, 
+                                    fill=FALSE),
+                       col=c("orangered3","turquoise4"), 
+                       cex=0.5,
+                       cex.labels=1,
+                       row1attop=TRUE)
+oldop <- options()
+options(warn=-1)
+  GGally::ggpairs(subset(Dados, 
+                       select=-c(ID,Ano,Turma,Mao,TipoSang,
+                                 ABO,AtivFisica,IMC)), 
+                ggplot2::aes(colour=Sexo))
+options(oldop) 
+```
+
+### Intervalo de confiança: comparação de médias populacionais
+
+```{r}
+alpha <- 0.05
+gplots::plotmeans(Dados$MCT~Dados$Sexo,
+                  main="Intervalo de confiança de 95%\ncom correção de Bonferroni",
+                  col="black",
+                  barcol="black",
+                  p=1-alpha/length(unique(levels(Dados$Sexo))),
+                  connect=FALSE)
+gplots::plotmeans(Dados$MCT~Dados$Sedentarismo,
+                  main="Intervalo de confiança de 95%\ncom correção de Bonferroni",
+                  col="black",
+                  barcol="black",
+                  p=1-alpha/length(unique(levels(Dados$Sexo))),
+                  connect=FALSE)
+gplots::plotmeans(Dados$MCT~ interaction(Dados$Sexo, 
+                                         Dados$Sedentarismo),
+                  main="Intervalo de confiança de 95%\ncom correção de Bonferroni",
+                  col="black",
+                  barcol="black",
+                  p=1-alpha/(length(unique(levels(Dados$Sexo)))*
+                    length(unique(levels(Dados$Sedentarismo)))),
+                  connect=FALSE)
+
+```
+
+## Gráficos avançados
+
+* ggplot2
+  * https://ggplot2.tidyverse.org/
+* Módulo V:  Gráficos com ggplot2 por Bruno Lucian & Claudia Jakelline
+  * https://bookdown.org/bruno_lucian_costa/CursoBasicoR/m5.html#gr%C3%A1ficos-com-ggplot2
+* ggplot2 - Essentials
+  * http://www.sthda.com/english/wiki/ggplot2-essentials
+* The R Graph Gallery
+  * https://r-graph-gallery.com/index.html
+* Advanced plotting by Jeff Powell and Remko Duursma 
+  * http://www.hiercourse.com/advancedplot
+  * http://www.hiercourse.com/docs/advanced_plotting.html
+* Chapter 19. Advanced graphics with ggplot2
+  * https://livebook.manning.com/book/r-in-action-second-edition/chapter-19/1
+* Top 50 ggplot2 Visualizations - The Master List (With Full R Code)
+  * http://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html
+  
+# Ler arquivo de dados com medidas repetidas
+
+## Ler e transformar a estrutura de dados de wide para long 
+
+* [`NewDrug.xls`](NewDrug.xls){target="_blank"}
+  * Fonte dos dados: Norusis, M (2021) _IBM SPSS Statistics 19 Statistical Procedures Companion_. Chapter: GLM Repeated Measures. USA: Addison Wesley.
+
+Este arquivo tem 12 pacientes, em dois grupos (nova droga e placebo), dada um deles com três medidas de `resp` e três de `pulse`. 
+
+```{r}
+Dados.wide <- readxl::read_xlsx("NewDrug.xlsx")
+Dados.wide$drug <- factor(Dados.wide$drug)
+tabela <- knitr::kable(Dados.wide, format="html", caption="New Drug: wide")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+
+str(Dados.wide)
+descricao <- psych::describeBy(subset(Dados.wide,select=c(-drug)),
+                               group=list(Dados.wide$drug),
+                               mat=TRUE,
+                               digits=2)
+tabela <- knitr::kable(descricao, format="html", caption="New Drug: wide")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+```
+<!--
+```{r}
+labelled::look_for(Dados.wide)
+```
+-->
+```{r}
+Dados.wide <- cbind(seq(1:nrow(Dados.wide)),Dados.wide)
+names(Dados.wide) <- c("ID",names(Dados.wide[,2:ncol(Dados.wide)]))
+Dados.wide$ID <- factor(Dados.wide$ID)
+tabela <- knitr::kable(Dados.wide, format="html", caption="New Drug: wide")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+```
+
+```{r}
+Dados.long <- Hmisc::reShape(Dados.wide,
+                             id=c("ID"),
+                             colvar=c("drug"),
+                             base=c("resp", "pulse"),
+                             reps=3,
+                             timevar="time",
+                             times=c(1,2,3))
+str(Dados.long)
+tabela <- knitr::kable(Dados.long, format="html", caption="New Drug: long")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+```
+
+Temos dois _data frames_, nos formatos wide e long. Podemos juntá-los em um único objeto, neste caso uma lista, e salvá-los para uso futuro.
+```{r}
+Dados.lista <- list(Dados.wide, Dados.long)
+names(Dados.lista) <- c("wide", "long")
+saveRDS(Dados.lista, "NewDrug.rds")
+```
+
+Uma vez salvo, você pode recuperar o arquivo quando precisar:
+```{r}
+Dados <- readRDS("NewDrug.rds")
+str(Dados)
+tabela <- knitr::kable(Dados$wide, format="html", caption="New Drug: wide")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+tabela <- knitr::kable(Dados$long, format="html", caption="New Drug: long")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+```
+
+## Ler e transformar a estrutura de dados de long para wide
+
+```{r}
+Dados.wide.resp <- reshape2::dcast(Dados.long, 
+                                   ID + drug ~ time, 
+                                   value.var="resp")
+names(Dados.wide.resp) <- c("ID","drug","resp1","resp2","resp3")
+tabela <- knitr::kable(Dados.wide.resp, format="html", caption="New Drug: resp wide")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+Dados.wide.pulse <- reshape2::dcast(Dados.long, 
+                                    ID + drug ~ time, 
+                                    value.var="pulse")
+names(Dados.wide.pulse) <- c("ID","drug","pulse1","pulse2","pulse3")
+tabela <- knitr::kable(Dados.wide.pulse, format="html", caption="New Drug: pulse wide")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+Dados.wide <- cbind(Dados.wide.resp, 
+                    Dados.wide.pulse[c("pulse1","pulse2","pulse3")])
+tabela <- knitr::kable(Dados.wide, format="html", caption="New Drug: wide")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+```
+
+# Ler dados em script R
+
+## variáveis em colunas e casos em linhas
+```{r}
+# https://rcompanion.org 
+ 
+Dados <- read.table(header=TRUE, 
+                    stringsAsFactors=TRUE, 
+                    text="
+ Medico   Conceito
+ A        3
+ A        5
+ A        4
+ A        4
+ A        4
+ A        4
+ A        4
+ A        4
+ A        5
+ A        5
+ B        2
+ B        4
+ B        2
+ B        2
+ B        1
+ B        2
+ B        3
+ B        2
+ B        2
+ B        3
+")
+Dados$Conceito <- factor(Dados$Conceito, ordered=TRUE)
+levels(Dados$Conceito)
+class(Dados)
+str(Dados)
+tabela <- knitr::kable(Dados, format="html", caption="Médico: conceito")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+summary(Dados)
+FSA::Summarize(as.numeric(Conceito) ~ Medico,
+               digits=3,
+               data=Dados)
+lattice::histogram(~ Conceito | Medico,
+                   data=Dados,
+                   aspect="fill",
+                   col="lightgray",
+                   layout=c(1,2)) 
+
+tabela <- xtabs(~ Medico + Conceito, data=Dados)
+addmargins(tabela)
+round(prop.table(tabela, margin=1), 2)
+spineplot(tabela)
+mosaicplot(tabela, shade=TRUE)
+saveRDS(object=Dados, file="MediConceito.rds")
+rm(Dados)
+Dados <- readRDS(file="MediConceito.rds")
+class(Dados)
+str(Dados)
+```
+
+## tabela bidimensional
+
+Para este exemplo hipotético, os agricultores foram pesquisados sobre com que frequência eles utilizam uma determinada prática de manejo adequado. As respostas são organizadas de acordo com o tamanho da operação. Ambas as variáveis na tabela de contingência são categorias ordenadas.
+
+```{r}
+tabela <- ("
+                     Sempre 'Às Vezes' Nunca
+   Hobbista          0       1         5
+   'Pequeno negócio' 2       3         4
+   Pequeno           4       4         4
+   Médio             3       2         0
+   Grande            2       0         0
+")
+
+Dados.tabela <- as.matrix(read.table(textConnection(tabela), 
+                                     header=TRUE, 
+                                     row.names=1))
+names(dimnames(Dados.tabela)) <- c("Tamanho", "Frequência")
+Dados.tabela <- as.table(Dados.tabela)
+addmargins(Dados.tabela)
+str(Dados.tabela)
+gplots::balloonplot(t(Dados.tabela), 
+                    main ="Tabela de contingência\nDuas variáveis ordinais", 
+                    xlab ="Freq prática manejo", 
+                    ylab="Tamanho operação",
+                    dotcolor="gray45",
+                    show.zeros=TRUE,
+                    show.margins=TRUE)
+Dados <- DescTools::Untable(Dados.tabela)
+print.data.frame(Dados)
+Dados$Tamanho <- factor(Dados$Tamanho, 
+                        ordered=TRUE,
+                        levels=rownames(Dados.tabela))
+Dados$Frequência <- factor(Dados$Frequência, 
+                           ordered=TRUE,
+                           levels=colnames(Dados.tabela))
+
+str(Dados)
+summary(Dados)
+xtabs(~Tamanho+Frequência, data=Dados)
+
+round(prop.table(Dados.tabela,
+           margin=NULL),2)
+spineplot(Dados.tabela)
+mosaicplot(Dados.tabela, shade=TRUE)
+```
+
+Da mesma forma que fizemos no exemplo acima, podemos salvar os dados, remover da memória e recuperar a lista para mostrar que o trabalho fica preservado:
+```{r}
+DadosLista <- list(Dados.tabela, Dados)
+names(DadosLista) <- c("Dados.tabela", "Dados")
+saveRDS(object=DadosLista, file="PraticaManejoLista.rds")
+rm(DadosLista)
+DadosLista <- readRDS(file="PraticaManejoLista.rds")
+DadosLista$Dados.tabela
+DadosLista$Dados
+```
+
+## tabela tridimensional
+
+Tabela de contingência 2x2 estratificada com relação entre tabagismo e sobrevivência em 20 anos (1974-1994) em 1.134 mulheres adultas do Reino Unido.
+
+* Delineamento: coorte
+* Fonte:  APPLETON, DR et al. (1996) Ignoring a covariate: An example of Simpson's paradox. The American Statistician, 50(4): 340-1.
+
+
+```{r}
+# A aspa inicial TEM que começar na primeira coluna da linha
+# e os espaçamentos distintos dos dessa tabela podem causar 
+# problemas na geração da tabela horizontalizada (ftable).
+tabela3D <- (
+"         FaixaEtaria 18-24 25-34 35-44 45-54 55-64 65-74 75+
+Tabagista Desfecho 
+Sim       Morta       2     3     14    27    51    29   13  
+          Viva        53    121   95    103   64    7    0 
+Nao       Morta       1     5     7     12    40    101  64
+          Viva        61    152   114   66    81    28   0
+")
+Dados.tabela3D <- as.table(read.ftable(textConnection(tabela3D)))
+ftable(Dados.tabela3D) # Display a flattened table (tabela horizontalizada)
+mosaicplot(Dados.tabela3D, shade=TRUE)
+saveRDS(object=Dados.tabela3D, file="Tabagismo3D.rds")
+rm(Dados.tabela3D)
+Dados.tabela3D <- readRDS(file="Tabagismo3D.rds")
+Dados.tabela2D <- margin.table(Dados.tabela3D, margin=c(1,2))
+addmargins(Dados.tabela2D)
+Dados.tabela.margin <- addmargins(Dados.tabela3D, margin=c(1,2))
+Dados.tabela.margin
+
+DadosLista <- list(Dados.tabela3D, Dados.tabela2D)
+names(DadosLista) <- c("Dados.tabela3D", "Dados.tabela2D")
+saveRDS(object=DadosLista, file="DadosLista.rds")
+rm(DadosLista)
+tabelas <- readRDS(file="DadosLista.rds")
+ftable(tabelas$Dados.tabela3D)
+ftable(tabelas$Dados.tabela2D)
+```
+
+# Ler arquivo de dados grande
+
+* `DOBR2020.dbc`: Declarações de Óbitos (DO) de BR em 2020 do Sistema de Informações de Mortalidade (SIM) do DATASUS: https://datasus.saude.gov.br/transferencia-de-arquivos/ 
+
+A documentação sobre as variáveis está no arquivo [`Estrutura_SIM_para_CD.pdf`](image/Estrutura_SIM_para_CD.pdf){target="_blank"}.
+
+```{r}
+# SIM - Sistema de Informaçõess de Mortalidade
+# DO - Declarações de Óbitos 
+# 2020 - BR
+# 1.556.824 linhas x 88 colunas
+
+# precisaremos desta funcao adiante
+age <- function(dob, age.death, units="years", floor=TRUE) {
+                calc.age <- lubridate::interval(dob, age.death)/
+                             lubridate::duration(num = 1, units=units)
+                if (floor) return(as.integer(floor(calc.age)))
+                return(calc.age) 
+}
+```
+
+## Dicionário de dados
+
+```{r out.height="460px", out.width='800px', echo=FALSE}
+knitr::include_graphics("image/Estrutura_SIM_para_CD.pdf")
+```
+
+## Ler o arquivo `DOBR2020.dbc`
+
+```{r}
+# Ler o formato exclusivo do Ministério da Saúde.
+# Eles oferecem um programa TABWIN, exclusivo para Windows;
+# felizmente, desenvolveram em R uma alternativa
+# Package ‘read.dbc’ was removed from the CRAN repository.
+
+Dados <- read.dbc::read.dbc("DOBR2020.dbc")
+sapply(Dados,class)
+```
+
+## Exemplo de uma inconsistência
+
+Este arquivo tem diversas inconsistências com sua documentação. Por exemplo, para IDADE dizem:
+<pre>
+  Idade: composto de dois subcampos.
+  - O primeiro, de 1 dígito, indica a unidade da idade (se 1 = minuto, se 2 = hora, se 3 = mês, se 4 = ano, se = 5 idade maior que 100 anos).
+  - O segundo, de dois dígitos, indica a quantidade de unidades: 
+    Idade menor de 1 hora: subcampo varia de 01 e 59 (minutos); 
+    De 1 a 23 Horas: subcampo varia de 01 a 23 (horas); 
+    De 24 horas e 29 dias: subcampo varia de 01 a 29 (dias);
+    De 1 a menos de 12 meses completos: subcampo varia de 01 a 11 (meses); 
+    Anos - subcampo varia de 00 a 99;
+  - 9 - ignorado
+</pre>
+
+Vamos verificar o primeiro dígito:
+```{r}
+# como fator é ruim de manipular
+Dados$IDADE <- as.character(Dados$IDADE)
+
+# códigos existentes
+todos <- table(Dados$IDADE)
+names(todos)
+
+# verificamos o primeiro dígito
+# O primeiro, de 1 dígito, indica a unidade da idade
+#  (se 1 = minuto, se 2 = hora, se 3 = mês, se 4 = ano,
+#   se = 5 idade maior que 100 anos).
+# 9 - ignorado
+
+table(substr(Dados$IDADE,1,1))
+```
+Ao que será que 0 corresponde?
+
+Mesmo assim, vamos verificar o que aparece como segundo e terceiro dígitos:
+```{r}
+#  1 = minuto, 2 = hora, 3 = mês, 4 = ano, 5 idade maior que 100 anos
+# - O segundo, de dois dígitos, indica a quantidade de unidades:
+#   (1) Idade menor de 1 hora: subcampo varia de 01 e 59 (minutos);
+#   (2) De 1 a 23 Horas: subcampo varia de 01 a 23 (horas);
+#   (?) De 24 horas e 29 dias: subcampo varia de 01 a 29 (dias);
+#   (3) De 1 a menos de 12 meses completos: subcampo varia de 01 a 11 (meses);
+#   (4) Anos - subcampo varia de 00 a 99;
+#   (5) > 100 anos
+
+for(i in c(0:5,9))
+{
+  cat("\nPrimeiro dígito = ",i," (",sep="")
+  if(i == 0){cat("não documentado")}
+  if(i == 1){cat("minuto, deve variar de 01 a 59")}
+  if(i == 2){cat("hora, deve variar de 01 a 23")}
+  if(i == 3){cat("mês, deve variar de 01 a 11")}
+  if(i == 4){cat("ano, deve variar de 00 a 99")}
+  if(i == 5){cat("> 100 anos)")}
+  if(i == 9){cat("não informado)")}
+  cat(")\n")
+  Dadostmp <- Dados$IDADE[substr(Dados$IDADE,1,1)==as.character(i)]
+  tabela <- table(substr(Dadostmp,2,3))
+  tabela <- data.frame(tabela)
+  names(tabela) <- c("Posições [2,3]","Frequência")
+  print.data.frame(tabela)
+}
+```
+
+## Calculando a idade
+Desistimos de entender esta variável, então arrumaremos datas de nascimento e óbito para recalcular a idade ao óbito:
+```{r}
+Dados$DTOBITO <- as.Date(as.character(Dados$DTOBITO),
+                         format="%d%m%Y")
+Dados$DTNASC <- as.Date(as.character(Dados$DTNASC),
+                        format="%d%m%Y")
+Dados$IdadeObito <- age(Dados$DTNASC, Dados$DTOBITO)
+# verificando os valores encontrados
+table(Dados$IdadeObito)
+# vamos encontrar o registro com idades muito altas
+r.aux <- which(Dados$IdadeObito > 130)
+Dados[r.aux,c("DTNASC","DTOBITO")]
+# e eliminar o registro com dado impossível
+Dados$IdadeObito[r.aux] <- NA
+# eliminando colunas que estão vazias
+summary(Dados[, c(19, 47, 74, 81, 85)])
+Dados <- subset(Dados,
+                select=-c(19, 47, 74, 81, 85))
+# um jeito de fazer summary turbinado, bom para arquivo grande
+sjPlot::view_df(Dados)
+```
+
+## Recodificação
+Seguindo o manual, substituímos os códigos numéricos nas colunas que usaremos (o mesmo procedimento pode ser feito para todas as outras que quiserem usar):
+```{r}
+Dados$TIPOBITO <- factor(Dados$TIPOBITO,
+                         levels=c(1,2),
+                         labels=c("Fetal",
+                                  "Não fetal"))
+Dados$LOCOCOR <- factor(Dados$LOCOCOR,
+                        levels=c(1:6,9),
+                        labels=c("Hospital",
+                                 "Outros estabelecimentos de saúde",
+                                 "Domicílio",
+                                 "Via pública",
+                                 "Outros",
+                                 "Aldeia indígena",
+                                 "Ignorado"))
+Dados$SEXO <- factor(Dados$SEXO,
+                     levels=0:2,
+                     labels=c("Ignorado",
+                              "Masculino",
+                              "Feminino"))
+Dados$RACACOR <- factor(Dados$RACACOR,
+                        levels=1:5,
+                        labels=c("Branca",
+                                 "Preta",
+                                 "Amarela",
+                                 "Parda",
+                                 "Indígena"))
+Dados$ESTCIV <- factor(Dados$ESTCIV,
+                       levels=c(1:5,9),
+                       labels=c("Solteiro",
+                                "Casado",
+                                "Viúvo",
+                                "Separado judicialmente/ divorciado",
+                                "União Estável",
+                                "Ignorado"))
+Dados$ESC2010 <- factor(Dados$ESC2010,
+                        levels=c(0:5,9),
+                        labels=c("Sem",
+                                 "Fundamental I",
+                                 "Fundamental II",
+                                 "Médio",
+                                 "Superior incompleto",
+                                 "Superior completo",
+                                 "Ignorado"))
+Dados$CIRCOBITO <- factor(Dados$CIRCOBITO,
+                         levels=c(1:4,9),
+                         labels=c("Acidente",
+                                  "Suicídio",
+                                  "Homicídio",
+                                  "Outros",
+                                  "Ignorado"))
+Dados$ACIDTRAB <- factor(Dados$ACIDTRAB,
+                         levels=c(1,2,9),
+                         labels=c("Sim",
+                                  "Não",
+                                  "Ignorado"))
+Dados$FONTE <- factor(Dados$FONTE,
+                         levels=c(1,2,3,4,9),
+                         labels=c("Ocorrência policial",
+                                  "Hospital",
+                                  "Família",
+                                  "Outra",
+                                  "Ignorado"))
+```
+
+## Salvando a versão recodificada
+Salvamos o arquivo modificado em formato `.rds`
+```{r}
+saveRDS(Dados, "DOBR2020.rds")
+```
+Este trecho só precisa ser feito uma vez. Com os dados organizados, agora é possível trabalhar a partir do arquivo `DOBR2020.rds`:
+
+## Lendo o arquivo já recodificado
+
+Lemos o arquivo preparado, e separamos apenas algumas colunas para exemplificar a análise:
+```{r}
+Dados <- readRDS("DOBR2020.rds")
+# separando as variáveis de interesse
+Variaveis <- c("TIPOBITO","IdadeObito", "SEXO",
+               "RACACOR", "ESTCIV", "ESC2010","PESO",
+               "LOCOCOR","CIRCOBITO","ACIDTRAB","FONTE")
+Dados <- subset(Dados, select=Variaveis)
+# verificando a integridade do arquivo
+sjPlot::view_df(Dados)
+```
+
+## Análise de dados faltantes
+```{r}
+n.total <- nrow(Dados)
+n.completo <- nrow(na.omit(Dados))
+n.incompleto <- n.total - n.completo
+cat("Numero de casos total = ", n.total, "\n", sep="")
+cat("Numero de casos completos = ", n.completo, 
+    " (",round(100*n.completo/n.total,2),"%)\n", sep="")
+cat("Numero de casos incompletos = ", n.incompleto, 
+    " (",round(100*n.incompleto/n.total,2),"%)\n", sep="")
+obs.falt <- sum(is.na(Dados))
+obs.valid <- sum(!is.na(Dados))
+obs.tot <- obs.falt + obs.valid
+cat("Numero de observacoes validas = ", obs.valid, 
+    " (",round(100*obs.valid/obs.tot,2),"%)\n", sep="")
+cat("Numero de observacoes faltantes = ", obs.falt, 
+    " (",round(100*obs.falt/obs.tot,2),"%)\n", sep="")
+# usando o modo texto (o gráfico fica ruim de ver)
+missing <- finalfit::missing_pattern(Dados, plot=FALSE)
+contagem <- rownames(missing)
+missing <- data.frame(missing)
+missing <- cbind(contagem,missing)
+names(missing)[ncol(missing)] <- "missing"
+rownames(missing) <- NULL
+tabela <- knitr::kable(missing, format="html", caption="Análise de dados faltantes")
+tabela <- kableExtra::kable_styling(tabela, bootstrap_options = "striped", full_width = FALSE)
+tabela <- kableExtra::row_spec(tabela, 0, background = "#b2dfee")
+tabela
+```
+
+## Estatística descritiva
+```{r}
+pie(table(Dados$CIRCOBITO), main="Tipo de óbito por causa externa")
+xtabs(~ Dados$CIRCOBITO)
+round(prop.table(xtabs(~ Dados$CIRCOBITO)),2)
+pie(table(Dados$FONTE), main="Fonte de informação do óbito por causa externa")
+xtabs(~ Dados$FONTE)
+round(prop.table(xtabs(~ Dados$FONTE)),2)
+plot(xtabs(~ Dados$FONTE + Dados$CIRCOBITO))
+tabela <- xtabs(~ Dados$FONTE + Dados$CIRCOBITO)
+print(tabela)
+gplots::balloonplot(t(tabela), main ="Declarações de Óbito\nBrasil 2020", 
+                    xlab ="Óbito (causa externa)", 
+                    ylab="Fonte de informação",
+                    label=TRUE, show.margins=TRUE, 
+                    show.zeros=TRUE, 
+                    dotcolor="gray75")
+```
+
+## Estudando a idade do óbito
+```{r}
+# car::densityPlot(Dados$IdadeObito~Dados$SEXO) # demora demais!
+print(psych::describeBy(Dados$IdadeObito, Dados$SEXO, mat=1, digits=2))
+plot(table(Dados$IdadeObito))
+boxplot(Dados$IdadeObito~Dados$SEXO, horizontal=TRUE)
+ggplot2::ggplot(Dados, 
+                ggplot2::aes(IdadeObito, 
+                             fill=SEXO, 
+                             colour=SEXO)) +
+  ggplot2::geom_density(alpha=0.2) +
+  ggplot2::theme_bw()
+```
+
+O número de Ignorados é muito pequeno. Podemos corrigir pelo tamanho dos grupos:
+```{r}
+# tamanho dos grupos
+descricao <- psych::describeBy(Dados$IdadeObito, Dados$SEXO, mat=1, digits=2)
+r.i <- which(descricao$group1=="Ignorado")
+r.F <- which(descricao$group1=="Feminino")
+r.M <- which(descricao$group1=="Masculino")
+n.i <- descricao$n[r.i]
+n.F <- descricao$n[r.F]
+n.M <- descricao$n[r.M]
+# distribuicao densidade de probabilidade
+d.i <- density(Dados$IdadeObito[Dados$SEXO=="Ignorado"],na.rm=TRUE)
+d.F <- density(Dados$IdadeObito[Dados$SEXO=="Feminino"],na.rm=TRUE)
+d.M <- density(Dados$IdadeObito[Dados$SEXO=="Masculino"],na.rm=TRUE)
+# escala a densidade pelo tamanho dos grupos
+d.i$y <- d.i$y * n.i
+d.F$y <- d.F$y * n.F
+d.M$y <- d.M$y * n.M
+# exibe o grafico
+x.min <- min(c(d.i$x,d.F$x,d.M$x),na.rm=TRUE)
+x.max <- max(c(d.i$x,d.F$x,d.M$x),na.rm=TRUE)
+y.min <- min(c(d.i$y,d.F$y,d.M$y),na.rm=TRUE)
+y.max <- max(c(d.i$y,d.F$y,d.M$y),na.rm=TRUE)
+plot(NA, main="Distribuição do MCT",
+     xlab="Idade do Óbito", ylab="Densidade * n",
+     xlim=c(x.min,x.max), ylim=c(y.min,y.max),
+     bty="n")
+lines(d.i, col="gray60", lwd=1)
+lines(d.F, col="orangered3", lwd=2, lty=2)
+lines(d.M, col="turquoise4", lwd=2, lty=3)
+legend("topright", 
+       c("Ignorado","Feminino","Masculino"), 
+       col=c("gray60","orangered3","turquoise4"),
+       lwd=c(1,2,2), 
+       lty=c(1,2,3), 
+       box.lwd=0, bg="transparent")  
+```
+
+## Alternativas para verificar e descrever o conteúdo das variáveis
+Uma outra maneira de ver os dados em conjunto (requer o ambiente de um navegador):
+```{r}
+summarytools::st_options(lang="pt")
+section_title <- "**DOBR2020**"
+summarytools::define_keywords(title.freq=section_title,
+                             freq="n")
+summarytools::view(summarytools::dfSummary(Dados), 
+                 file="./image/Summary01.html")
+```
+O resultado está [disponível neste link](./image/Summary01.html){target="_blank"}.
+
+<!--
+```{r}
+htmltools::includeHTML("./image/Summary.html")
+```
+-->
+
+```{r}
+summarytools::view(summarytools::freq(Dados[,"SEXO"],
+                                      plain.ascii=FALSE,
+                                      style="rmarkdown"), 
+                 file="./image/Summary02.html")
+```
+O resultado está [disponível neste link](./image/Summary02.html){target="_blank"}.
+```{r}
+summarytools::view(summarytools::freq(Dados[,"SEXO"],
+                                      plain.ascii=FALSE,
+                                      style="rmarkdown",
+                                      report.nas=FALSE), 
+                 file="./image/Summary03.html")
+```
+O resultado está [disponível neste link](./image/Summary03.html){target="_blank"}.
+```{r}
+summarytools::view(summarytools::freq(Dados[,"SEXO"],
+                                      plain.ascii=FALSE,
+                                      style="rmarkdown",
+                                      report.nas=FALSE,
+                                      totals=FALSE,
+                                      cumul=FALSE,
+                                      headings=FALSE), 
+                 file="./image/Summary04.html")
+```
+O resultado está [disponível neste link](./image/Summary04.html){target="_blank"}.
+```{r}
+summarytools::view(summarytools::freq(Dados,
+                                      plain.ascii=FALSE,
+                                      style="rmarkdown"), 
+                 file="./image/Summary05.html")
+```
+O resultado está [disponível neste link](./image/Summary05.html){target="_blank"}.
+```{r}
+summarytools::view(summarytools::freq(Dados,
+                                      plain.ascii=FALSE,
+                                      style="rmarkdown",
+                                      order="freq",
+                                      rows=1:5), 
+                 file="./image/Summary06.html")
+```
+O resultado está [disponível neste link](./image/Summary06.html){target="_blank"}.
+```{r}
+summarytools::view(summarytools::ctable(Dados$SEXO,
+                                        Dados$RACACOR,
+                                        prop='n',
+                                        totals=FALSE,
+                                        headings=TRUE,
+                                        useNA="no"), 
+                 file="./image/Summary07.html")
+```
+O resultado está [disponível neste link](./image/Summary07.html){target="_blank"}.
+```{r}
+summarytools::view(summarytools::ctable(Dados$SEXO,
+                                        Dados$RACACOR,
+                                        prop="t"), 
+                 file="./image/Summary08.html")
+```
+O resultado está [disponível neste link](./image/Summary08.html){target="_blank"}.
+```{r}
+summarytools::view(summarytools::descr(Dados,
+                                       transpose=TRUE,
+                                       headings=TRUE), 
+                 file="./image/Summary09.html")
+```
+O resultado está [disponível neste link](./image/Summary09.html){target="_blank"}.
+```{r}
+summarytools::view(summarytools::descr(Dados,
+                                       stats=c("mean", "sd","n.valid"),
+                                       transpose=TRUE,
+                                       headings=TRUE), 
+                 file="./image/Summary10.html")
+```
+O resultado está [disponível neste link](./image/Summary10.html){target="_blank"}.
+```{r}
+summarytools::view(stby(Dados,
+                        INDICES=list(Dados$SEXO),
+                        FUN=summarytools::descr,
+                        stats="common",
+                        transpose=TRUE), 
+                 file="./image/Summary11.html")
+```
+O resultado está [disponível neste link](./image/Summary11.html){target="_blank"}.
+```{r}
+summarytools::view(stby(data=list(Dados$SEXO, Dados$RACACOR),
+                        INDICES=list(Dados$ESTCIV),
+                        FUN=summarytools::ctable,
+                        prop="n",
+                        totals=FALSE,
+                        headings=TRUE,
+                        useNA="no"), 
+                 file="./image/Summary12.html")
+```
+O resultado está [disponível neste link](./image/Summary12.html){target="_blank"}.
+```{r}
+summarytools::view(stby(data=list(Dados$SEXO, Dados$RACACOR),
+                        INDICES=list(Dados$ESTCIV),
+                        FUN=summarytools::ctable,
+                        prop="t"), 
+                 file="./image/Summary13.html")
+```
+O resultado está [disponível neste link](./image/Summary13.html){target="_blank"}.
+```{r}
+summarytools::view(Dados %>%
+                     dplyr::group_by(SEXO) %>%
+                     summarytools::descr(stats=c("mean", "sd","n.valid"),
+                                         transpose=TRUE,
+                                         headings=TRUE), 
+                 file="./image/Summary14.html")
+```
+O resultado está [disponível neste link](./image/Summary14.html){target="_blank"}.
+
+# Epílogo
+
+```{r fig.align="center", echo=FALSE}
+knitr::include_graphics("./image/cartoon.png")
+```
+<div align=right>https://www.mitsloanreview.com.br/post/cuidado-para-nao-se-afogar-em-numeros</div>
+
+
+

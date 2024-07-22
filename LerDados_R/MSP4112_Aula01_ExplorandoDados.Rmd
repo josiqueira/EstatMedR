@@ -1,0 +1,243 @@
+---
+title: "MLS4001: Estatística Aplicada à Medicina"
+author: | 
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+subtitle: "Aula 01: Explorando Dados"
+date: "`r format(Sys.time(), '%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    font_adjustment: 1 
+    css: style.css
+    df_print: tibble
+    footer: "MLS4001_Aula01_ExplorandoDados.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  slidy_presentation:
+    font_adjustment: -1
+    css: style.css
+    footer: "MLS4001_Aula01_ExplorandoDados.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=2500)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: #FFFFCC;
+  border: 2px solid blue;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r class.source="code"}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+```
+
+# Quatro problemas
+
+* Ler e descrever [`Biometria_FMUSP.xlsx`](Biometria_FMUSP.xlsx){target="_blank"}
+* Ler e transformar a estrutura de dados de [`NewDrug.xlsx`](NewDrug.xlsx){target="_blank"} de formato _wide_ para _long_ e vice-versa
+* Ler dados em colunas e tabelas dentro de script R
+* Ler e descrever arquivo de dados grande `DOBR2020.dbc` (documentação em [`Estrutura_SIM_para_CD.pdf`](Estrutura_SIM_para_CD.pdf){target="_blank"})
+
+# Ler e descrever [`Biometria_FMUSP.xlsx`](Biometria_FMUSP.xlsx){target="_blank"}
+
+A primeira etapa é ler os dados, ver como estão, consertá-los e preparar para futura análise. A íntegra deste R _script_ está em [`Biometria_arruma.R`](Biometria_arruma.R){target="_blank"}.
+
+Este R _script_:
+
+* le o arquivo em formato Excel:
+
+```{r}
+dados <- readxl::read_excel("Biometria_FMUSP.xlsx")
+knitr::kable(head(dados), format="html", caption="Biometria FMUSP")
+knitr::kable(tail(dados), format="html", caption="Biometria FMUSP")
+```
+
+* mostra quais sao as colunas:
+
+```{r}
+print(names(dados))
+```
+
+* verifica a estrutura de dados:
+
+```{r}
+print(str(dados))
+```
+
+* define quais os tipos de variáveis das colunas, corrigindo.
+
+* arruma (trabalho manual, para ser feito caso a caso) os problemas que podem ser encontrados nas variáveis.
+
+* salva nova planilha fo formato RDS, [`Biometria_analise.rds`](Biometria_analise.rds){target="_blank"}.
+
+Executando-se este procedimento temos:
+
+```{r}
+source("Biometria_arruma.R")
+```
+
+Com os dados arrumados, uma primeira análise descritiva é feita com [`Biometria_descreve.R`](Biometria_descreve.R){target="_blank"}. Este procedimento relê a planilha para análise do anterior, mostrando que há informações perdidas sobre os tipos de variável no Excel (é necessário refazer) e, então, grava os resultados em dois arquivos:
+
+* [`DescreveBiometria.txt`](DescreveBiometria.txt){target="_blank"} com as saídas textuais
+* [`DescreveBiometria.pdf`](DescreveBiometria.pdf){target="_blank"} com os gráficos
+
+Este é o jeito mais simples, embora rudimentar, de produzir saídas do R. 
+
+É necessário, então, analisar cada variável, em busca de valores atípicos ou outros problemas nos dados. Ao final deste processo teremos um conjunto de dados "curado", que pode ser analisado mais confiavelmente. 
+
+<table style="border:1; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+
+Para mostrar a saída de [`Biometria_descreve.R`](Biometria_descreve.R){target="_blank"} aqui, foi incluída uma variável lógica, <code>gravar <- FALSE</code>. Altere para <code>gravar <- TRUE</code> se quiser gerar os arquivos mencionados.
+</td></tr></table>
+
+A saída de [`Biometria_descreve.R`](Biometria_descreve.R){target="_blank"} é:
+
+```{r}
+source("Biometria_descreve.R")
+```
+
+# Ler e transformar a estrutura de dados de [`NewDrug.xls`](NewDrug.xls){target="_blank"} de wide para long e vice-versa
+
+Este arquivo tem 12 pacientes, em dois grupos, dada um deles com três medidas de `resp` e três de `pulse`. 
+
+```{r}
+dt_dados <- readxl::read_excel("NewDrug.xlsx")
+print(dt_dados)
+```
+
+<!-- Cada linha é um paciente, precisamos explicitar um ID unico. A forma mais primitiva, mas mais facil de visualizar o que está sendo feito eh construir um procedimento manual para cada caso. Esta solução está em [`NewDrug_widelong.R`](NewDrug_widelong.R){target="_blank"}. Ao executar, gera-se [`NewDrug_long.xlsx`](NewDrug_long.xlsx){target="_blank"} no formato Excel. -->
+
+<!-- Obtém-se: -->
+<!-- ```{r} -->
+<!-- source("NewDrug_widelong.R") -->
+<!-- ``` -->
+
+<!-- Usando-se [`NewDrug_long.xlsx`](NewDrug_long.xlsx){target="_blank"}, podemos mostrar a reversão do processo usando-se o procedimento programado em [`NewDrug_longwide.R`](NewDrug_longwide.R){target="_blank"}. O resultado é armazendo em  [`NewDrug_wide.xlsx`](NewDrug_wide.xlsx){target="_blank"} -->
+
+<!-- Obtém-se: -->
+<!-- ```{r} -->
+<!-- source("NewDrug_longwide.R") -->
+<!-- ``` -->
+
+# Ler e descrever arquivo muito grande `DOBR2020.dbc`
+
+A documentação sobre as variáveis está no arquivo [`Estrutura_SIM_para_CD.pdf`](Estrutura_SIM_para_CD.pdf){target="_blank"}.
+
+O procedimento em [`DOBR_arruma.R`](DOBR_arruma.R){target="_blank"} utiliza a função <code>read.dbc::read.dbc</code> para ler este formato específico do Ministério da Saúde e, então, testa o salvamento em diferentes formatos.
+
+O uso do pacote <code>haven</code> para salvar e reler em formato <code>.sav</code>, <code>.sas</code> e <code>.sta</code>  foram mal sucedidas (Siqueira tem outra solução para isto). 
+
+Desenvolvemos, então, uma alternativa eficiente para lidar com <code>.csv</code>, salvando os dados em [`DOBR2020.csv`](DOBR2020.csv){target="_blank"}. O problema deste formato é que toda a informação sobre o tipo de variável é perdida. Para contornar o problema, criamos um procedimento que produz um esboço de dicionário, gravado em [`DOBR2020dic.csv`](DOBR2020dic.csv){target="_blank"}. 
+
+Abrindo o dicionário em uma planilha (Excel, OpenOffice Calc, gnumeric), completamos ou corrigimos o formato das variáveis, salvando em  [`DOBR2020dic.xlsx`](DOBR2020dic.xlsx){target="_blank"}.
+
+O segundo procedimento, [`DOBR_arruma2.R`](DOBR_arruma2.R){target="_blank"}, lê [`DOBR2020.csv`](DOBR2020.csv) e [`DOBR2020dic.xlsx`](DOBR2020dic.xlsx){target="_blank"}, integrando os dois, faz alguns consertos nas variáveis (precisamos ajustar estes consertos manualmente e verificar a documentação em [`Estrutura_SIM_para_CD.pdf`](Estrutura_SIM_para_CD.pdf){target="_blank"}. 
+
+<table style="border:1; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+
+Para mostrar a saída de [`DOBR_arruma2.R`](DOBR_arruma2.R){target="_blank"} aqui, foi incluída uma variável lógica, <code>pausa <- FALSE</code>. Para executar no RStudio, parando em cada variável, mude para <code>pausa <- TRUE</code>.
+
+</td></tr></table>
+
+Apresenta-se, então, cada variável com uma descritiva breve, verificando se os dados parecem adequadamente armazenados. É um processo interativo, ainda não completo. Seu início está aqui:
+
+```{r}
+# source("DOBR_arruma2.R")
+```
+
+# Scripts R 
+
+```{r eval=TRUE, echo=TRUE, class.output="bgcodigo"}
+  cat(readLines("Biometria_arruma.R"), sep="\n")
+```
+
+```{r eval=TRUE, echo=TRUE, class.output="bgcodigo"}
+  cat(readLines("Biometria_descreve.R"), sep="\n")
+```
+
+```{r eval=TRUE, echo=TRUE, class.output="bgcodigo"}
+  cat(readLines("DOBR_arruma.R"), sep="\n")
+```
+
+```{r eval=TRUE, echo=TRUE, class.output="bgcodigo"}
+  cat(readLines("DOBR_arruma2.R"), sep="\n")
+```
+
