@@ -1,0 +1,1661 @@
+---
+title: "Fundamentos de Inferência Estatística"
+author: |
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+subtitle: ""
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    css: style.css
+    font_adjustment: 1 
+    df_print: tibble
+    footer: "FundamentosInferencia.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  slidy_presentation:
+    css: style.css
+    font_adjustment: -1
+    footer: "FundamentosInferencia.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+# Pacotes, funções e arquivos necessários
+
+```{r}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(EnvStats, warn.conflicts=FALSE))
+suppressMessages(library(fmsb, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(RVAideMemoire, warn.conflicts=FALSE))
+suppressMessages(library(epiR, warn.conflicts=TRUE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(openxlsx, warn.conflicts=FALSE))
+suppressMessages(library(reshape2, warn.conflicts=FALSE))
+suppressMessages(library(Rmisc, warn.conflicts=FALSE))
+suppressMessages(library(gplots, warn.conflicts=FALSE))
+suppressMessages(library(conf, warn.conflicts=FALSE))
+suppressMessages(library(MVN, warn.conflicts=FALSE))
+source("eiras.friendlycolor.R")
+source("eiras.create.population.R")
+source("eiras.plot.density.withmeansd.R")
+source("eiras.sampling.R")
+source("summarySEwithin2.R")
+```
+
+* Scripts R
+
+  * [demo_binomial.R](demo_binomial.R){target="_blank"}
+  * [demo_binomialChocolate.R](demo_binomialChocolate.R){target="_blank"}
+  * [demo_binomialCondicoes.R](demo_binomialCondicoes.R){target="_blank"}
+  * [demo_binomialDiff.R](demo_binomialDiff.R){target="_blank"}
+  * [demo_binomialMethods.R](demo_binomialMethods.R){target="_blank"}
+  * [eiras.create.population.R](eiras.create.population.R){target="_blank"}
+  * [eiras.exit.R](eiras.exit.R){target="_blank"}
+  * [eiras.friendlycolor.R](eiras.friendlycolor.R){target="_blank"}
+  * [eiras.plot.barmeansd.R](eiras.plot.barmeansd.R){target="_blank"}
+  * [eiras.plot.density.empty.R](eiras.plot.density.empty.R){target="_blank"}
+  * [eiras.plot.density.withmeansd.R](eiras.plot.density.withmeansd.R){target="_blank"}
+  * [eiras.sampling.R](eiras.sampling.R){target="_blank"}
+  * [eiras.text.leading.R](eiras.text.leading.R){target="_blank"}
+  * [fi_Amostra.R](fi_Amostra.R){target="_blank"}
+  * [fi_boot02.R](fi_boot02.R){target="_blank"}
+  * [fi_boot02b.R](fi_boot02b.R){target="_blank"}
+  * [fi_bootstrapping.R](fi_bootstrapping.R){target="_blank"}
+  * [fi_bootstrapping2.R](fi_bootstrapping2.R){target="_blank"}
+  * [fi_bootstrapping3.R](fi_bootstrapping3.R){target="_blank"}
+  * [fi_criapopsample.R](fi_criapopsample.R){target="_blank"}
+  * [fi_IntervaloConfiancaAnalitico.R](fi_IntervaloConfiancaAnalitico.R){target="_blank"}
+  * [fi_IntervaloPredicao.R](fi_IntervaloPredicao.R){target="_blank"}
+  * [fi_IntervalosDadosEntre.R](fi_IntervalosDadosEntre.R){target="_blank"}
+  * [fi_IntervalosDadosIntra.R](fi_IntervalosDadosIntra.R){target="_blank"}
+  * [fi_Normal.R](fi_Normal.R){target="_blank"}
+  * [fi_Normal_e_Amostra.R](fi_Normal_e_Amostra.R){target="_blank"}
+  * [fi_ToDoMargemErro.R](fi_ToDoMargemErro.R){target="_blank"}
+  * [simulaIC95pivotal.R](simulaIC95pivotal.R){target="_blank"}
+  * [simulaIC95pivotal_Dieta.R](simulaIC95pivotal_Dieta.R){target="_blank"}
+  * [simulaIC95pivotal_MF.R](simulaIC95pivotal_MF.R){target="_blank"}
+  * [simulaIC95pivotal2.R](simulaIC95pivotal2.R){target="_blank"}
+
+* Arquivos de dados
+
+  * [`Biometria_FMUSP.rds`](Biometria_FMUSP.rds){target="_blank"}
+  * [`Dieta.xlsx`](Dieta.xlsx){target="_blank"}
+  
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+# Conteúdo
+
+<div class=customlist>
+* Amostragem
+* Intervalo de predição
+* Intervalo de confiança
+* Distribuição normal
+* Teorema do limite central
+* Bootstrapping
+* Intervalo de credibilidade
+* Intervalo de confiança de proporção
+</div>
+
+<!-- # Como seria o mundo se tivesse 100 pessoas? -->
+
+<!-- * LORD, A (2016) _The World as 100 People: A Visual Guide to 7 Billion Humans_. Smith Street Books. -->
+<!-- * Vídeo: [The world as 100 people](https://www.youtube.com/watch?v=VxNAU7pdxGU) -->
+
+<!-- ```{r echo=FALSE, out.width="80%"} -->
+<!-- knitr::include_graphics("image/world100people.png") -->
+<!-- ``` -->
+
+<!-- ## Quais as principais religiões? -->
+<!-- ```{r echo=FALSE, out.width="50%"} -->
+<!-- knitr::include_graphics("image/world100religion.png") -->
+<!-- ``` -->
+
+<!-- ## Muitos passam fome? -->
+<!-- ```{r echo=FALSE, out.width="50%"} -->
+<!-- knitr::include_graphics("image/world100nutrition.png") -->
+<!-- ``` -->
+
+<!-- ## Falta água limpa? -->
+<!-- ```{r echo=FALSE, out.width="50%"} -->
+<!-- knitr::include_graphics("image/world100water.png") -->
+<!-- ``` -->
+
+<!-- ## Qual a língua nativa mais falada? -->
+<!-- ```{r echo=FALSE, out.width="50%"} -->
+<!-- knitr::include_graphics("image/world100language.png") -->
+<!-- ``` -->
+
+# Amostragem e inferência estatística
+
+A figura precisa de uma flecha da amostra para população decorrendo do método de reamostragem.
+
+```{r echo=FALSE, out.width="70%"}
+knitr::include_graphics("image/sampling.png")
+```
+
+<!-- # Amostragem probabilística -->
+
+<!-- ```{r echo=FALSE, out.width="70%"} -->
+<!-- knitr::include_graphics("image/pxfuel_dados.jpg") -->
+<!-- ``` -->
+<!-- <div align=center><span style="font-size:50%;"> -->
+<!-- https://www.pxfuel.com/pt/free-photo-ekmrp/ -->
+<!-- </span></div> -->
+
+<!-- ## Sampling (statistics): https://en.wikipedia.org/wiki/Sampling_(statistics) -->
+
+<!-- <div class=customlist> -->
+<!-- * Amostragem aleatória simples (SRS) -->
+<!-- </div> -->
+<!-- ```{r echo=FALSE, out.width="70%"} -->
+<!-- knitr::include_graphics("image/SimpleRandomSample.png") -->
+<!-- ``` -->
+
+<!-- <div class=customlist> -->
+<!-- * Amostragem sistemática  -->
+<!-- </div> -->
+<!-- ```{r echo=FALSE, out.width="70%"} -->
+<!-- knitr::include_graphics("image/SS.png") -->
+<!-- ``` -->
+
+<!-- <div class=customlist> -->
+<!-- * Amostragem estratificada -->
+<!-- </div> -->
+<!-- ```{r echo=FALSE, out.width="70%"} -->
+<!-- knitr::include_graphics("image/StS.png") -->
+<!-- ``` -->
+
+<!-- <div class=customlist> -->
+<!-- * Amostragem por conglomerado -->
+<!-- </div> -->
+<!-- ```{r echo=FALSE, out.width="70%"} -->
+<!-- knitr::include_graphics("image/CS.png") -->
+<!-- ``` -->
+
+<!-- <div class=customlist> -->
+
+<!-- __Vídeos sobre Amostragem__ -->
+
+<!-- * [Vídeo 1](https://www.youtube.com/watch?v=pTuj57uXWlk){target="_blank"} -->
+<!-- * [Vídeo 2](https://www.youtube.com/watch?v=be9e-Q-jC-0){target="_blank"} -->
+<!-- </div> -->
+
+# Intervalo de predição da variável
+
+$$\LARGE \text{IP}^{75\%}(X) = \left[\bar{x} \pm 2s\right]$$
+
+<div class=customlist>
+* $X$: variável intervalar
+* $\bar{x}$: média amostral
+* $s$: desvio-padrão amostral
+</div>
+
+## Descrição da amostra
+
+Independentemente da distribuição da variável intervalar, o intervalo simétrico centrado na média com amplitude de 4 desvios-padrão contém pelo menos 75% das observações da amostra. 
+
+> [Desigualdade de Chebyshev: Wikipedia](https://en.wikipedia.org/wiki/Chebyshev%27s_inequality){target="_blank"}
+
+## Indício de distribuição normal
+
+A distribuição normal contém aproximadamente 95% dos valores da amostra no intervalo simétrico centrado na média com amplitude 4 desvios-padrão.
+
+> [Distribuição normal: Wikipedia](https://en.wikipedia.org/wiki/Normal_distribution){target="_blank"}
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center",  out.width="90%"}
+knitr::include_graphics("image/pred.png")
+```
+
+# Ler `Biometria_FMUSP.rds`
+
+```{r}
+Dados <- readRDS("Biometria_FMUSP.rds")
+Dados.F <- subset(Dados, Sexo=="F")
+Dados.M <- subset(Dados, Sexo=="M")
+```
+
+Usando os dados de `Biometria_FMUSP.rds`, executamos [`fi_IntervaloPredicao.R`](fi_IntervaloPredicao.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("fi_IntervaloPredicao.R")
+```
+
+__Referências__
+
+* White, C (1953) Sampling in medical research. _BMJ_ 12: 1284-8.
+* Roach, KE (2001) A clinician's guide to specification and sampling. _Journal of Orthopaedic & Sports Physical Therapy_ 31(12): 753-8.
+* Ranstam, J (2009) Sampling uncertainty in medical research. _Osteoarthritis and Cartilage_ 17:1416-9.
+
+# Intervalo de confiança da média
+
+```{r echo=FALSE, out.width="80%"}
+knitr::include_graphics("image/me.png")
+```
+
+<div class=customlist>
+* [Margem de erro: Wikipédia](https://pt.wikipedia.org/wiki/Margem_de_erro){target="_blank"}
+* [Intervalo de confiança: Wikipédia](https://pt.wikipedia.org/wiki/Intervalo_de_confian%C3%A7a){target="_blank"}
+* [Vídeo: Confidence Interval Creation: YouTube](https://www.youtube.com/watch?v=vNdxtdEjBQk){target="_blank"}
+* [Confidence Interval Creation: Demo](https://wise.cgu.edu/portfolio2/demo-confidence-interval-creation/)
+</div>
+
+__Referências__
+
+* Cumming, G & Finch, S (2005) Inference by eye: Confidence intervals and how to read pictures of data. _American Psychologist_ 60(2): 170-80.
+* Krzywinski, M & Altman, N (2013) Importance of being uncertain. _Nature Methods_ 10(9): 809-10. 
+* Puth, M et al. (2015) On the variety of methods for calculating confidence intervals by bootstrapping. _Journal of Animal Ecology_ 84: 892-7.
+* Weissgerber TL, Milic NM, Winham SJ, Garovic VD (2015) Beyond bar and line graphs: Time for a new data presentation paradigm. _PLoS Biol_ 13(4): e1002128. doi:10.1371/journal.
+* Banjanovic, ES & Osborne, JW (2016) Confidence intervals for effect sizes: Applying bootstrap resampling. _Practical Assessment, Research & Evaluation_ 21(5).
+* Wonnacott, TH & Wonnacott, RJ (1969) _Introductory Statistics_. NJ: Wiley.   
+* Wonnacott, TH & Wonnacott, RJ (1981) _Estatística aplicada à Economia e à Administração_. RJ: LTC.
+* Wonnacott, TH & Wonnacott, RJ (1990) _Introductory Statistics for Business and Economics_. NJ: Wiley.
+
+# Fórmula do intervalo de confiança da média 
+
+$$\LARGE \text{IC}^{95\%}(\mu) = \left[\bar{x} \pm t^{0.975}_{n-1}\dfrac{s}{\sqrt{n}}\right]$$
+
+<div class=customlist>
+* $\mu$: média populacional
+* $n$: tamanho da amostra
+* $\bar{x}$: média amostral
+* $s$: desvio-padrão amostral
+* $t^{0.975}_{n-1} =$ `qt(p=.975, df=n-1)`: quantil da distribuição _t_
+* $n = 2$: `qt(p=.975, df=1)` = `r round(qt(p=.975, df=1),2)`
+* $n = 3$: `qt(p=.975, df=2)` = `r round(qt(p=.975, df=2),2)`
+* $n = 12$: `qt(p=.975, df=11)` = `r round(qt(p=.975, df=11),2)`
+* $n = 20$: `qt(p=.975, df=19)` = `r round(qt(p=.975, df=19),2)`
+* $n = 30$: `qt(p=.975, df=29)` = `r round(qt(p=.975, df=29),2)`
+* $n = 500$: `qt(p=.975, df=499)` = `r round(qt(p=.975, df=499),2)`
+</div>
+
+# Estimação de intervalo de confiança
+
+__MCT__
+
+* sd: desvio-padrão
+* se: erro-padrão (desvio-padrão da média)
+
+group |   n |  mean |    sd|  se| 
+-----:|----:|------:|-----:|---:|
+F     | 230 |  57.6 |   9.1| 0.6|     
+M     | 312 |  71.6 |  12.1| 0.7|
+
+<table><tr><td>
+<div class='right' style='float:right;width:10%'>
+```{r echo=FALSE, fig.align="left", out.width="100%"}
+knitr::include_graphics("image/tools.png")
+```
+</div>
+<div class='left' style='float:left;width:90%'>
+
+Executando [`fi_ToDoMargemErro.R`](fi_ToDoMargemErro.R){target="_blank"}, resulta:
+
+```{r echo=FALSE}
+cat(readLines("fi_ToDoMargemErro.R"), sep="\n")
+```
+</div>
+</td></tr></table>
+
+Obtemos:
+
+```{r echo=FALSE}
+source("fi_ToDoMargemErro.R")
+```
+
+# Intervalo de confiança da média: condições de validade
+
+O intervalo de confiança tem validade se:
+
+* Delineamento entre participantes: observações independentes
+* Variável intervalar
+* Distribuição normal da variável intervalar
+
+```{r}
+alfa <- 0.05
+# Com dados brutos
+
+gplots::plotmeans(MCT ~ Sexo,
+                  main="Intervalo de confiança de 95% de MCT",
+                  barwidth=2, p=1-alfa, cex=1,
+                  col="black", barcol="black", connect=FALSE,
+                  data=Dados)
+
+s <- Rmisc::summarySE(Dados, 
+                      measurevar="MCT", 
+                      groupvars=c("Sexo"),
+                      conf.interval=1-alfa,
+                      na.rm=TRUE)
+
+# Intervalo de predição de 75%: Standard deviation (sd)
+graf <- ggplot2::ggplot(s, 
+                        ggplot2::aes(x=Sexo, 
+                                     y=MCT)) + 
+  ggplot2::geom_errorbar(ggplot2::aes(ymin=MCT-ci, 
+                                      ymax=MCT+ci), 
+                         width=.3) +
+  ggplot2::geom_point(size=3,
+                      shape=21) +
+  ggplot2::xlab("Sexo") +
+  ggplot2::ylab("MCT (kg)") +
+  ggplot2::ggtitle("Intervalo de confiança de 95% de MCT") +
+  ggplot2::theme_bw()
+print(graf)
+
+# Sem dados brutos
+tmp   <- split(Dados$MCT, Dados$Sexo)
+means <- sapply(tmp, mean, na.rm=TRUE)
+stdev <- sqrt(sapply(tmp, var, na.rm=TRUE))
+n     <- sapply(tmp,length)
+ciw   <- qt(1-alfa/2, n-1) * stdev / sqrt(n)
+g <- length(unique(Dados$Sexo))
+gplots::plotCI(x=means,
+               uiw=ciw,
+               main="Intervalo de confiança de 95%", 
+               ylab="MCT", xlab="Sexo",
+               barwidth=2, p=1-alfa, cex=1,
+               col="black", barcol="black", connect=FALSE,
+               labels=round(means,-3), xaxt="n")
+axis(side=1, at=1:g, labels=names(tmp), cex=0.7)
+```
+
+```{r}
+DescTools::MeanCI(Dados.F$MCT, na.rm=TRUE)
+DescTools::MeanCI(Dados.M$MCT, na.rm=TRUE)
+
+print(psych::describeBy(Dados$MCT,group=Dados$Sexo,
+                  mat=2, digits=2))
+
+boxplot(MCT~Sexo, na.rm=TRUE,
+        data=Dados, ylab="MCT (kg)")
+
+m.F <- mean(Dados.F$MCT, na.rm=TRUE)
+s.F <- sd(Dados.F$MCT, na.rm=TRUE)
+plot(density(Dados.F$MCT, na.rm=TRUE),
+     ylim=c(0, 0.06),
+     main="Feminino",
+     xlab="MCT (kg)",
+     ylab="Densidade")
+rug(jitter(Dados.F$MCT))
+x.F <- seq(m.F-4*s.F, m.F+4*s.F, length.out=1e3)
+y.F <- dnorm(x.F, m.F, s.F)
+lines(x.F, y.F,lty=2)
+legend("topright", legend=c("estimada", "normal"),
+       lty=c(1,2), bty="n")
+
+m.M <- mean(Dados.M$MCT, na.rm=TRUE)
+s.M <- sd(Dados.M$MCT, na.rm=TRUE)
+plot(density(Dados.M$MCT, na.rm=TRUE),
+     ylim=c(0, 0.04),
+     main="Masculino",
+     xlab="MCT (kg)",
+     ylab="Densidade")
+rug(jitter(Dados.M$MCT))
+x.M <- seq(m.M-4*s.M, m.M+4*s.M, length.out=1e3)
+y.M <- dnorm(x.M, m.M, s.M)
+lines(x.M, y.M,lty=2)
+legend("topright", legend=c("estimada", "normal"),
+       lty=c(1,2), bty="n")
+
+result <- MVN::mvn(data=subset(Dados, 
+                               select=c(Sexo, MCT)), 
+                   subset="Sexo", 
+                   mvnTest="hz", 
+                   univariateTest="SW")
+result$univariateNormality
+``` 
+
+# Região de confiança da média e desvio-padrão
+
+```{r}
+## plot the 95% confidence region for normal parameters
+variable <- Dados.M$MCT
+print(m <- DescTools::MeanCI(variable, na.rm=TRUE))
+print(s <- sqrt(DescTools::VarCI(variable, na.rm=TRUE)))
+invisible(out <- conf::crplot(dataset=sort(variable), distn="norm", 
+                              alpha = alfa, pts=FALSE, animate=FALSE, 
+                              info=TRUE, silent=TRUE,
+                              # animate=TRUE,
+                              main="Normal\nMCT Masculino"))
+conf::crplot(dataset = sort(variable), distn = "norm", alpha = alfa, 
+             pts=FALSE, origin = TRUE, 
+             main="Normal\nMCT Masculino")
+cat("\nMean\n")
+print(identical(as.numeric(out$muhat), as.numeric(m[1])))
+print(all.equal(as.numeric(out$muhat), as.numeric(m[1])))
+cat("\nSD\n")
+print(identical(as.numeric(out$sigmahat), as.numeric(s[1])))
+print(all.equal(as.numeric(out$sigmahat), as.numeric(s[1])))
+cat("\nMean CI95%: Lower Limit\n")
+print(all.equal(min(as.numeric(out$mu)), as.numeric(m[2])))
+cat("\nMean CI95%: Upper Limit\n")
+print(all.equal(max(as.numeric(out$mu)), as.numeric(m[3])))
+cat("\nSD CI95%: Lower Limit\n")
+print(all.equal(min(as.numeric(out$sigma)), as.numeric(s[2])))
+cat("\nSD CI95%: Upper Limit\n")
+print(all.equal(max(as.numeric(out$sigma)), as.numeric(s[3])))
+```
+# Validade do intervalo de confiança
+
+Uma das suposições dos seguintes intervalos de confiança da média populacional (por fórmula) é a distribuição normal de MCT. 
+A hipótese nula de distribuição normal de MCT foi rejeitada com $\alpha=0.05$ para estudantes das condições Masculino e Feminino. 
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+# IC95% por DescTools::MeanCI
+round(DescTools::MeanCI(Dados.F$MCT, na.rm=TRUE),1)
+round(DescTools::MeanCI(Dados.M$MCT, na.rm=TRUE),1)
+```
+
+A suposição de normalidade é uma condição suficiente para a validade do intervalo de confiança (por fórmula). Ela não é uma condição necessária para sua validade.
+
+O intervalo de confiança da média populacional por fórmula é válido, mesmo com distribuição de MCT não normal, se o tamanho da amostra por condição de sexo é maior que 30 (Teorema Central do Limite) ou usando o método de estimação chamado de _bootstrapping_. TCL e _bootstrapping_ não necessitam da suposição de normalidade para a validade do intervalo de confiança.
+
+# Intervalo de predição vs. Intervalo de confiança
+
+```{r echo=FALSE, out.width='100%'}
+knitr::include_graphics("image/SDSE.png")
+```
+
+# Teorema Central do Limite
+
+O Teorema Central do Limite (TCL) assume:
+
+* observações independentes,
+* variável intervalar,
+* amostra com pelo menos 30 observações.
+
+e enuncia que:
+
+"[...] the Central Limit Theorem [...] states that as the size of the samples we select increases, the nearer to the population mean will be the mean of these sample means and the closer to normal will be the distribution of the sample
+means."
+
+traduzido para:
+
+"[...] o Teorema Central do Limite [...] declara que à medida que o tamanho das amostras que selecionamos aumenta, mais próxima da população [_sic_, da média populacional] será a média destas médias amostrais e mais próxima de uma normal estará a distribuição das médias amostrais."
+
+> Dancey & Reidy, 2019, p. 108
+
+Segundo Wikipedia:
+
+"Seja uma amostra aleatória simples $X_1, X_2, \ldots ,X_n$ de tamanho $n$ dada a partir de uma população com média $\mu$ e variância $\sigma ^{2}$ finitas. À medida que $n$ cresce, a distribuição amostral da média $\dfrac{\sum_{i=1}^{n}{X_i}}{n} = \bar{X}$ aproxima-se de uma distribuição normal com média $\mu$ e variância $\dfrac{\sigma^2}{n}$."
+
+> https://pt.wikipedia.org/wiki/Teorema_central_do_limite
+
+Ou, em nossas palavras:
+
+Independentemente do formato da distribuição da variável na população, a distribuição das médias amostrais tem distribuição assintoticamente normal com média igual à média populacional e erro-padrão da média igual ao desvio-padrão populacional dividido pela raiz quadrada do tamanho da amostra.
+
+# Erro-padrão
+
+O erro-padrão é fundamental na definição do TCL. 
+
+A frase define seu cálculo:
+
+"... erro-padrão [é igual ao] desvio-padrão populacional dividido pela raiz quadrada do tamanho da amostra."
+
+> Dancey & Reidy, 2019
+
+Este erro-padrão é estimado por:
+
+$$\Large EP=\dfrac{s}{\sqrt{n}}$$ 
+
+sendo que $s$ é o desvio-padrão amostral e $n$ é o tamanho da amostra. 
+
+Note que o desvio-padrão populacional $\sigma$ não aparece neste estimador porque é desconhecido.
+
+Estas definições podem não ser muito esclarecedoras a quem nunca as encontrou. 
+
+São muitas afirmações entrelaçadas:
+
+* Qual a relação entre a média populacional $\mu$ e a média amostral $\bar{X}$?
+
+* Qual a relação entre o desvio-padrão populacional $\sigma$ e o desvio-padrão amostral $s$?
+
+* De onde veio esta expressão ${s}\big/{\sqrt{n}}$ e qual é seu significado? 
+
+* A quais médias amostrais (no plural) ou a qual distribuição amostral da média o enunciado se refere, uma vez que há apenas uma amostra?
+
+* Qual deve ser o formato da distribuição da variável na população? 
+
+* De qual variável é a distribuição normal mencionada neste enunciado?
+
+Os autores tentam ilustrar o teorema com figuras:
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/TCL_fig.jpeg")
+```
+
+> Wonnacott & Wonnacott (1990)
+
+Esta figura pode ser muito esclarecedora, mas somente **depois** que alguém é apresentado ao processo do TCL. De início parece aumentar o enigma. Observe a figura. Há duas distribuições desenhadas: população à esquerda e amostra à direita. A distribuição da população é bimodal, aparecendo as letras gregas $\mu$ (denotando média) em um eixo $x$ e $\sigma$ (denotando desvio-padrão populacional). Há vários $\bar{x}$ em cinza e um em preto (amostra observada). Dois (um cinza, um preto) aparecem entre a população e a amostra. Vários em cinza e um em preto estão agrupados abaixo da distribuição amostral. A distribuição amostral, denotada como _Gaussian_ (sinônimo de distribuição normal) tem novamente a letra $\mu$ (que é a média populacional, apesar de ser a figura da amostra) e o eixo da distribuição amostral é $\bar{x}$. A expressão ${\sigma}\big/{\sqrt{n}}$ reaparece no lugar de um desvio-padrão. Voltaremos a esta figura adiante.
+
+# Simulação 
+
+A proposta, aqui, é utilizar uma simulação pode mostrar o que o erro-padrão representa e como o TCL funciona. 
+
+Suponha que a distribuição do nível de hemoglobina, na população geral, tenha distribuição normal com média de 11.9 g/dl e desvio-padrão de 1.5 g/dl. 
+
+> Fonte: Gilbertson et al., 2008
+
+A população, caso fosse acessível, teria a seguinte distribuição ([`fi_Normal.R`](fi_Normal.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("fi_Normal.R")
+```
+
+O fato de sabermos tratar-se de uma distribuição normal, completamente definida por sua média e desvio-padrão, traz a conveniência de aproveitarmos suas propriedades para saber, por exemplo, que aproximadamente 95% dos indivíduos desta população têm hemoglobina entre `r round(qnorm(0.025,media,dp),2)` e `r round(qnorm(0.975,media,dp),2)` g/dl (perto do valor da média mais ou menos 2 desvios-padrão, que correspondem a `r media-2*dp` e `r media+2*dp` g/dl).
+
+Como é possível conhecer o valor da média populacional se não forem mensurados todos os indivíduos da população? Seria possível estimar esta média a partir de uma amostra? 
+
+Geramos uma amostra simulada do nível de hmoglobina de uma população normal de 100 indivíduos ([`fi_Normal_e_Amostra.R`](fi_Normal_e_Amostra.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("fi_Normal_e_Amostra.R")
+```
+
+<table><tr><td>
+<div class='right' style='float:left;width:10%'>
+
+```{r fig.align="left", out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+  <div class=customlist>
+  * a média amostral é estimativa da média populacional 
+  * o desvio-padrão amostral é estimativa do desvio-padrão populacional 
+  </div>
+</div>
+</td></tr></table>
+
+A distribuição normal que representa a população está em coloração mais apagada porque não temos acesso a ela. Em linha mais fina e de cor mais intensa temos a distribuição da amostra de `r n` indivíduos. Observe que a distribuição amostral não é perfeitamente normal, embora siga o perfil geral da população.
+
+Na prática, porém, é tudo o que teríamos é uma amostra, sem qualquer referência da população  ([`fi_Amostra.R`](fi_Amostra.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("fi_Amostra.R")
+```
+
+Analiticamente:
+
+$$\Large \text{IC}^{95\%}(\mu) = \left[\bar{x} \pm t^{0.975}_{n-1}\dfrac{s}{\sqrt{n}}\right]$$
+
+Computa-se ([`fi_IntervaloConfiancaAnalitico.R`](fi_IntervaloConfiancaAnalitico.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("fi_IntervaloConfiancaAnalitico.R")
+```
+
+<table><tr><td>
+<div class='left' style='float:left;width:10%'>
+
+```{r fig.align="left", out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+
+Para recordar (nunca saberíamos), a média populacional é `r media`.
+
+A partir da amostra localizamos um intervalo de confiança 95%
+que contém a média populacional.
+
+</div>
+</td></tr></table>
+
+# _Bootstrapping_
+
+A maior parte dos textos que explica o TCL parte de um experimento imaginário, no qual infinitas amostras (ou um número muito grande quando pretendemos fazer simulações) de igual tamanho $n$ são retiradas de uma população hipotética. 
+
+Na prática este experimento não faz sentido porque, se pudéssemos retirar muitas amostras poderíamos retirar uma amostra maior e mais representativa da população. 
+
+Existe, porém, uma alternativa possível e que produz o mesmo resultado para que, com base em um única amostra, possamos chegar a conclusões que possam ser extrapoladas para a população de onde ela proveio: _bootstrapping_. 
+
+```{r echo=FALSE, out.width='25%'}
+knitr::include_graphics("image/boot_strap.png")
+```
+
+Reamostragem por _bootstrapping_, com base no comportamento do teorema central do limite, serve para calcular erro-padrão e intervalo de confiança. 
+
+Faremos várias reamostragens **com reposição** de `r sprintf("%d",n)` elementos sobre a única amostra de `r sprintf("%d",n)` elementos que temos para trabalhar. 
+
+<table><tr><td>
+<div class='left' style='float:left;width:10%'>
+```{r fig.align="left", warning=FALSE, out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+
+Cada uma das reamostras tem que ser feita com reposição, enquanto as amostragens simples sobre a população, propostas pelo experimento imaginário, são feitas sem reposição. 
+
+Esta reposição implica em manter cada indivíduo, embora já sorteado para uma amostra, disponível para o sorteio seguinte, assim permitindo que este apareça na amostra mais de uma vez.  
+
+Por exemplo, imagine uma amostra que tenha cinco valores, da qual computamos a média e o desvio-padrão:
+
+```{r}
+B <- 9 # numero de reamostragens
+amostra <- c(1, 2, 5, 7, 8)
+n <- length(amostra)
+cat("amostra:", amostra, 
+    "  media =", round(mean(amostra),2), 
+    "dp =", round(sd(amostra),2), 
+    "\n")
+```
+
+Com `r B` reamostras de cinco elementos sejam feitas sem reposição, tudo que obteremos são `r B` representações da amostra, permutando a ordem dos `r n` valores, com a mesma média e desvio-padrão da amostra original:
+
+```{r}
+# B reamostragens sem reposicao
+reamostra <- replicate(B, sample(amostra, n, replace=FALSE))
+# https://www.r-bloggers.com/2018/09/how-to-avoid-for-loop-in-r/
+invisible(lapply(1:B, 
+                 function(i) cat("reamostra",
+                                 i, ": ", reamostra[,i], 
+                                 "  media =", format(mean(reamostra[,i]),
+                                                     width=3, nsamll=2, digits=2), 
+                                 "dp =", format(sd(reamostra[,i]),2,
+                                                width=3, nsmall=2, digits=2), 
+                                 "\n")))
+```
+
+No entanto, fazendo este processo com reposição (utilizando o parâmetro <code>replace=TRUE</code> na função <code>sample()</code>):
+
+```{r}
+# B reamostragens com reposicao
+set.seed(123)
+reamostra <- replicate(B, sample(amostra, n, replace=TRUE))
+invisible(lapply(1:B, 
+                 function(i) cat("reamostra",
+                                 i, ": ", reamostra[,i], 
+                                 "  media =", format(mean(reamostra[,i]),
+                                                     width=3, nsamll=2, digits=2), 
+                                 "dp =", format(sd(reamostra[,i]),2,
+                                                width=3, nsmall=2, digits=2), 
+                                 "\n")))
+```
+
+obteremos a essência do _bootstrapping_: variantes da amostra original.
+</div>
+</td></tr></table>
+
+O _bootstrapping_, sobre a amostra obtida da população fictícia, resulta em: 
+
+```{r echo=FALSE}
+source("fi_boot01.R")
+```
+
+<div align=right>
+<small>implementado com [`fi_boot01.R`](fi_boot01.R)</small>
+</div>
+
+```{r echo=FALSE}
+# relato
+am <- mean(amostra,na.rm=TRUE)
+as <- sd(amostra,na.rm=TRUE)
+bm <- mean(boot.medias)
+bs <- mean(boot.sds)
+v <- ""
+v <- paste0(v,"Amostra unica (n = ",n,"):\n")
+v <- paste0(v,"\tmedia amostral: ",round(am,4),"\n")
+v <- paste0(v,"\td.p. amostral: ",round(as,4),"\n")
+v <- paste0(v,"\nAmostras:",B," com n = ",n,"\n")
+v <- paste0(v,"\tmedia das medias amostrais: ",round(bm,4),"\n")
+v <- paste0(v,"\tmedia dos desvios padrao das medias amostrais: ",round(bs,4),"\n")
+cat(v)
+```
+
+<table><tr><td>
+<div class='left' style='float:left;width:10%'>
+
+```{r fig.align="left", out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+  <div class=customlist>
+  
+* a média das médias das reamostras é próxima à média da amostra que lhes deram origem
+* a média dos desvios-padrão das reamostras é próxima ao desvio-padrão da amostra que lhes deram origem.
+
+  </div>
+</div>
+</td></tr></table>
+
+O gráfico mostra linhas representando as `r sprintf("%d",B)` reamostras de `r sprintf("%d",n)` indivíduos (o gráfico só exibe 500 linhas das `r sprintf("%d",B)` geradas para melhor visibilidade) às quais a distribuição da amostra original foi sobreposta. Como acontecia entre a amostra e a população, também as reamostras seguem o perfil geral da amostra única que tomamos como ponto de partida. Na parte alta do gráfico vemos a média e os desvios-padrão da amostra original, e a média das médias e a média dos desvios-padrão das `r sprintf("%d",B)` reamostras.
+
+Estas últimas médias (das médias e dos desvios-padrão das `r sprintf("%d",B)` reamostras) foram obtidas do _bootstrapping_ e seus valores podem ser encontrados: cada uma das `r sprintf("%d",B)` reamostras tem sua média e desvio-padrão, respectivamente guardadas nos vetores <code>boot.medias</code> e <code>boot.sds</code> (contendo `r sprintf("%d",B)` elementos cada um dos vetores). 
+
+Observe os próximos códigos em R para entender quais vetores e quais valores foram calculados:
+
+```{r echo=FALSE}
+cat(readLines("fi_exibevetores.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("fi_exibevetores.R")
+```
+
+<div align=right>
+<small>implementado com [`fi_exibevetores.R`](fi_exibevetores.R)</small>
+</div>
+
+```{r echo=TRUE, eval=FALSE}
+v <- ""
+bm <- mean(boot.medias)
+bs <- mean(boot.sds)
+v <- paste0(v,"\nAmostras:",B," com n = ",n,"\n")
+v <- paste0(v,"\tmedia das medias amostrais: ",round(bm,4),"\n")
+v <- paste0(v,"\tmedia dos desvios padrao das medias amostrais: ",round(bs,4),"\n")
+cat(v)
+```
+
+```{r echo=FALSE}
+v <- ""
+bm <- mean(boot.medias)
+bs <- mean(boot.sds)
+v <- paste0(v,"\nAmostras:",B," com n = ",n,"\n")
+v <- paste0(v,"\tmedia das medias amostrais: ",round(bm,4),"\n")
+v <- paste0(v,"\tmedia dos desvios padrao das medias amostrais: ",round(bs,4),"\n")
+cat(v)
+```
+
+<table><tr><td>
+<div class='left' style='float:left;width:10%'>
+
+```{r fig.align="left", out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+  <div class=customlist>
+  
+* a média de <code>boot.medias</code> é a média das médias das reamostras
+* o média de <code>boot.sds</code> é a média dos desvios-padrão das reamostras.
+
+  </div>
+</div>
+</td></tr></table>
+
+Adicionalmente, considerando apenas <code>boot.medias</code>, podemos calcular mais um desvio-padrão:
+
+```{r}
+v <- ""
+ep <- sd(boot.medias)
+v <- paste0(v,"\tdesvio padrao das medias amostrais: ",round(ep,4),"\n")
+cat(v)
+```
+
+```{r echo=FALSE}
+v <- ""
+ep <- sd(boot.medias)
+v <- paste0(v,"\tdesvio padrao das medias amostrais: ",round(ep,4),"\n")
+cat(v)
+```
+
+<table><tr><td>
+<div class='left' style='float:left;width:10%'>
+
+```{r fig.align="left", out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+  <div class=customlist>
+  
+* o desvio-padrão das médias das reamostras é o erro-padrão 
+(repare que o valor obtido é $\frac{1}{10}$ do desvio-padrão da amostra).
+
+  </div>
+</div>
+</td></tr></table>
+
+O erro-padrão da média, estimado aqui pelo desvio-padrão das médias amostrais obtidas por muitas reamostragens, é denotado como $EP_{\mu}$. 
+
+A distribuição de <code>boot.medias</code> pode ser expressa graficamente, mantendo-se a mesma escala do eixo $x$ que utilizamos para a distribuição dos valores amostrais:
+
+```{r echo=FALSE}
+# distribuicao das medias amostrais (mantendo a escala)
+plot.density.withmeansd(boot.medias,
+                        main="Distribuicao de medias amostrais\n(bootstrapping)",
+                        xlab="Medias amostrais de Hb (g/dl)",
+                        ylab="Densidade",
+                        x.min=limits[1], x.max=limits[2],
+                        col=friendlycolor(29))
+```
+
+A distribuição destas médias amostrais é mais alta e mais estreita (a área de uma distribuição de probabilidades é mantida em 1) porque o desvio-padrão das médias amostrais é o $EP_{\mu}$ estimado. Observe que este erro-padrão é cerca de $1 \big/ 10$ da média dos desvios-padrão das amostras ($s$, que é estimador do desvio-padrão populacional, $\sigma$). Não é uma coincidência $n=100$ e $\sqrt{n}=10$. 
+
+Para melhor visualização, exibimos a mesma curva da distribuição das médias amostrais ajustando a escala do eixo $x$, adicionando a referência amostral e populacional (esta última apenas para conferência; lembre-se que jamais a teremos na prática). Temos:
+
+```{r echo=FALSE}
+source("fi_boot01c.R")
+```
+
+<div align=right>
+<small>implementado com [`fi_boot01c.R`](fi_boot01c.R)</small>
+</div>
+
+
+```{r echo=FALSE}
+v <- ""
+v <- paste0(v,"Amostra unica (n = ",n,"):\n")
+v <- paste0(v,"\tmedia amostral: ",round(am,4),"\n")
+v <- paste0(v,"\td.p. amostral: ",round(as,4))
+bm <- mean(boot.medias)
+bs <- mean(boot.sds)
+ep <- sd(boot.medias)
+ic95 <- quantile(boot.medias,probs=c(0.05/2, 1-(0.05/2)))
+v <- paste0(v,"\nAmostras:",B," com n = ",n,"\n")
+v <- paste0(v,"\tmedia das medias amostrais: ",round(bm,4),"\n")
+v <- paste0(v,"\tmedia dos d.p. amostrais: ",round(bs,4),"\n")
+v <- paste0(v,"\td.p. das medias amostrais: ",round(ep,4)," (erro padrao da media)","\n")
+v <- paste0(v,"\tIC95(mu): [",round(ic95[1],4),",",round(ic95[2],4),"]")
+cat(v)
+```
+
+O círculo sólido (na mesma coordenada $x$ que o círculo preto) e as faixas que aparecem na mesma cor da distribuição na parte alta do gráfico correspondem, respectivamente, à média das médias amostrais, $\bar{\bar{x}}$, e aos erros padrão destas médias (de $\pm1$ a $\pm3$ $EP_{\mu}$). Na parte de baixo do gráfico adicionamos uma linha horizontal com halteres em preto que representa o intervalo de confiança 95%: seus limites indicam 95% da área sob a curva da distribuição das médias das reamostras com um círculo sólido preto na posição de $\bar{\bar{x}}$ que corresponde à estimativa pontual da média populacional $\mu$; observe que os limites dos halteres estão aproximadamente a $\mu \pm2 EP_{\mu}$. Adicionamos, também na parte de baixo do gráfico, um círculo sólido na posição da média da amostra original e um círculo branco na posição da média populacional para referência. 
+
+Colocando em outras palavras, uma vez que confiamos na única amostra que obtivemos e supomos que esta amostra representa bem a população de onde foi retirada, utilizamos o _bootstrapping_ para criar um número grande de variantes desta amostra (neste exemplo, `r sprintf("%d",B)` reamostras). Cada uma destas reamostras tem sua média, $\bar{x}$. A distribuição obtida mostra que é mais provável que a maioria dos valores de $\bar{x}$ sejam próximas da média de nossa amostra única e que valores de $\bar{x}$ mais afastados são progressivamente mais improváveis, de tal forma que a distribuição dos `r sprintf("%d",B)` valores de $\bar{x}$ é aproximadamente normal. Encontramos, então, a faixa de valores que contém 95% destes $\bar{x}$. Esta faixa de valores é o intervalo em que, com confiança de 95%, esperamos encontrar a média populacional. Não conhecendo a média populacional (como acontece em uma amostra obtida na prática) poderíamos dizer que ela está localizada entre `r round(ic95[1],4)` e  `r round(ic95[2],4)` com 95% de confiança. Esta média populacional está representada no gráfico como um círculo branco apenas para mostrar o sucesso deste procedimento com _bootstrapping_, pois o intervalo de confiança 95% estimado a englobou. 
+
+```{r echo=FALSE}
+oldic95 <- ic95 # para guardar os valores com n==100
+```
+
+O _bootstrapping_ serve para situações com amostras menores. Vamos repetir este procedimento com uma amostra de $n=9$ da mesma população com média de Hb de 11.6 g/dl e desvio-padrão de 1.5 g/dl. Com `r sprintf("%d",1e5)` reamostragens, obteríamos o seguinte (código disponível em [`fi_boot02.R`](fi_boot02.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("fi_boot02.R")
+```
+
+Observe o que aconteceu com o intervalo de confiança 95% [`r round(ic95[1],4)`, `r round(ic95[2],4)`]. Com uma amostra menor, a distribuição normal das médias das reamostras é mais larga ($EP_{\mu}$ é aproximadamente $1 \big/ \sqrt{9}$ do desvio-padrão amostral, que por sua vez é estimador do desvio-padrão populacional) e, consequentemente, a faixa de valores que afirmamos conter a média populacional com confiança de 95% é mais larga (com $n=100$ o IC95 era  [`r round(oldic95[1],4)`, `r round(oldic95[2],4)`]).
+
+<table><tr><td>
+<div class='left' style='float:left;width:10%'>
+
+```{r fig.align="left", out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+
+O TCL não vale apenas para estimar a média populacional. Podemos aproveitar o mesmo _bootstrapping_ para estimar o desvio-padrão populacional. A distribuição dos desvios-padrão das reamostras e os cálculos para o intervalo de confiança são (código disponível em [`fi_boot02b.R`](fi_boot02b.R)):
+
+```{r echo=FALSE}
+source("fi_boot02b.R")
+```
+
+Aqui estimamos o $EP_{\sigma}$ e obtivemos o intervalo de confiança 95% do $\sigma$. Encontramos que o desvio-padrão populacional deve estar localizado entre `r round(ic95s[1],4)` e `r round(ic95s[2],4)`. Como estamos em uma situação simulada, sabemos que a população de onde retiramos a amostra tinha desvio-padrão igual a 1.5 g/dl, valor este que está dentro do intervalo e a estimativa por _bootstrapping_ foi bem sucedida. 
+
+</div>
+</td></tr></table>
+
+# Bootstrapping (variável populacional não normal)
+
+No exemplo acima tiramos amostras (com $n=100$ e $n=9$) de uma população cuja variável Hb tinha distribuição normal. A distribuição das médias reamostrais obtida por _bootstrapping_ tinha, igualmente, distribuição normal. 
+
+Para verificar o comportamento do _bootstrapping_ em situação menos favorável, simularemos com uma população com variável que  **não** tem distribuição normal. 
+
+Em primeiro lugar ativamos algumas funções de apoio que desenvolvemos e, então, criamos um vetor com uma população fictícia. Vamos imaginar que pretendemos medir o valor do colesterol LDL e, embora não saibamos, esta população tem indivíduos misturados: hipo, normo e hipercolesterolêmicos. 
+
+Observe o código em R (implementado em [`fi_criapopsample.R`](fi_criapopsample.R){target="_blank"}). Criaremos a população artificialmente e, em seguida, retiramos uma única amostra desta população com tamanho $n=36$:
+
+```{r echo=FALSE}
+# cat(readLines("fi_criapopsample.R"), sep = '\n')
+```
+
+obtendo-se:
+
+```{r echo=FALSE}
+source("fi_criapopsample.R")
+```
+
+Nesta situação, a amostra captura informação (com imperfeição) da população. Assim como é a população, esta amostra não tem distribuição normal. Repare que os "picos" e "vales" existentes na distribuição populacional foram incompletamente representados, mas a média e desvio-padrão amostrais são similares àqueles da população.
+
+Lembramos novamente: na prática temos tão somente esta amostra, sem a referência populacional:
+
+```{r echo=FALSE}
+# amostra isolada, sem a populacao
+plot.density.withmeansd(amo.unique,
+                        main=paste0("Amostra unica (n = ",n,")"),
+                        xlab="Colesterol LDL (mg/dl)",
+                        ylab="Densidade",
+                        x.min=limits[1], x.max=limits[2],
+                        y.min=limits[3], y.max=limits[4],
+                        col=friendlycolor(1))
+legend("right", 
+       c("Amostra",
+         "Media am. +-3 dp"
+       ), 
+       col=c(friendlycolor(1),
+             paste(friendlycolor(1),"88",sep="")             
+       ),
+       lwd=c(2,10), 
+       lty=c(1,1), 
+       cex=0.7,
+       box.lwd=0, bg="transparent")  
+# relato
+v <- ""
+v <- paste(v,"\tmedia amostral:",round(am,4),"\n")
+v <- paste(v,"\td.p. amostral:",round(as,4))
+cat(v)
+```
+
+Com o bootstrapping (código em [`fi_bootstrapping.R`](fi_bootstrapping.R){target="_blank"}) obtemos:
+
+```{r echo=FALSE}
+source("fi_bootstrapping.R")
+```
+
+Surpreendentemente, a distribuição das médias das reamostras continua sendo aproximadamente normal (apesar da amostra não o ser) com média igual à da amostra original e desvio-padrão dado por $EP=s/\sqrt{n}$ (ou próximo a estes valores porque aqui estamos simulando).
+
+Exibindo novamente o último gráfico, adicionando o intervalo de confiança e uma distribuição normal (linha pontilhada) para comparação, podemos observar melhor a distribuição das médias amostrais (código em [`fi_bootstrapping2.R`](fi_bootstrapping2.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("fi_bootstrapping2.R")
+```
+
+Neste caso temos o desvio-padrão da amostra <code>as=`r round(as,4)`</code> e o desvio-padrão das `r sprintf("%d",B)` médias das reamostras <code>epm=`r round(epm,4)`</code>. Podemos conferir que <code>as/epm=`r round(as,4)/round(epm,4)`</code> é valor próximo a <code>sqrt(`r sprintf("%d",n)`)=`r sqrt(n)`</code>. A concordância talvez fosse melhor se usássemos um _bootstrapping_ com mais reamostras; aqui exemplificamos com `r sprintf("%d",B)` reamostras, mas é recomendado que se aplique entre `r sprintf("%d",1e5)` (=`r sprintf("%.0e",1e5)`) e `r sprintf("%d",1e6)` (=`r sprintf("%.0e",1e6)`) reamostras para fins de decisão estatística.
+
+<table><tr><td>
+<div class='left' style='float:left;width:10%'>
+
+```{r fig.align="left", out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+Interessantemente, o TCL sob _bootstrapping_ também funciona  para o desvio-padrão neste caso de distribuição não normal da variável populacional (código em [`fi_bootstrapping3.R`](fi_bootstrapping3.R)):
+
+```{r echo=FALSE}
+source("fi_bootstrapping3.R")
+```
+
+O intervalo de confiança 95% estimado incluiu, como pode-se verificar, o desvio-padrão populacional. 
+
+</div>
+</td></tr></table>
+
+O _bootstrapping_ é um procedimento sempre possível com o uso de computadores, capturando o experimento imaginário de obter inúmeras amostras de uma mesma população e reconstituindo propriedades da população inalcançável de onde a amostra proveio.   
+
+<table><tr><td>
+<div class='left' style='float:left;width:10%'>
+
+```{r fig.align="left", out.width="100%", echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+</div>
+<div class='right' style='float:right;width:90%;background-color:#ced9e6;'>
+Voltando à figura de Wonnacott & Wonnacott (1990) apresentada no início de texto, agora é possível entender seus elementos:
+
+```{r echo=FALSE, out.width='70%'}
+knitr::include_graphics("image/SDSE.png")
+```
+
+<div class=customlist>
+
+* A população é representada à esquerda com uma variável intervalar que tem média $\mu$ e desvio-padrão $\sigma$. O eixo das abscissas é dos valores que variável pode assumir, $x$. Amostras com $n$ elementos ($x_1, x_2, ... x_n$ são retiradas desta população. 
+* A distribuição populacional é claramente não normal, e este é um cuidado dos autores: é comum pessoas lembrarem que a distribuição normal é definida por dois parâmetros (média e desvio-padrão) e, então, erroneamente assumirem que tudo que tem média e desvio-padrão tem distribuição normal; qualquer conjunto numérico tem média e desvio-padrão (como nesta figura).
+* Ao centro, a figura ilustra o experimento imaginário, com inúmeras amostras, cada uma com sua média $\bar{x}$, sendo retiradas da população.
+* Estas amostras $\bar{x}$ compõem uma distribuição gaussiana à direita. O eixo das abscissas é dos valores médios das amostras, $\bar{x}$. A média desta gaussiana coincide com a média populacional $\mu$ e seu desvio-padrão é $\sigma \big/ \sqrt{n}$.
+* A seta que aparece sob $\sigma \big/ \sqrt{n}$ é menor do que a que aparece sob $\sigma$ no gráfico da população; o valor do erro-padrão é sempre menor que o do desvio-padrão populacional.
+
+</div>
+</div>
+</td></tr></table>
+
+# `DescTools::MeanCI`: estimação de intervalo de confiança 
+
+```{r}
+# IC95% por DescTools::MeanCI
+round(DescTools::MeanCI(Dados.F$MCT, na.rm=TRUE),1)
+round(DescTools::MeanCI(Dados.M$MCT, na.rm=TRUE),1)
+
+# Os mesmos IC95% por t.test
+round(t.test(Dados.F$MCT)$conf.int[1:2],1)
+round(t.test(Dados.M$MCT)$conf.int[1:2],1)
+
+# IC95% por DescTools::MeanCI com desvio-padrao conhecido
+round(DescTools::MeanCI(Dados.F$MCT, sd=10, na.rm=TRUE), 1)
+round(DescTools::MeanCI(Dados.M$MCT, sd=14, na.rm=TRUE), 1)
+
+# IC95% unilateral por DescTools::MeanCI
+# round(DescTools::MeanCI(Dados.F$MCT, sides="left", na.rm=TRUE),1)
+# round(DescTools::MeanCI(Dados.M$MCT, sides="left", na.rm=TRUE),1)
+# round(DescTools::MeanCI(Dados.F$MCT, sides="right", na.rm=TRUE),1)
+# round(DescTools::MeanCI(Dados.M$MCT, sides="right", na.rm=TRUE),1)
+
+# IC95% estratificado por Sexo
+tapply(Dados$MCT, 
+       Dados$Sexo, 
+       FUN=DescTools::MeanCI, 
+       na.rm=TRUE)
+
+# IC95% por bootstrapping para sexo feminino
+round(DescTools::MeanCI(Dados.F$MCT, 
+                        method="boot", 
+                        type="perc", 
+                        R=1e4, 
+                        na.rm=TRUE), 1)
+
+# IC95% de MCT, Estatura e IMC para sexo feminino
+round(do.call("rbind", lapply(Dados.F[, c("MCT","Estatura","IMC")], 
+                              FUN=DescTools::MeanCI, 
+                              na.rm=TRUE)), 1)
+t(round(sapply(Dados.F[,c("MCT","Estatura","IMC")], 
+               FUN=DescTools::MeanCI, 
+               na.rm=TRUE), 1))
+```
+
+# Gráfico de intervalo de confiança de 95% de média: delineamento entre participantes
+
+Obtido com [`fi_IntervalosDadosEntre.R`](fi_IntervalosDadosEntre.R){target="_blank"}:
+
+```{r echo=FALSE, error=FALSE}
+source("fi_IntervalosDadosEntre.R")
+```
+
+# Gráfico de intervalo de confiança de 95% de média: delineamento intraparticipantes
+
+Obtido com [`fi_IntervalosDadosIntra.R`](fi_IntervalosDadosIntra.R){target="_blank"}:
+
+```{r echo=FALSE, error=FALSE}
+source("fi_IntervalosDadosIntra.R")
+```
+
+# `HH::CIplot`: simulação de intervalo de confiança
+
+```{r}
+HH::CIplot(n.intervals=1e2,
+           n.per.row=40,
+           pop.mean=175,
+           pop.sd=10,
+           conf.level=0.95)
+```
+
+```{r}
+HH::CIplot(n.intervals=1e4,
+           n.per.row=40,
+           pop.mean=175,
+           pop.sd=10,
+           conf.level=0.95)
+```
+
+Uma outra implementação ([`fi_Manual.R`](fi_Manual.R)), com 1000 reamostragens:
+
+```{r echo=TRUE}
+B <- 1e3
+source("fi_Manual.R")
+```
+
+e com 100 mil:
+```{r echo=TRUE}
+B <- 1e5
+source("fi_Manual.R")
+```
+
+## Simulação de intervalo de confiança em Rpsychologist
+
+* [Interpreting Confidence Intervals: an interactive visualization](http://rpsychologist.com/d3/CI/){target="_blank"}
+
+# `DescTools::MedianCI`: IC de mediana
+
+```{r}
+DescTools::MedianCI(Dados.F$MCT, na.rm=TRUE)
+DescTools::MedianCI(Dados.M$MCT, na.rm=TRUE)
+```
+
+# `DescTools::VarCI`: IC de desvio-padrão
+
+```{r}
+sqrt(DescTools::VarCI(Dados.F$MCT, na.rm=TRUE))
+sqrt(DescTools::VarCI(Dados.M$MCT, na.rm=TRUE))
+```
+
+# Intervalo de confiança pivotal
+
+Uma forma mais robusta é o **intervalo de confiança pivotal** (Chihara & Hesterberg, 2019). Voltamos ao exemplo do colesterol LDL e simulamos com [`simulaIC95pivotal.R`](simulaIC95pivotal.R){target="_blank"} utilizando a população simulada anteriormente. A execução pode ser feita no ambiente do RStudio com o botão [Source] ou com o seguinte comando na _Console_:
+
+```{r echo=TRUE}
+source("simulaIC95pivotal.R")
+```
+
+Neste gráfico e nos seguintes não apresentamos mais a distribuição das médias amostrais (já sabemos que serão aproximadamente normais), mas apenas os intervalos de confiança computados por três métodos diferentes: o _bootstrapping_ percentílico, o _bootstrapping_ pivotal (veja o código para seu cálculo) e a maneira tradicional por equação com base na distribuição $t$ (aproveitando a função nativa t.teste que fornece o intervalo de confiança sem que precisemos implementá-lo manualmente).
+
+Note que a média populacional igual a <code>`r format(round(mp,2),nsmall=2)`</code> (linha vertical pontilhada) está dentro do intervalo de confiança pivotal de 95% [<code>`r format(round(ICpv,2),nsmall=2)`</code>] (o mesmo ocorreu com os outros dois tipos de intervalo). Os intervalos obtidos por _bootstrapping_ pivotal podem ser assimétricos (capturando a assimetria da amostra e da variável populacional), enquanto a estimativa tradicional do intervalo de confiança da média é sempre simétrico. No caso dos intervalos de confiança do desvio-padrão, por _bootstrapping_ ou por fórmula, assimetrias costumam aparecer.
+
+# Uma condição
+
+Em outro exemplo estes procedimentos, como não poderia deixar de ser, funcionam da mesma forma para populações cuja variável tem distribuição aproximadamente normal. 
+
+Supondo que a estatura de homens adultos tem distribuição normal com média 171 cm e desvio-padrão de 7 cm e que tenhamos feito uma amostra, podemos verificar a plausibilidade da amostra ser oriunda desta população. A hipótese nula é:
+
+$$H_0: \mu = 171$$
+e a alternativa:
+$$H_1: \mu \ne 171$$
+
+Testamos o procedimento executando [`simulaIC95pivotal2.R`](simulaIC95pivotal2.R){target="_blank"}, obtendo:
+
+```{r echo=FALSE}
+source("simulaIC95pivotal2.R")
+```
+
+Novamente, média populacional igual a <code>`r round(mean(pop),0)`</code> (linha vertical pontilhada) está dentro dos intervalos de confiança 95% estimados pelos três métodos apresentados.
+
+# Duas condições independentes
+
+Os intervalos de confiança também podem ser utilizados para distinguir duas populações (Chihara & Hesterberg, 2019). 
+
+Por exemplo, imagine que não soubéssemos que os homens tendem a ser mais altos que as mulheres e que estaturas têm distribuição normal. Suponha que, em dada população, os homens têm $\mu_M=175$ e $\sigma_M=8$ e as mulheres $\mu_M=168$ e $\sigma_M=6$.
+
+Sem ter acesso à população, simulamos com [`simulaIC95pivotal_MF.R`](simulaIC95pivotal_MF.R){target="_blank"} a retirada de uma amostra de cada grupo com $n=30$ para decidir se as estaturas coincidem, utilizando um teste da hipótese nula. No gráfico aparece a distribuição normal populacional apenas para referência (lembre que nunca a veríamos na prática), evidenciando que as amostras, embora próximas em termos de média e dispersão, são imperfeitas. 
+
+Caso a estatura dos indivíduos de sexo masculino e feminino fossem iguais, esperaríamos:
+$$H_0: \mu_M - \mu_F = 0$$
+A hipótese alternativa é:
+$$H_1: \mu_M - \mu_F \ne 0$$
+Executamos o _bootstrapping_ para cada amostra em separado a cada iteração, calculamos as respectivas médias e armazenamos a diferença entre elas. A distribuição das diferenças entre as médias, como se vê no gráfico abaixo, também produz uma distribuição aproximadamente normal (o TCL também vale nesta situação), com média igual à diferença das médias (amostrais ou populacionais) e erro-padrão da diferença entre as médias. 
+```{r echo=FALSE}
+source("simulaIC95pivotal_MF.R")
+```
+
+Observe que as estimativas dos intervalos de confiança de 95% da diferença das médias populacionais entre indivíduos masculinos e femininos não incluiram o valor zero, esperado para quando não houvesse diferença de estatura. Portanto, rejeitamos a igualdade e ficamos com a hipótese alternativa. 
+
+Como fizemos a diferença das médias amostrais $\bar{x}_M - \bar{x}_F$ e o intervalo de confiança de 95% está acima do valor nulo, então assuminos, com base neste teste, que a média de estatura dos indivíduos do sexo masculino é maior do que a dos indivíduos do sexo femininos.
+
+# Duas condições dependentes
+
+Uma outra situação ocorre com condições dependentes. Suponha que mulheres façam parte de um estudo para avaliar a eficácia de uma dieta. Suas massas corporais totais (MCT), então, são obtidas antes e depois da dieta. Analisa-se a diferença de MCT (adotaremos "depois"-"antes").
+
+Aqui a hipótese nula é $$H_0: \mu_D = 0$$ e a hipótese alternativa é $$H_1: \mu_D \ne 0$$
+onde $\mu_D$ é a diferença média de peso. Caso a dieta funcione, a diferença média de peso "depois"-"antes" não pode ser nula. Caso seja negativa, a dieta promoveu emagrecimento; caso seja positivo, engorda.
+
+Neste exemplo, aproximando de uma situação que podemos encontrar na prática e diferentemente dos exemplos anteriores, não simulamos qualquer referência populacional. O arquivo [`Dieta.xlsx`](Dieta.xlsx){target="_blank"} contém as medidas de massa corporal total em kg de 30 mulheres em dois momentos (Antes e Depois da dieta) e a diferença de Depois-Antes em g. Observe que há mulheres que perderam e outras que ganharam peso com a dieta.
+
+```{r echo=FALSE}
+dt_dieta <- readxl::read_excel("Dieta.xlsx")
+cat("Dataframe dt_dieta:\n")
+prmatrix(dt_dieta,rowlab=rep("",nrow(dt_dieta)))
+```
+
+Simulamos com  [`simulaIC95pivotal_Dieta.R`](simulaIC95pivotal_Dieta.R){target="_blank"}. O primeiro gráfico mostra a distribuição das massas corporais totais nos dois momentos considerados; são, visualmente similares. 
+
+O segundo gráfico mostra a diferença de massa corporal total, em gramas, sobre a qual é feito o teste. A curva é a distribuição amostral, anotada na terceira coluna do _data frame_, <code>dt_dieta\$Dif</code> que, embora mostre um emagrecimento de `r round(mean(dt_dieta$Dif),0)`g em média, `r sum(dt_dieta$Dif>0)` mulheres ganharam peso enquanto outras `r sum(dt_dieta$Dif<0)` perderam peso. Precisamos avaliar se esta dieta funciona.
+
+Os intervalos de confiança no topo do gráfico foram obtidos pelo teste $t$ tradicional ou por bootstrapping (veja o código para entender sua aplicação neste caso).
+
+```{r echo=FALSE}
+source("simulaIC95pivotal_Dieta.R")
+```
+
+O intervalo de confiança de 95% da diferença de MCT não contém o valor nulo e o intervalo é negativo. Rejeita-se a hipótese nula e, portanto, o experimento sugere que houve redução da MCT com a dieta.
+
+# Proporção
+
+## Prevalência
+
+Em epidemiologia, a prevalência das doenças na população é uma pergunta fundamental.
+
+```{r echo=FALSE, out.width='45%'}
+knitr::include_graphics("image/vanBellecover.png")
+```
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/vanBellecap6.png")
+knitr::include_graphics("image/vanBellecap6b.png")
+```
+
+Prevalência é a proporção de indivíduos doentes em determinado momento e, portanto, pode ser vista como a probabilidade de encontrarmos um indivíduo doente através de sorteio simples. 
+
+Doença é um evento raro na população geral.
+
+Prevalência é probabilidade (e.g., 2% de gripe em agosto/2018):
+
+* pode ser medida em uma coorte fechada ou em uma população aberta
+* geralmente usada em estudos transversais
+* varia entre 0 e 1
+
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Não confunda:
+
+Incidência é taxa (e.g., casos por 100 mil habitantes por ano):
+
+* pode ser medida em uma coorte fechada
+* conta-se o aparecimento de novos casos
+* tem um tempo determinado
+
+Risco é razão entre duas probabilidades:
+
+* as probabilidades são condicionais
+* relaciona exposição e desfecho
+
+</td></tr></table>
+
+<br>
+
+```{r echo=FALSE, out.width='70%'}
+knitr::include_graphics("image/vanBelletab66.png")
+```
+
+> van Belle (2008)
+
+É muito comum existirem itens com respostas dicotômicas, por exemplo quando classifica-se um indivíduo em portador ou não de uma doença, transtorno, trauma ou síndrome. Uma das formas de lidar com isto é utilizar a proporção destes eventos de interesse.
+
+O modelo de variável dicotômica é o jogo de cara ou coroa com uma moeda. Assim, se uma moeda bem balanceda for jogada 100 vezes, esperamos obter 50 coroas. Em outras palavras, a proporção de coroas é 0.5 ou 50%, que também pode ser vista como a probabilidade de ocorrência de coroa, ou como a média esperada de coroas. 
+
+A distribuição de probabilidades de uma variável dicotômica é a de Bernoulli (um evento com probabilidade $p$). A soma de vários eventos deste tipo resulta em uma distribuição binomial. Assim, a média da ocorrência de $n$ eventos é $np$ e o desvio-padrão é $\sqrt{np(1-p)}$.
+
+Na área da saúde $p$ corresponde também à prevalência. Como vimos, os valores de $p$ costumam ser pequenos, da ordem de 10% ou (muito) menos. 
+Em estudos, como sempre, usamos amostras e, portanto, precisamos calcular o erro-padrão e o intervalo de confiança da proporção populacional. O erro-padrão é dado por: 
+
+$$\Large \text{EP} = \sqrt{{\hat{p}(1-\hat{p})\over{n}}}$$
+
+O intervalo de confiança de proporção de Wald é o mais popular. Para o IC de 95%, calcula-se com:
+
+$$\Large \text{IC}^{95\%}_{\text{Wald}} =  \left[\hat{p} \pm 1.96 \text{EP}\right]$$
+
+A fórmula de Wald, porém, tem restrições. Para utilizar a distribuição normal padrão, onde $z_{\alpha/2}=1.96, \alpha=0.05$, o tamanho da amostra deveria ser de, pelo menos, 30 indivíduos. Além disto, proporções estão limitadas ao intervalo $[0,1]$ e esta fórmula não garante que seus limites inferior e superior estejam contidos neste intervalo.
+
+Uma forma mais robusta é o Intervalo de Confiança de Proporção de Wilson. Para 95% é dado por:
+
+$$\Large {\text{IC}^{95\%}_{\text{Wilson}}} = \dfrac{{{\hat{p} + \dfrac{1.96^2}{2n} \pm 1.96 \sqrt{\dfrac{\hat{p}(1-\hat{p})}{n} +\dfrac{1.96^2}{4n^2}}}}}{1 + {\dfrac{1.96^2}{n}}}$$
+
+> Wilson (1927)
+
+Esta fórmula vale para qualquer $n$ e também costuma manter os limites inferior e superior dentro do intervalo [0,1]. 
+
+Wallis (2013) traz um exemplo verificando a proporção do uso das palavras _shall_ ou _will_ na língua inglesa ao longo dos anos. 
+
+```{r out.width='70%', echo=FALSE}
+knitr::include_graphics("image/Wallis2013(table).png")
+```
+
+Podemos comparar o desempenho das duas fórmulas com as seguintes figuras:
+
+* com o intervalo de Wald:
+
+```{r out.width='70%', echo=FALSE}
+knitr::include_graphics("image/Wallis2013(1).jpeg")
+```
+
+* com o intervalo de Wilson:
+
+```{r out.width='70%', echo=FALSE}
+knitr::include_graphics("image/Wallis2013(2).jpeg")
+```
+
+> Wallis (2013)
+
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Se quiser saber mais, consulte <a href=https://towardsdatascience.com/five-confidence-intervals-for-proportions-that-you-should-know-about-7ff5484c024f>Robert D (2020).</a>
+</td></tr></table>
+
+<br>
+
+# Uma condição: teste bilateral
+
+Simulamos com [`demo_binomial.R`](demo_binomial.R){target="_blank"} a distribuição de ocorrências de um evento com prevalência populacional de 10%, do qual retiramos uma amostra de 30 indivíduos, obtendo:
+
+```{r echo=FALSE}
+source("demo_binomial.R")
+```
+
+Observe que o teste $t$, não concebido para proporções, pode gerar valores inadequados. Note, também, que os intervalos de confiança obtidos por _bootstrapping_ e pelo teste binomial são assimétricos.
+
+É importante enfatizar que o valor da prevalência de 10%, representada como uma linha horizontal pontilhada no gráfico, só está disponível porque o simulamos. Na prática, não saberemos a prevalência populacional: aqui está representada para mostrar que os intervalos de confiança estimados a partir da única amostra que obtivemos contém (e, portanto, estimaram corretamente) o valor populacional.
+
+# Uma condição: teste unilateral
+
+Há vezes em que, para estimar a prevalência de uma doença na população, queremos saber qual é seu valor mínimo ou máximo. Para tanto, generalizamos este código para utilizar o parâmetro <code>side</code> com um dos três valores:
+
+* <code>two.sided</code> que é a situação anterior (_default_),
+* <code>greater</code> que estima a prevalência mínima,
+* <code>less</code> que estima a prevalência máxima
+
+Estas são estimativas do mínimo e máximo da média populacional de onde a amostra proveio (Wonnacott & Wonnacott, 1990, p. 317-8).
+
+Então, a estimativa da prevalência mínima é o limite mínimo do intervalo obtido por:
+
+```{r echo=TRUE}
+side <- "greater"
+source("demo_binomial.R")
+```
+
+Observe novamente o teste $t$ gerando probabilidades negativas. Além disto, como estamos procuramos a estimativa mínima da prevalência, o valor superior não interessa: e o código está adequado para auxiliar o usuário substituindo o valor (ainda que apareça) por NA e representando o intervalo com uma seta direcional para sugerir que prossegue para cima (até 1, no caso de proporções).
+
+A estimativa da prevalência máxima é o limite máximo do intervalo obtida por:
+
+```{r}
+side <- "less"
+source("demo_binomial.R")
+```
+
+Novamente, agora para o limite máximo, o código foi preparado para auxiliar a análise. 
+
+Nestes três exemplos, fixamos a amostra com <code>set.seed()</code>. A estimativa pontual desta amostra subestimou a prevalência de nossa população artificial (encontrou `r sucessos` sucessos em `r n` tentativas, em vez de `r round(n*proppop,0)` que esperaríamos para a prevalência de `r round(100*proppop,0)`% que usamos para criar a população). No entanto, estimando o intervalo de confiança, a decisão passa a ser sobre a faixa de prevalência dentro da qual deve estar a prevalência populacional; como são dados simulados, sabemos que o intervalo estimado está correto porque englobou 10%.
+
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Há outras funções em outros pacotes que também dão informações interessantes sobre proporções.
+
+Há vários outros métodos possíveis, disponíveis em outros pacotes. Por exemplo, <code>DescTools::BinomCI()</code> os tem no parâmetro <code>method</code>. Esta função também pode computar intervalos unilaterais, mas aqui o parâmetro é <code>sides</code> (no plural) e os valores possíveis são <code>"two.sided"</code>, <code>"left"</code> e <code>"right"</code>.
+
+Com o código disponível em [`demo_binomialMethods.R`](demo_binomialMethods.R), de acordo com a amostra na qual encontramos `r sucessos` sucessos em `r n` tentativas, a chamada do _Rscript_ para rodar todos os métodos disponíveis é:
+
+```{r}
+method <- c("wilson", "wald", "agresti-coull", "jeffreys",
+            "modified wilson", "wilsoncc","modified jeffreys",
+            "clopper-pearson", "arcsine", "logit", "witting",
+            "pratt")
+source("demo_binomialMethods.R")
+```
+
+Compare os intervalos obtidos por <code>DescTools::BinomCI()</code> com a saída de <code>binom.test()</code> obtida anteriormente para confirmar que o _default_ foi <code>clopper-pearson</code> (intervalo de Clopper and Pearson, 1934). 
+
+Para as estimativas unilaterais implementadas neste código, basta passar um dos três valores disponíveis em <code>sides</code> (<code>"two.sided"</code>, <code>"left"</code> ou <code>"right"</code>). A função do pacote <code>DescTools</code> é mais bem estruturada que <code>binom.test()</code>: observe o que acontece com os limites inferior e superior quando pedimos estimativas unilaterais. O equivalente a <code>"greater"</code> é <code>"left"</code>:
+
+```{r}
+sides <- "left"
+source("demo_binomialMethods.R")
+```
+
+O equivalente a <code>"less"</code> é <code>"right"</code>
+
+```{r echo=TRUE, fig.width=6.5}
+sides <- "right"
+source("demo_binomialMethods.R")
+```
+
+</td></tr></table>
+
+<br>
+
+# Duas condições independentes
+
+Suponha que uma dieta foi instituída para pessoas dos dois sexos, 80 pessoas do sexo feminino (F) e 70 pessoas do sexo masculino (M). Após algum tempo, o pesquisador verifica quantos tiveram sucesso em perder peso: 48 (`r round((48/80)*100,2)`%) mulheres e 56 (`r round((56/70)*100,2)`%) homens conseguiram emagrecer. Como verificar se a proporção de sucesso é igual ou diferente para os dois sexos?
+
+As hipóteses são:
+
+$$H_0: \pi_F - \pi_M = 0 \\
+H_1: \pi_F - \pi_M \ne 0$$
+
+sendo que $\pi$ é a proporção populacional da condição (sucesso em emagrecer).
+
+O código R para este tipo de teste utiliza a função <code>DescTools::BinomDiffCI()</code>:
+
+```{r}
+sucessos.F <- 48
+n.F <- 80 
+sucessos.M <- 56
+n.M <- 70
+
+xci <- DescTools::BinomDiffCI(sucessos.F, n.F, 
+                              sucessos.M, n.M)
+prmatrix(xci, rowlab="", quote=FALSE)
+```
+
+Observe que o valor nulo não está contido no intervalo de confiança de 95% da diferença de proporções de emagrecimento (pela ordem) das mulheres em relação aos homens. Como o intervalo está abaixo de zero, significa que a proporção de mulheres que teve sucesso em emagrecer é menor do que a dos homens.
+
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+A função <code>DescTools::BinomDiffCI()</code> também tem vários métodos de estimação, incluindo o intervalo de confiança tradicional de Wald, ao qual voltaremos (e criticaremos) adiante. 
+
+Não encontrei na documentação nesta data (setembro/2020) qual é o método _default_. Quando isto acontece, pode-se usar o R como laboratório para descobrir. Implementamos uma generalização do código anterior em [`demo_binomialDiff.R`](demo_binomialDiff.R){target="_blank"} e o executamos com todos os métodos que a documentação do R menciona:
+
+```{r}
+sides <- "two.sided"
+method <- c("wald", "waldcc", "ac",
+            "score", "scorecc", "mn",
+            "mee", "blj", "ha", "hal",
+            "jp")
+source("demo_binomialDiff.R")
+```
+
+Comparando a saída com a anterior, vemos que o método usado como _default_ foi <code>ac</code> (Agresti-Caffo). Seja qual for o método, a decisão anterior sobre existir diferença de proporção de indivíduos que emagrecem de acordo com o sexo não mudou.
+
+Verifique o código: o parâmetro <code>sides</code> também está disponível, caso precise.
+</td></tr></table>
+
+<br>
+
+# Três ou mais condições independentes
+
+Em um estudo verificou-se a curva de aprendizado de neurologistas, medindo-se a proporção de erros cometidos em punções lombares. A expectativa é de decréscimo da proporção de erros ao longo de três anos de treinamento (R1 a R3). Como referência, o estudo incluiu os médicos especialistas da área (assistentes). A principal função que escolhemos para resolver esta situação é <code>DescTools::BinomCI</code> para o teste _omnibus_ e <code>fmsb::pairwise.fisher.test</code> para o teste _post hoc_.
+
+Se os intervalos de confiança com correção de Bonferroni dois a dois não se sobrepõem, então há diferença significante. Se há sobreposição, o valor _p_ como correção de Bonferroni pode ser usado para analisar a significância.
+
+Os dados estão simulados em [`demo_binomialCondicoes.R`](demo_binomialCondicoes.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("demo_binomialCondicoes.R")
+```
+
+# Três ou mais condições dependentes (multinomial)
+
+Três marcas de chocolate foram disponibilizadas para degustação às cegas por 79 voluntários. Cada voluntário experimentou os três chocolates e então informou seu preferido. O chocolate A teve 23 (`r round((23/79)*100,1)`%), o chocolate B 12 (`r round((12/79)*100,1)`%) e o chocolate C 44 (`r round((44/79)*100,1)`%) das preferências. As marcas, então foram reveladas, respectivamente Best Cocoa, Dream Brown e Wonka. A principal função que escolhemos para resolver esta situação é <code>DescTools::MultinomCI</code> (default: `sisonglaz`) para o teste _omnibus_ e <code>RVAideMemoire::multinomial.multcomp</code> para o teste _post hoc_.
+
+Se os intervalos de confiança com correção de Bonferroni dois a dois não se sobrepõem, então há diferença significante. Se há sobreposição, o valor _p_ como correção de Bonferroni pode ser usado para analisar a significância.
+
+A análise está em [`demo_binomialChocolate.R`](demo_binomialChocolate.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("demo_binomialChocolate.R")
+```
+
+Como no exemplo anterior, o teste estatístico é aplicado em duas fases: (1) aplicamos um qui-quadrado para avaliar globalmente (teste _omnibus_) se há alguma diferença entre os chocolates e (2) havendo, compara-se os chocolates dois a dois. A diferença, neste caso, está nas funções escolhidas porque há dependência sobre as escolhas dos chocolates: ao escolher um chocolate, cada indivíduo deixa de escolher os outros dois, criando uma correlação negativa entre as escolhas e as recusas. 
+
+A hipótese nula, par a par, é que a proporção de preferência pelos chocolates é a mesma. Adotando $\alpha=0.05$, conclui-se que não se rejeita a hipótese nula na comparação entre Dream Brown e Best Cocoa ($p$<code>=`r format(pares$p.value[1,1],scientific=FALSE)`</code>), mas que o Wonka é diferente dos outros dois (respectivamente $p$<code>=`r format(pares$p.value[2,1],scientific=FALSE)`</code> e $p$<code>=`r format(pares$p.value[2,2],scientific=FALSE)`</code>). Observando as proporções, Wonka é o preferido.
+
+# Intervalo de credibilidade (bayesiano)
+
+```{r echo=FALSE, out.width="70%"}
+knitr::include_graphics("image/bayes.png")
+```
+
+Suposições para validade do intervalo de credibilidade:
+
+* Delineamento entre participantes: observações independentes
+* Variável intervalar
+* Distribuição normal da variável intervalar
+* O parâmetro média tem distribuição normal
+
+Na inferência frequentista/ clássica/ de Neyman-Pearson, o intervalo de confiança de proporção da média é um intervalo que contêm este parâmetro com 95% de confiança (https://rpsychologist.com/d3/ci/).
+
+“Um intervalo de confiança frequentista de 95%  significa que, com um grande número de amostras repetidas, 95% de tais intervalos de confiança calculados incluem o valor verdadeiro do parâmetro. 
+
+Em termos frequentistas, o parâmetro é fixo (não pode ser considerado como tendo uma distribuição de valores possíveis) e o intervalo de confiança é probabilístico (pois depende da amostra aleatória).” https://en.wikipedia.org/wiki/Credible_interval 
+
+Na inferência bayesiana, o intervalo de credibilidade de 95% da média é um intervalo que contêm este parâmetro com 95% de probabilidade (https://rpsychologist.com/d3/bayes/). 
+O preço do intervalo de credibilidade bayesiano é que sua interpretação depende da distribuição prévia (_prior_) que é subjetiva.
+
+“Um intervalo de credibilidade de 95% é um intervalo dentro do qual um valor de parâmetro com distribuição de probabilidade está com 95% de probabilidade.” https://en.wikipedia.org/wiki/Credible_interval 
+
+Intervalo de credibilidade de 95% da média populacional:
+
+$$\Large \text{IC}_{\text{bayes}}^{95\%}(\mu)=\left[\dfrac{n_0\,\mu_0+n\,\bar{x}}{n_0+n} \pm t^{0.975}_{n-1}\,\dfrac{s}{\sqrt{n_0+n}}\right]$$
+
+Sendo que: 
+
+* $\mu \sim normal\left(\mu_0,\sigma_0\right)$
+* $n_0 = \dfrac{s}{\sigma_0}$
+
+Exemplo: MCT Feminino
+
+$$\Large \text{IC}^{95\%}_{\text{bayes}}(\mu)=\left[\dfrac{1.82\times55+230\times57.6}{1.82+230} \pm 1.97\,\dfrac{9.1}{\sqrt{1.82+230}}\right]$$
+
+Sendo que: 
+
+* $t^{0.975}_{229}=$ `r qt(0.975,232-1)`
+* $\mu \sim normal\left(55,5\right)$
+* $n_0 = \dfrac{9.1}{5} = 1.82$
+
+$$\Large \text{IC}^{95\%}_{\text{bayes}}(\mu)=\left[56.4,58.8\right] \\
+\Large \text{IC}^{95\%}_{\text{freq}}(\mu)=\left[56.5,58.8\right] \\
+\Large \text{IC}^{95\%}_{\text{boot}}(\mu)=\left[56.6, 58.9\right]$$
+
+Se o tamanho da amostra é grande, i.e., $n>30$, as amplitudes dos três intervalos de confiança de 95% são aproxidamentamente iguais.
+
+A distribuição não-informativa da média populacional $\mu$ ocorre quando o desvio-padrão $\sigma_0$ é grande, acarretatando valor baixo de $n_0$.
+
+Se $n\gg n_{0}$, o intervalo de confiança é aproximadamente igual ao intervalo de credibilidade.
+
+"Para nós, a mensagem principal do nosso artigo é a seguinte.
+Os intervalos de confiança frequentistas podem ser interpretados como uma aproximação razoável de um intervalo de credibilidade bayesiano  (com a priori não informativa). Isso é reconfortante para aqueles que lutam por uma interpretação formalmente correta dos intervalos de confiança frequentistas." 
+
+> Albers et al., 2018, p. 6
+
+```{r echo=FALSE,  out.width="80%"}
+knitr::include_graphics("image/classicbayes.png")
+```
+
+> Wonnacott & Wonnacott, 1969
+
+"Ponto 11: Fatores de Bayes frequentemente concordam com valores $p$ […] Os resultados entre fatores de Bayes e testes clássicos frequentemente concordam entre si."
+
+> Tendeiro & Kiers, 2019, p. 789
+
+* Referências
+  * Wonnacott, TH & Wonnacott, RJ (1969) _Introductory Statistics_. NJ: Wiley.
+  * Wonnacott, TH & Wonnacott, RJ (1981) _Estatística aplicada à Economia e à Administração_. RJ: LTC.
+  * Wonnacott, TH & Wonnacott, RJ (1990) _Introductory Statistics for Business and Economics_. NJ: Wiley.
+  * Albers, CJ et al. (2018) Credible confidence: A pragmatic view on the frequentist vs Bayesian debate. _Collabra: Psychology_, 4(1): 31. DOI:  https://doi.org/10.1525/collabra.149; Scripts R: https://osf.io/dgfht/.
+  * Tendeiro, JN & Kiers, HAL (2019) A review of issues about null hypothesis Bayesian testing. _Psychological Methods_ 24(6): 774–95. https://doi.org/10.1037/met0000221.
+  * R-Bloggers: Confidence vs. Credibility Intervals: https://www.r-bloggers.com/2014/11/confidence-vs-credibility-intervals/ 
+  * https://en.wikipedia.org/wiki/Credible_interval
+  * https://rpsychologist.com/d3/ci/
+  * https://rpsychologist.com/d3/bayes/
+  
+# Vídeos
+
+* Incidence and Prevalence - Everything you need to know: 
+https://www.youtube.com/watch?v=cTp_ONVVrh8 
+* Test sensitivity and specificity made easy: 
+https://www.youtube.com/watch?v=8J_i2C4elnk
+* Sensitivity and Specificity – Advanced: 
+https://www.youtube.com/watch?v=eC1K_2DR9Yg
+* Positive Predictive Value - The role of specificity: 
+https://www.youtube.com/watch?v=z4yauM3GqfI 
+* Positive Predictive Value - The role of prevalence: 
+https://www.youtube.com/watch?v=QqgJHryKOSU
+
+# Referências Gerais
+
+* Auvin S, Irwin J, Abi-Aad, Battersby A (2018) The Problem of Rarity: Estimation of Prevalence in Rare Disease. _Value in Health_ 21(5): 501-07. https://doi.org/10.1016/j.jval.2018.03.002
+
+* Chihara LM & Hesterberg TC (2019) _Mathematical statistics with resampling and R_. 2nd ed. NJ: Wiley.
+
+* Clopper C & Pearson E (1934). The Use of Confidence or Fiducial Limits Illustrated in the Case of the Binomial. _Biometrika_ 26(4): 404-13. doi:10.2307/2331986
+
+* DANCEY, CP & REIDY, J (2019) _Estatística sem Matemática para Psicologia_ 7ª ed. Porto Alegre: Penso.
+
+* Gilbertson D, Ebben J, Foley R, Weinhandl E, Bradbury B, Collins A (2008) Hemoglobin Level Variability: Associations with Mortality. _Clinical journal of the American Society of Nephrology_ CJASN 3: 133-8. 10.2215/CJN.01610407.
+
+* Rahme E & Joseph L (2002) Estimating the prevalence of a rare disease: adjusted maximum likelihood. _The Statistician_ 47(1):149-58. https://doi.org/10.1111/1467-9884.00120
+
+* Robert D (2020) _Five Confidence Intervals for Proportions That You Should Know About_. Disponível em https://towardsdatascience.com/five-confidence-intervals-for-proportions-that-you-should-know-about-7ff5484c024f
+
+* Siqueira JO, Vieira JE, Silveira PSP (2017) Os testes estatísticos. In: Luiz Marciano Cangiani; Maria José Carvalho Carmona; Marcelo Luiz Abramides Torres; Carlos Othon Batos; David Ferez; Enis Donizetti Silva; Leonardo Duarte; Maria Angela Tardelli. (Org.). _Tratado de Anestesiologia_. 8ed. Rio de Janeiro: Atheneu 2: 3863-78.
+
+* van Belle G (2008) _Statistical rules of thumb_. 2nd ed. NJ: Wiley.
+
+* Wallis SA (2013) Binomial confidence intervals and contingency tests: mathematical fundamentals and the evaluation of alternative methods. _Journal of Quantitative Linguistics_ 20(3): 178-208.
+
+* Wilson EB (1927). Probable inference, the law of succession, and statistical inference. _Journal of the American Statistical Association_ 22(158): 209–12.
+
+* Wonnacott TH & Wonnacott RJ (1990) _Introductory Statistics for Business and Economics_. 4th ed. NJ: Wiley.

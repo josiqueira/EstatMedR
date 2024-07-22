@@ -1,0 +1,11 @@
+v <- ""
+v <- paste0(v,"boot.medias (",length(boot.medias)," elementos): ")
+v <- paste0(v,paste(round(boot.medias[1:50],2),collapse=" "))
+v <- paste0(v," ... ")
+v <- paste0(v,paste(round(boot.medias[(B-50):B],2),collapse=" "))
+v <- paste0(v,"\n\n")
+v <- paste0(v,"boot.sds (",length(boot.sds)," elementos): ")
+v <- paste0(v,paste(round(boot.sds[1:50],2),collapse=" "))
+v <- paste0(v," ... ")
+v <- paste0(v,paste(round(boot.sds[(B-50):B],2),collapse=" "))
+cat(v)
