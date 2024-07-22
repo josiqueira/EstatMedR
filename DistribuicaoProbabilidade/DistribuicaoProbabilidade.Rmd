@@ -1,0 +1,2482 @@
+---
+title: "Distribuição de probabilidade"
+subtitle: ""
+author: |
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    font_adjustment: 1
+    css: style.css
+    df_print: tibble
+    footer: "DistribuicaoProbabilidade.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  slidy_presentation:
+    font_adjustment: -1
+    css: style.css
+    footer: "DistribuicaoProbabilidade.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size:  18px;
+  background-color: white;
+  border: 2px solid darkblue;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r echo=FALSE}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE, error=FALSE}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(png, warn.conflicts=FALSE))
+suppressMessages(library(grid, warn.conflicts=FALSE))
+suppressMessages(library(EnvStats, warn.conflicts=FALSE))
+# source("eiras.friendlycolor.R")
+# source("eiras.numeric.summary.R")
+# source("demo_numericsummary.R")
+# source("demo_gamma.R")
+# source("demo_beta.R")
+# source("demo_beta&normal.R")
+# source("demo_t&normal.R")
+# source("BiometriaNormal.R")
+# source("AproximacaoNormal.R")
+# source("hemoglobina.R")
+# source("hemoglobina_padrao.R")
+# source("hemoglobina_centrada.R")
+# source("massacerebro.R")
+# source("massacerebro_padrao.R")
+# source("massacerebro_tukeytry.R")
+# source("eiras.create.population.R")
+# source("eiras.plot.density.withmeansd.R")
+# source("eiras.sampling.R")
+# source("glicemia_normal.R")
+# source("glicemia_intervalos.R")
+# source("glicemia_hdi.R")
+# source("demo_pie.R")
+# source("demo_barra.R")
+# source("demo_lowhigh.R")
+# source("demo_dotplot.R")
+# source("demo_dotplot2.R")
+# source("demo_histograma.R")
+# source("demo_histograma2.R")
+# source("demo_scatterplot.R")
+# source("demo_scatterplot2.R")
+# source("demo_bagplot.R")
+# source("demo_density.R")
+# source("demo_density2.R")
+# source("demo_dotplot3.R")
+# source("demo_mediaIC95.R")
+# source("demo_mediaIC95_2.R")
+# source("demo_boxplot2.R")
+# source("demo_Likert.R")
+```
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+
+# O que é uma distribuição de probabilidade?
+
+Em um estudo foi verificado o número de drogas utilizadas por grávidas, incluindo medicamentos, álcool, fumo e drogas ilícitas. Os dados hipotéticos estão em um arquivo no formato Excel: 
+
+```{r, echo=TRUE}
+library(readxl)
+DrgGrv <- readxl::read_excel("DrogasGravidez.xlsx")
+print(DrgGrv)
+```
+O arquivo lido tem duas colunas: 
+
+* <code>Drogas</code>, contendo o número de drogas utilizadas e 
+* <code>Pacientes</code>, com o número de pacientes que utilizou este número de drogas.
+
+Um gráfico da distribuição do número de pacientes deve trazer o número de drogas no eixo das abscissas (x) e o número de pacientes no eixo das ordenadas (y). O comando mais simples possível é:
+```{r, echo=TRUE, eval=FALSE}
+plot(DrgGrv$Drogas,DrgGrv$Pacientes)
+```
+obtendo-se:
+```{r, echo=FALSE}
+plot(DrgGrv$Drogas,DrgGrv$Pacientes)
+```
+Funciona, foi rápido, mas é muito mal acabado.
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Usando, na _Console_:
+
+\> ? plot
+
+acessará a documentação da função plot no RStudio. Note que, em algum ponto do texto, aparece
+
+**Usage**<br>
+plot(x, y, ...)
+
+Sempre que encontrar "...", significa que a função pode receber muitos parâmetros. Uma parte deles pode estar descrita na função, mas outros são partilhados entre várias funções de gráfico, e só as encontrará através dos links disponíveis.
+
+Para facilitar, sugerimos alguns destes parâmetros.
+</td></tr></table>
+
+<br>
+
+Uma das vantagens de se utilizar comandos para gerar gráficos é a flexibilidade. O usuário não fica limitado a uma interface gráfica usando somente os recursos considerados necessários por quem a desenvolveu. No caso do <code>plot</code>, sugiro aqui alguns parâmetros. Há muitos outros, caso queira explorar:
+
+* main ... título
+* xlab e ylab ... títulos dos eixos x e y
+* xlim e ylim ... limites dos eixos x e y (recebem um vetor)
+* col ... cor para linhas ou símbolos
+* bg ... cor de preenchimento
+* type ... tipo de gráfico
+* lwd ... largura da linha
+* lty ... padrão da linha (sólida ou pontilhadas)
+* pch ... tipo de símbolo
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Há muitos outros, e nem todos podem funcionar ao mesmo tempo, pois há dependências mútuas. Além de consultar
+
+\> ?plot
+
+veja também
+
+\> ?lines
+
+\> ?points
+
+para encontrar outros e experimentar com eles.
+</td></tr></table>
+
+<br>
+
+Os nomes das variáveis passadas para a função <code>plot</code> (<code>DrgGrv\$Drogas</code>, <code>DrgGrv\$Pacientes</code>) são usados como nomes dos eixos para construir o gráfico. Isto pode ser resolvido no R com os parâmetros <code>xlab</code> e <code>ylab</code>:
+
+```{r, echo=TRUE}
+plot(DrgGrv$Drogas,DrgGrv$Pacientes, 
+     main="Uso de Drogas na Gravidez", 
+     xlab="Número de Drogas", 
+     ylab="Gestantes", 
+     ylim=c(0,1500), lwd=3, col="#994F88")
+```
+
+Gostaria de ligar os pontos? Use a função <code>lines()</code>:
+
+```{r, echo=TRUE}
+plot(DrgGrv$Drogas,DrgGrv$Pacientes, 
+     main="Uso de Drogas na Gravidez", 
+     xlab="Número de Drogas", 
+     ylab="Gestantes", 
+     ylim=c(0,1500), lwd=3, col="#994F88")
+lines (DrgGrv$Drogas, DrgGrv$Pacientes, lwd=3, col="#994F88")
+```
+
+No entanto, isto não é o mais correto a fazer, pois trata-se de variável quantitativa discreta. Para fazer com linhas verticais, como se fosse um gráfico de barras com uma variável quantitativa no eixo x, use <code>type</code>:
+
+```{r, echo=TRUE}
+plot(DrgGrv$Drogas,DrgGrv$Pacientes, 
+     main="Uso de Drogas na Gravidez", 
+     xlab="Número de Drogas", ylab="Gestantes", 
+     ylim=c(0,1500), lwd=3, col="#994F88", 
+     type = "h")
+```
+
+**O mesmo gráfico, em porcentagem**
+
+Muitas vezes podemos precisar criar novas variáveis em um _data frame_. Por exemplo, podemos criar uma coluna com a porcentagem de pacientes, arredondada para duas casas decimais:
+
+```{r, echo=TRUE}
+DrgGrv$FrequenciaRelativa <- round(DrgGrv$Pacientes/sum(DrgGrv$Pacientes)*100,2)
+```
+
+Agora, para obter o mesmo gráfico, é só ajustar o comando, alterando <code>ylab</code> e <code>ylim</code> de acordo. Podemos, também, adicionar os símbolos no topo das barras, usando a função <code>points()</code>:
+
+```{r, echo=TRUE}
+plot(DrgGrv$Drogas,DrgGrv$FrequenciaRelativa, 
+     main="Uso de Drogas na Gravidez", 
+     xlab="Número de Drogas", ylab="Porcentagem de Gestantes", 
+     ylim=c(0,40), lwd=3, col="#994F88", type = "h")
+points(DrgGrv$Drogas,DrgGrv$FrequenciaRelativa, col="#994F88", bg="#994F88", pch=21)
+```
+
+Esta á a distribuição de probabilidades desta amostra, cuja variável é quantitativa discreta. Cada coluna representa, se eu acessar aleatoriamente uma paciente deste grupo, a probabilidade de ser alguém que utiliza nenhuma droga, uma droga, duas drogas, etc. 
+
+Há duas propriedades que definem uma distribuição de probabilidades:
+
+**1**. Todos os valores estão entre zero e um (ou 100%)
+```{r, echo=TRUE}
+DrgGrv$FrequenciaRelativa>=0 & DrgGrv$FrequenciaRelativa<=100
+```
+Alternativamente, se o arquivo é grande, pode ser mais fácil verificar pelo complemento: o total de valores abaixo de zero ou acima de 100%:
+```{r, echo=TRUE}
+sum(DrgGrv$FrequenciaRelativa<0 | DrgGrv$FrequenciaRelativa>100)
+```
+
+**2**. A soma das probabilidades tem que ser 100%
+```{r, echo=TRUE}
+sum(DrgGrv$FrequenciaRelativa)
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Outra alternativa para gerar gráficos de distribuições, menos trabalhosa porque as funções do pacote fornecem _defaults_ úteis, mas que envolve a instalação de outro pacote, é 
+<code>EnvStats::epdfPlot()</code>. Por exemplo:
+```{r, echo=FALSE}
+suppressMessages(library(EnvStats, warn.conflicts = FALSE))
+```
+```{r, echo=TRUE}
+library(EnvStats)
+DadosBrutos <- c()
+for (r in 1:nrow(DrgGrv))
+{
+  DadosBrutos <- c(DadosBrutos, rep(DrgGrv$Drogas[r], times=DrgGrv$Pacientes[r]))
+}
+EnvStats::epdfPlot(DadosBrutos, discrete=TRUE,
+                   epdf.col = "black")
+```
+
+</td></tr></table>
+
+<br>
+
+Uma outra forma útil é verificar as probabilidades acumuladas. Vamos criar uma nova coluna:
+
+```{r, echo=TRUE}
+DrgGrv$FrequenciaAcumulada <- NA
+for(r in 1:nrow(DrgGrv))
+{
+  DrgGrv$FrequenciaAcumulada[r] <- sum(DrgGrv$FrequenciaRelativa[1:r])
+}
+```
+O _data frame_ agora contém:
+```{r, echo=TRUE}
+print(DrgGrv)
+```
+
+Para uma visão gráfica da frequência relativa acumulada, temos:
+```{r, echo=TRUE}
+plot(DrgGrv$Drogas,DrgGrv$FrequenciaAcumulada, 
+     main="Uso de Drogas na Gravidez", 
+     xlab="Número de Drogas", ylab="Frequência Relativa Acumulada", 
+     ylim=c(0,100), lwd=3, col="#994F88", type = "s",
+     axes=FALSE)
+axis(1, at=0:max(DrgGrv$Drogas))
+axis(2)
+points(DrgGrv$Drogas,DrgGrv$FrequenciaAcumulada, 
+       col="#994F88", bg="#994F88", pch=21)
+```
+
+Note o uso de <code>axes=FALSE</code> seguido da colocação dos eixos _x_ (<code>axis(1)</code>) e _y_ (<code>axis(2)</code>). Fizemos assim para que todos os números de drogas, de 1 em 1, aparecessem (usando o parâmetro <code>at</code>). Este tipo de tratamento facilita verificar, por exemplo, que a quase totalidade das pacientes (93.6%) utilizam 3 drogas ou menos:
+```{r, echo=TRUE}
+plot(DrgGrv$Drogas,DrgGrv$FrequenciaAcumulada, 
+     main="Uso de Drogas na Gravidez", 
+     xlab="Número de Drogas", ylab="Frequência Relativa Acumulada", 
+     ylim=c(0,100), lwd=3, col="#994F88", type = "s",
+     axes=FALSE)
+axis(1, at=0:max(DrgGrv$Drogas))
+axis(2)
+points(DrgGrv$Drogas,DrgGrv$FrequenciaAcumulada, 
+       col="#994F88", bg="#994F88", pch=21)
+abline(h=DrgGrv$FrequenciaAcumulada[DrgGrv$Drogas==3], lty=2)
+abline(v=3, lty=2)
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+A tabela que utilizamos já trouxe a contagem do número de pacientes que utilizam determinado número de drogas. Podemos reconstituir os dados brutos, com o seguinte código:
+
+```{r, echo=TRUE}
+DadosBrutos <- c()
+for(r in 1:nrow(DrgGrv))
+{
+  DadosBrutos <- c(DadosBrutos, rep(DrgGrv$Drogas[r], times=DrgGrv$Pacientes[r]))
+}
+```
+Este código percorre cada linha da tabela e repete (<code>rep()</code>) o número de drogas quantas vezes forem as pacientes que consomem tal quantidade, acumulando em um vetor numérico que chamamos de <code>DadosBrutos</code>. Para mostrar que a operação está correta, podemos tabular os dados novamente:
+```{r, echo=TRUE}
+Contagem <- table(DadosBrutos)
+print (Contagem)
+```
+
+Existe uma forma de exibir graficamente a distribuição de probabilidades acumuladas a partir dos dados brutos, usando a função <code>ecdf()</code>:
+```{r, echo=TRUE}
+plot(ecdf(DadosBrutos),
+     main="Uso de Drogas na Gravidez", 
+     xlab="Número de Drogas", ylab="Probabilidade Acumulada", 
+     ylim=c(0,1), lwd=3, col="#994F88", 
+     axes=FALSE)
+axis(1, at=0:max(DadosBrutos))
+axis(2)
+abline(h=sum(DadosBrutos<=3)/length(DadosBrutos), lty=2)
+abline(v=3, lty=2)
+```
+Repare que as linhas tracejadas que apresentamos com <code>abline()</code> são, respectivamente:
+
+* a horizontal dada pela fração do número de ocorrências de drogas entre 0 e 3 (<code>sum(DadosBrutos<=3)</code>) dividida pelo número total de ocorrências que é o tamanho do vetor, o qual também corresponde ao número de pacientes da amostra (<code>length(DadosBrutos)</code>), resultando em `r sum(DadosBrutos<=3)/length(DadosBrutos)`.
+* a vertical, dada pelo valor 3.
+
+Compare este gráfico com o que fizemos, anteriormente, utilizando a frequência relativa acumulada do _data frame_.
+</td></tr></table>
+
+<br>
+
+# Anatomia das distribuições
+
+A distribuição de probabilidades que apresentamos até aqui não tem nome. Existem várias outras que são utilizadas porque suas propriedades são bem conhecidas.
+Por exemplo:
+
+```{r, echo=FALSE, out.width='80%'}
+knitr::include_graphics("image/DistribuicoesProbabilidades.png")
+```
+<div align=right><span style="font-size:70%">
+https://www.kdnuggets.com/2020/02/probability-distributions-data-science.html
+</span></div>
+
+Esta figura mostra as distribuições mais populares. As distribuições agrupam-se em famílias. Na parte superior aparecem as distribuições discretas, sendo a de Bernoulli uma das mais fundamentais. Dela derivam a Geométrica e a Binomial, da qual se obtém a de Poisson. Na parte inferior aparecem as distribuições contínuas. 
+
+Caso queira ver outras distribuições e os relacionamentos entre elas, consulte, por exemplo, https://chenghanyu.github.io/software/rshiny_random/
+
+## Propriedades gerais
+
+As propriedades que mais interessam para entender a anatomia de uma distribuição são média (_mean_), variância (_variance_) ou desvio-padrão, assimetria (_skewness_) e excesso de curtose (_ex. kurtosis_). Nossa proposta é utilizar funções do R para verificar tais propriedades; usaremos duas alternativas. 
+
+Um jeito de testar estas funções é gerar vetores numéricos com as funções do R que fornecem as distribuições conhecidas a partir dos valores de interesse. Estas funções começam com um "d" minúsculo, seguido do tipo de distribuição (e.g., <code>dnorm()</code>, <code>dbinom()</code>, <code>dpois()</code>, <code>dgamma()</code>, etc.), e precisam receber os parâmetros necessários para caracterizar a distribuição pedida.
+
+Por exemplo, a distribuição normal pode ser gerada com:
+```{r, echo=TRUE}
+valores <- 0:70
+valnorm <- dnorm(valores, mean=35, sd=12)
+```
+
+Os parâmetros estão explícitos para maior clareza (funcionaria da mesma forma com <code>dnorm(valores,35,12)</code>) e veremos adiante que a distribuição normal é completamente caracterizada por estes dois parâmetros: média e desvio-padrão. 
+
+Podemos conferir o que foi obtido graficamente com:
+
+```{r, echo=TRUE}
+plot(valores, valnorm, type="l")
+```
+
+Alternativamente, podemos usar o pacote <code>EnvStats</code>.
+```{r, echo=TRUE}
+EnvStats::pdfPlot(distribution = "norm",
+                  param.list = list(mean=35, sd=12))
+```
+
+Observe que, apenas com os _defaults_, <code>EnvStats::pdfPlot()</code> produziu um gráfico mais elaborado. Vários dos parâmetros gráficos podem ser utilizados para mais controle. O nome do eixo y não é adequado. Devia ser "Densidade". Adiciona título ao gráfico e aos eixos mas utiliza o inglês. No entanto, a documentação desta função, disponível em https://www.rdocumentation.org/packages/EnvStats/versions/2.3.1/topics/Distribution.df, mostra que há parâmetros adicionais que <code>plot()</code>, de propósito geral, necessitaria de algum esforço. Além disto, <code>EnvStats::pdfPlot()</code>  traz diversas funções disponíveis, pré-configuradas, que podem ser vistas digitando-se  <code>EnvStats::Distribuition.df$Name</code> na _Console_ do RStudio.
+
+Veja resultados comparáveis, com os dois códigos abaixo, e escolha o que prefere utilizar. 
+Com <code>plot()</code> é necessário computar a distribuição e, então, gerar o gráfico:
+```{r, echo=TRUE}
+valor.x <- 0:70
+valor.y <- dnorm(valores, mean=35, sd=12)
+plot(valor.x, valor.y, 
+     main="Distribuição normal\n(média=35, dp=12)", 
+     xlab="Valores", ylab="Densidade",
+     lwd=3, type="l")
+```
+
+Com <code>EnvStats::pdfPlot()</code> o parâmetro <code>distribution</code> resolve o tipo solicitado (foi preciso adicionar <code>curve.fill=FALSE</code> para que a área sob a curva não fosse preenchida):
+```{r, echo=TRUE}
+EnvStats::pdfPlot(distribution = "norm",
+                  param.list = list(mean=35, sd=12),
+                  main="Distribuição normal\n(média=35, dp=12)", 
+                  xlab="Valores", ylab="Densidade",
+                  curve.fill=FALSE)
+```
+
+Sugerimos que também explore os parâmetros disponíveis, consultando a documentação no RStudio. A hachura da área sob a curva, por exemplo, pronta em <code>EnvStats::pdfPlot()</code>, é trabalhosa no <code>plot()</code>, exigindo o uso de outras funções.
+
+<br>
+Outra forma para estudar as propriedades das distribuições é gerar vetores numéricos com as funções do R que fornecem números pseudoaleatórios, sorteados de acordo com as probabilidades de distribuições conhecidas. Estas funções começam com um "r" minúsculo (de _random_), seguido do tipo de distribuição (e.g., <code>rnorm()</code>, <code>rbinom()</code>, <code>rpois()</code>, <code>rgamma()</code>, etc.), e precisam receber o número de valores a gerar e os parâmetros necessários para caracterizar a distribuição pedida.
+
+Por exemplo, um sorteio com distribuição normal pode ser feito com:
+```{r, echo=TRUE}
+set.seed(3972) # para repetir este exemplo
+valores <- rnorm(1e6, mean=35, sd=12)
+```
+
+Os parâmetros estão explícitos para maior clareza (funcionaria da mesma forma com <code>rnorm(1e6,35,12)</code>). Note que precisamos gerar muitos valores (neste exemplo, um milhão de valores) para que o sorteio tenha propriedades similares às previstas em teoria. 
+
+Graficamente: 
+
+```{r, echo=TRUE}
+densidade <- density(valores)
+plot(densidade, 
+     main="Distribuição normal", 
+     xlab="Valores", ylab="Densidade",
+     lwd=3, type="l")
+```
+
+Podemos conferir as propriedades da distribuição obtida e confrontá-las com os valores esperados para saber se a simulação foi bem sucedida.
+
+### média e desvio-padrão
+
+A função R para média é <code>mean()</code>, que calcula a média aritmética de um vetor numérico. Desvio-padrão é dado por <code>sd()</code>. Pode-se obter mais alguns valores com <code>summary()</code>. Outra alternativa é desenvolver uma função a seu gosto, o que fizemos em <code>numeric.summary()</code>. Além disto, após calcular os valores de média e desvio-padrão, podemos incorporar esta informação no título do gráfico com a função <code>paste()</code>. O código completo é:
+
+```{r, echo=FALSE}
+cat(readLines("demo_numericsummary.R"), sep = '\n')
+```
+obtendo-se:
+```{r, echo=FALSE}
+source("demo_numericsummary.R")
+```
+
+### índice de assimetria (_skewness_)
+
+Distribuições podem ser simétricas (como a distribuição normal), ou apresentarem assimetria: negativa (cauda mais longa à esquerda) ou positiva (cauda mais longa à direita).
+
+Existe função R no pacote <code>DescTools</code> que fornece:
+
+```{r, echo=TRUE}
+skewness <- DescTools::Skew(valores)
+cat("Skewness (método 3) = ",skewness,"\n", sep="")
+```
+Há alguns métodos de estimação disponíveis, e adotaremos, aqui, o _default_, <code>método=3</code>. O valor obtido, <code>skewness=`r  format(skewness, scientific=FALSE)`</code>, próximo a zero, indica que nosso sorteio seguindo distribuição normal foi bem sucedido, obtendo uma distribuição quase perfeitamente simétrica. 
+
+Por exemplo, esta distribuição gama tem assimetria positiva:
+```{r, echo=FALSE}
+cat(readLines("demo_gamma.R"), sep = '\n')
+```
+```{r, echo=FALSE}
+source("demo_gamma.R")
+```
+
+E esta distribuição beta tem assimetria negativa:
+```{r, echo=FALSE}
+cat(readLines("demo_beta.R"), sep = '\n')
+```
+```{r, echo=FALSE}
+source("demo_beta.R")
+```
+
+### excesso de curtose
+
+A curtose é a medida de quanto os valores estão concentrados. A distribuição normal é mesocúrtica. Valores negativos indicam distribuições platicúrticas (dados menos concentrados ao redor da tendência central) e positivos indicam distribuições leptocúrticas (dados mais concentrados ao redor da tendência central).
+
+O pacote <code>DescTools</code> também tem função para curtose. Para o exemplo da distribuição normal, acima, que criou o vetor <code>valores</code>, obtemos:
+```{r, echo=TRUE}
+curtose <- DescTools::Kurt(valores)
+cat("Ex. kurtosis (método 3) = ",curtose,"\n", sep="")
+```
+Similarmente à <code>DescTools::Skew()</code>, o método _default_ é 3 e o adotaremos sem discussão. O valor obtido, <code>curtose=`r curtose`</code>, próximo a zero, indica que nosso sorteio seguindo distribuição normal obteve uma distribuição praticamente mesocúrtica. 
+
+O seguinte código gera uma distribuição beta platicúrtica e uma normal, com mesma média e desvio padrão da beta para referência (em linha pontilhada):
+
+```{r, echo=FALSE}
+cat(readLines("demo_beta&normal.R"), sep = '\n')
+```
+obtendo-se:
+```{r, echo=FALSE}
+set.seed(3456)
+source("demo_beta&normal.R")
+```
+
+Com procedimento similar, uma distribuição $t$ com 5 graus de liberdade é leptocúrtica, com a seguinte anatomia:
+
+```{r, echo=FALSE}
+cat(readLines("demo_t&normal.R"), sep = '\n')
+```
+```{r, echo=FALSE}
+set.seed(2234)
+source("demo_t&normal.R")
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Encontramos um problema com a função <code>rt()</code>: produz a distribuição incorretamente quando geramos mais do que 1e6 valores.
+</td></tr></table>
+
+<br>
+
+Compare o valor absoluto do excesso de curtose e observe os gráficos. Não dão uma noção do porquê do excesso de curtose ser tão maior na distribuição $t$ do que na beta. As caudas devem ser observadas usando um gráfico semilog, usando-se o `log(Densidade)` no eixo $y$:
+```{r, echo=FALSE}
+options(warn=-1)
+
+source("eiras.numeric.summary.R")
+
+set.seed(3456)
+valores <- rbeta(1e6, shape1=2, shape2=2)
+densidade <- density(valores)
+media <- mean(valores)
+desvpad <- sd(valores)
+skewness <- DescTools::Skew(valores)
+curtose <- DescTools::Kurt(valores)
+norm.x <- seq(from = min(densidade$x), to = max(densidade$x), length.out = 500)
+norm.y <- dnorm(norm.x, mean=media, sd=desvpad)
+df.d <- data.frame(densidade$x,densidade$y)
+names(df.d) <- c("x","y")
+df.d <- df.d[df.d>=0 & df.d<=1,]
+plot(df.d$x,df.d$y,
+      main="Distribuição platicúrtica", xlab="Valores", ylab="log(Densidade)",
+      ylim=c(0.05,2), 
+      xlim=c(0,1),
+      lwd=3, log="y", type="l")
+df.n <- data.frame(norm.x,norm.y)
+names(df.n) <- c("x","y")
+df.n <- df.n[df.n>=0 & df.n<=1,]
+lines(df.n$x, df.n$y, col="red", lty=2, lwd=2)
+legend("topright", 
+       c("Beta", "Normal"), 
+       col=c("black", "red"),
+       lwd=c(3,2), 
+       lty=c(1,2), 
+       box.lwd=0, bg="transparent")  
+cat("Ex.curtose = ",curtose,"\n", sep="")
+options(warn=0)
+```
+```{r, echo=FALSE}
+options(warn=-1)
+
+source ("eiras.numeric.summary.R")
+
+set.seed(2234)
+valores <- rt(1e6, df=5, ncp=0)
+densidade <- density(valores)
+media <- mean(valores)
+desvpad <- sd(valores)
+skewness <- DescTools::Skew(valores)
+curtose <- DescTools::Kurt(valores)
+norm.x <- seq(from = min(densidade$x), to = max(densidade$x), length.out = 500)
+norm.y <- dnorm(norm.x, mean=media, sd=desvpad)
+plot(densidade,
+      main="Distribuição leptocúrtica", xlab="Valores", ylab="log(Densidade)",
+      xlim=c(-6,6),
+      ylim=c(1e-4,4e-1), 
+      lwd=3, log="y")
+lines(norm.x, norm.y, col="red", lty=2, lwd=2)
+legend("topright", 
+       c("t(5)", "Normal"), 
+       col=c("black", "red"),
+       lwd=c(3,2), 
+       lty=c(1,2), 
+       box.lwd=0, bg="transparent")  
+cat("Ex.curtose = ",curtose,"\n", sep="")
+options(warn=0)
+```
+
+Observe que um gráfico semilog (colocando o eixo $y$ em logaritmo) permitiu visualizarmos melhor as caudas. Neste tipo de gráfico, os valores menores de $y$ ficam mais distintos, e os maiores menos distintos. É o mesmo código que utilizamos acima, adicionando-se o parâmetro <code>log="y"</code> na função <code>plot()</code>:
+
+```{r, echo=TRUE, eval=FALSE}
+plot(densidade,
+      main="Distribuição leptocúrtica", xlab="Valores", ylab="log(Densidade)",
+      xlim=c(-6,6),
+      ylim=c(1e-4,4e-1), 
+      lwd=3, log="y")
+lines(norm.x, norm.y, col="red", lty=2, lwd=2)
+legend("topright", 
+       c("t(5)", "Normal"), 
+       col=c("black", "red"),
+       lwd=c(3,2), 
+       lty=c(1,2), 
+       box.lwd=0, bg="transparent")  
+```
+
+A seguir, exploraremos as propriedades de algumas das distribuições mais conhecidas.
+
+# Distribuição binomial
+
+Esta distribuição serve para contagens (variável quantitativa discreta) do número de sucessos em uma quantitade determinada de tentativas. 
+
+Assume-se:
+
+ - a ocorrência de sucesso ou fracasso de cada evento é independente dos demais (independência);
+ - todas as tentativas têm a mesma probabilidade de sucesso (similaridade).
+
+Ilustramos a construção desta distribuição através de um exemplo, utilizando o jogo de cara ou coroa com moedas.
+
+## Novamente, a incerteza
+```{r, echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/moeda400reis.png", dpi=300)
+```
+<!-- ![](moeda400reis.png) -->
+
+## Moeda é um exemplo em saúde?
+```{r, echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/moedasHeadTail.png", dpi=150)
+knitr::include_graphics("image/moedasHeadTailTexto.png", dpi=150)
+```
+```{r, echo=FALSE}
+# necessarias para incluir as imagens
+# nos graficos (nao precisa dela para
+# os codigos da distribuicao binomial)
+library(ggplot2, verbose = FALSE)
+library(png)
+library(grid)
+library(ggimage)
+```
+## Distribuição binomial: 1 jogada
+```{r, echo=FALSE}
+layout(matrix(1:2,nrow=1),widths=c(1,2))
+# imagem das moedas
+plot(NA,NA,xlim=c(0,10),ylim=c(0,10), 
+     xlab="", ylab="", axes=FALSE)
+img <- png::readPNG("image/moeda_1jogada.png")
+rasterImage(img,0,0,10,5)
+# grafico
+source("eiras.friendlycolor.R")
+jogadas <- 1
+probabilidade <- dbinom(0:jogadas,jogadas,0.5)
+sucesso <- 0:jogadas
+plot(sucesso, probabilidade,
+     main = paste("Binomial: ",jogadas, " jogada", sep=""),
+     ylim = c(0,0.5),
+     type="h", col=friendlycolor(8), lwd=3,
+     axes=FALSE)
+axis(2)
+axis(1, at=c(0,1))
+points(sucesso,probabilidade, pch=21, col=friendlycolor(8), 
+       bg=friendlycolor(12))
+par(mfrow=c(1,1))
+```
+
+## Distribuição binomial: 2 jogadas
+```{r, echo=FALSE}
+layout(matrix(1:2,nrow=1),widths=c(1,2))
+# imagem das moedas
+plot(NA,NA,xlim=c(0,10),ylim=c(0,10), 
+     xlab="", ylab="", axes=FALSE)
+img <- png::readPNG("image/moeda_2jogadas.png")
+rasterImage(img,0,0,10,5.5)
+# grafico
+source("eiras.friendlycolor.R")
+jogadas <- 2
+probabilidade <- dbinom(0:jogadas,jogadas,0.5)
+sucesso <- 0:jogadas
+plot(sucesso, probabilidade,
+     main = paste("Binomial: ",jogadas, " jogadas", sep=""),
+     ylim = c(0,0.5),
+     type="h", col=friendlycolor(8), lwd=3,
+     axes=FALSE)
+axis(2)
+axis(1, at=c(0,1,2))
+points(sucesso,probabilidade, pch=21, col=friendlycolor(8), 
+       bg=friendlycolor(12))
+par(mfrow=c(1,1))
+```
+
+## Distribuição binomial: 3 jogadas
+```{r, echo=FALSE}
+layout(matrix(1:2,nrow=1),widths=c(1,2))
+# imagem das moedas
+plot(NA,NA,xlim=c(0,10),ylim=c(0,10), 
+     xlab="", ylab="", axes=FALSE)
+img <- png::readPNG("image/moeda_3jogadas.png")
+rasterImage(img,0,0,10,8)
+# grafico
+source("eiras.friendlycolor.R")
+jogadas <- 3
+probabilidade <- dbinom(0:jogadas,jogadas,0.5)
+sucesso <- 0:jogadas
+plot(sucesso, probabilidade,
+     main = paste("Binomial: ",jogadas, " jogadas", sep=""),
+     ylim = c(0,0.5),
+     type="h", col=friendlycolor(8), lwd=3,
+     axes=FALSE)
+axis(2)
+axis(1, at=c(0,1,2,3))
+points(sucesso,probabilidade, pch=21, col=friendlycolor(8), 
+       bg=friendlycolor(12))
+par(mfrow=c(1,1))
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+A função R é `dbinom(x, size, prob)`, indicando, respectivamente, quantos sucessos, o total de
+jogadas e a probabilidade de sucesso de uma jogada.
+
+Para uma moeda balanceada (prob=0.5), a probabilidade de 0 sucesso (x=0) em 3 jogadas (size=3) é:
+```{r, echo=TRUE}
+dbinom(x=0, size=3, prob=0.5)
+```
+1 sucesso em 3 jogadas:
+```{r, echo=TRUE}
+dbinom(x=1, size=3, prob=0.5)
+```
+2 sucesso em 3 jogadas:
+```{r, echo=TRUE}
+dbinom(x=2, size=3, prob=0.5)
+```
+3 sucesso em 3 jogadas:
+```{r, echo=TRUE}
+dbinom(x=3, size=3, prob=0.5)
+```
+</td></tr></table>
+<br>
+
+## Distribuição binomial: 5 jogadas
+
+Os gráficos foram produzidos utilizando o seguinte código:
+```{r, echo=TRUE}
+source("eiras.friendlycolor.R")
+jogadas <- 5
+sucesso <- 0:jogadas
+probabilidade <- dbinom(sucesso,jogadas,0.5)
+plot(sucesso, probabilidade,
+     main = paste("Binomial: ",
+                  jogadas, " jogadas", sep=""),
+     ylim = c(0,0.5),
+     type="h", 
+     col=friendlycolor(8), lwd=3)
+points(sucesso,probabilidade, pch=21, 
+       col=friendlycolor(8), 
+       bg=friendlycolor(12))
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="width:100%; border:1; background-color:#CAE0AB;"><tr><td>
+É possível ver todos os valores em uma tabela:
+```{r, echo=TRUE, eval=FALSE}
+jogadas <- 5
+sucesso <- 0:jogadas
+probabilidade <- dbinom(sucesso,jogadas,0.5)
+cat ("Sucesso\tProbabilidade\n")
+for (i in 1:(jogadas+1))
+{
+  cat (sucesso[i],"\t",probabilidade[i],"\n")
+}
+```
+```{r, echo=FALSE}
+jogadas <- 5
+sucesso <- 0:jogadas
+probabilidade <- dbinom(sucesso,jogadas,0.5)
+cat ("Sucesso\tProbabilidade\n")
+for (i in 1:(jogadas+1))
+{
+  cat (sucesso[i],"\t",probabilidade[i],"\n")
+}
+```
+... ou, mais facilmente ainda, criando um _data frame_:
+```{r, echo=TRUE}
+jogadas <- 5
+sucesso <- 0:jogadas
+probabilidade <- dbinom(sucesso,jogadas,0.5)
+binomial <- data.frame(sucesso,probabilidade)
+print(binomial)
+```
+... as colunas do _data frame_ podem ser renomeadas:
+```{r, echo=TRUE}
+names(binomial) <- c("Sucesso","FR")
+print(binomial)
+```
+</td></tr></table>
+<br>
+
+## Distribuição binomial: 15 jogadas
+
+Este código foi modificado para usar um _data frame_.
+
+```{r, echo=TRUE}
+source("eiras.friendlycolor.R")
+jogadas <- 15
+sucesso <- 0:jogadas
+probabilidade <- dbinom(sucesso,jogadas,0.5)
+binomial <- data.frame(sucesso,probabilidade)
+names(binomial) <- c("Sucesso","FR")
+plot(binomial$Sucesso, 
+     binomial$FR,
+     main = paste("Binomial: ",
+                  jogadas, " jogadas", sep=""),
+     xlab="sucesso", ylab="probabilidade",
+     ylim = c(0,0.5),
+     type="h", 
+     col=friendlycolor(8), lwd=3)
+points(binomial$Sucesso, 
+       binomial$FR,
+       pch=21, 
+       col=friendlycolor(8), 
+       bg=friendlycolor(12))
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Observe que a soma de todas as colunas é igual a 1. Então, quanto mais jogadas, maior a dispesão e menor a altura das distribuições.
+</td></tr>
+<tr><td>
+
+```{r fig.height=2.5, echo=FALSE}
+layout(matrix(1:5,nrow=1,ncol=5))
+source("eiras.friendlycolor.R")
+p.sucesso <- 0.5
+for (jogadas in c(1,2,3,5,15))
+{
+  probabilidade <- dbinom(0:jogadas,jogadas,0.5)
+  sucesso <- 0:jogadas
+  plot(sucesso, probabilidade,
+       axes = FALSE,
+       main = paste("Bin(",jogadas,", ",p.sucesso,")", sep=""),
+       xlab=NA, ylab=NA,
+       xlim= c(0,15), ylim = c(0,0.5),
+       type="h", col=friendlycolor(8), lwd=3)
+  points(sucesso,probabilidade, pch=21, col=friendlycolor(8), 
+         bg=friendlycolor(12))
+}
+par(mfrow=c(1,1))
+```
+</td></tr>
+</table>
+<br>
+
+#### (alterando a escala)
+```{r, echo=TRUE}
+plot(binomial$Sucesso, 
+     binomial$FR,
+     main = paste("Binomial: ",jogadas, " jogadas", sep=""),
+     xlab="sucesso", ylab="probabilidade",
+     ylim = c(0,max(binomial$FR)),
+     type="h", 
+     col=friendlycolor(8), lwd=3)
+points(binomial$Sucesso, 
+       binomial$FR,
+       pch=21, 
+       col=friendlycolor(8), 
+       bg=friendlycolor(12))
+```
+
+#### Distribuição binomial: 15 jogadas, moeda desbalanceada
+```{r, echo=TRUE}
+source("eiras.friendlycolor.R")
+p.sucesso <- 0.7 # <br> probabilidade de sucesso <br>
+jogadas <- 15
+sucesso <- 0:jogadas
+probabilidade <- dbinom(sucesso,jogadas,p.sucesso)
+plot(sucesso, probabilidade,
+     main = paste("Binomial: ",
+                  jogadas, " jogadas, ", 
+                  "P[s] = ", p.sucesso, 
+                  sep=""),
+     xlab="sucesso", ylab="probabilidade",
+     ylim = c(0,max(probabilidade)), 
+     type="h", 
+     col=friendlycolor(20), lwd=3)
+points(sucesso,probabilidade, pch=21, 
+       col=friendlycolor(20), 
+       bg=friendlycolor(23))
+```
+
+## Anatomia da distribuição binomial
+
+A distribuição binomial descreve a probabilidade de termos um determinado número de sucessos (por exemplo, 3 coroas) em um certo número de tentativas (por exemplo, em 10 jogadas, $n$), sendo que cada jogada tem um certa probabilidade de sucesso, sempre a mesma (por exemplo, $p=0.5$). A binomial é inteiramente definida, portanto, por estes dois parâmetros, $n$ e $p$. Consequentemente, todas as suas características e propriedades estão, também, em função dos mesmos dois parâmetros.
+
+Uma boa fonte para ver as fórmulas e suas propriedades é a _Wikipedia_. Em https://en.wikipedia.org/wiki/Binomial_distribution encontra-se o seguinte resumo:
+
+```{r, echo=FALSE, out.width='30%'}
+knitr::include_graphics("image/WikipediaBinomial.png")
+```
+
+Inicialmente simularemos um milhão de jogadas nestas condições:
+```{r, echo=FALSE}
+set.seed(9796)
+```
+```{r, echo=TRUE}
+coroas <- rbinom(n=1e6, size=15, prob=0.7)
+```
+
+Podemos verificar que a função <code>rbinom()</code> faz um sorteio que obedece uma distribuição binomial, com
+
+```{r, echo=TRUE}
+contagem <- table(coroas)
+# converte em probabilidade
+contagem <- contagem/sum(contagem) 
+print (contagem)
+plot(contagem, 
+     ylab="Probabilidade",
+     xlim=c(0,15), axes=FALSE)
+axis(1, at=seq(from=0,to=15,by=5))
+axis(2)
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Alternativamente, podemos gerar o gráfico com <code>EnvStats::epdfPlot()</code>:
+
+
+</td></tr></table>
+
+<br>
+
+
+Comparando este gráfico com o esperado teoricamente com 15 jogadas de uma moeda desbalanceada para 70% de coroas, é possível ver a similaridade. 
+
+### média
+
+Em teoria, a média é dada por 
+
+$$\text{média} = np$$
+
+Por exemplo, nas 15 jogadas da moeda desbalanceada em que a probabilidade de sucesso era 0.7 (a moeda produz 70% de coroas), espera-se que a média seja $15 \cdot 0.7 = 10.5$. 
+
+Em nossa simulação a probabilidade de sucesso, $\hat{p}$, foi
+```{r, echo=TRUE}
+p.sucesso <- mean(coroas/15) 
+cat("Probabilidade de sucesso na simulação = ",p.sucesso,"\n", sep="")
+```
+
+O número de jogadas é dado, igual a 15. Então, na simulação, obtivemos:
+```{r, echo=TRUE}
+media <- p.sucesso * 15
+cat("Média simulada = ",media,"\n", sep="")
+```
+
+É o mesmo, mais diretamente, coincidente com o valor da média de coroas na simulação, dado por:
+```{r, echo=TRUE}
+mean(coroas)
+```
+
+### variância e desvio padrão
+
+Pela tabela da _Wikipedia_, temos que 
+
+$$\text{variância}=npq=np(1-p)$$ 
+
+onde $q=1-p$ é a probabilidade de fracasso. O desvio-padrão é a raiz quadrada da variância, $sd=\sqrt{np(1-p)}$ ($sd$, do inglês, _standard deviation_). Em teoria, portanto, esperamos $sd=15 \cdot 0.7 \cdot 0.3 = 1.774824$.
+
+Dos dados simulandos obtemos:
+```{r, echo=TRUE}
+cat(sqrt(15*p.sucesso*(1-p.sucesso)))
+```
+ou
+```{r, echo=TRUE}
+cat(sd(coroas))
+```
+ou
+```{r, echo=TRUE}
+var <- sum((coroas - mean(coroas))^2) / length(coroas)
+dp <- var^0.5
+cat(dp)
+```
+
+### índice de assimetria (skewness)
+
+No quadro temos, em teoria: 
+$$\text{assimetria} = {{(1-p)-p}\over{\sqrt{np(1-p)}}}$$
+
+Em teoria, espera-se $\text{assimetria} = -0.2253745$. O número de jogadas, $n$, é dado e igual a 15. A assimetria de nossa distribuição simulada, portanto, é:
+```{r, echo=TRUE}
+n <- 15
+skewness <- ((1-p.sucesso)-p.sucesso) / sqrt(n*p.sucesso*(1-p.sucesso))
+cat("Skewness (fórmula da Wikipedia) = ",skewness,"\n", sep="")
+```
+
+Existe função R no pacote <code>DescTools</code>:
+
+```{r, echo=TRUE}
+skewness <- DescTools::Skew(coroas)
+cat("Assimetria = ",skewness,"\n", sep="")
+```
+O valor não é exatamente igual ao da fórmula da _Wikipedia_ porque a função do pacote usa métodos diferentes de estimação e serve para qualquer distribuição, mas ainda assim o valor teórico e os obtidos da simulação são muito similares.
+
+Assimetria negativa é o que aparece, graficamente, como cauda mais longa à esquerda. Neste exemplo, o índice indica que, aproximadamente, a distribuição está `r round(DescTools::Skew(coroas),2)` desvios-padrão desviada do número médio de coroas em 15 tentativas.  Graficamente, representamos  em azul a média como um triângulo e o desvio-padrão desta amostra com uma seta para a esquerda (a direção dada pela assimetria).
+
+```{r, echo=TRUE}
+contagem <- table(coroas)
+contagem <- contagem/sum(contagem)
+plot(contagem, ylab="Probabilidade",
+     xlim=c(0,15), axes=FALSE)
+axis(1, at=seq(from=0,to=15,by=5))
+axis(2)
+points(mean(coroas), 0, pch=17, col="blue",cex=2)
+arrows(mean(coroas),0,mean(coroas)-sd(coroas),0, length=0.15, angle=15, lwd=2,  col="blue")
+```
+
+### excesso de curtose
+
+O excesso de curtose, em teoria é dado por 
+
+$$\text{Excesso de curtose} = { {1 - 6pq} \over { npg }  } = { {1 - 6p(1-p)} \over { np(1-p) }  }$$
+
+Em teoria esperamos curtose igual a `r (1 - 6*0.7 * 0.3) / (15 * 0.7 * 0.3)`.
+
+Em nossa simulação obtivemos:
+```{r, echo=TRUE}
+n <- 15
+curtose <- (1 - 6 * p.sucesso * (1-p.sucesso) ) / (n * p.sucesso * (1-p.sucesso))
+cat("Ex. kurtosis (fórmula da Wikipedia) = ",curtose,"\n", sep="")
+```
+
+Existe função R no pacote <code>DescTools</code>:
+
+```{r, echo=TRUE}
+curtose <- DescTools::Kurt(coroas)
+cat("Excesso de curtose = ",curtose,"\n", sep="")
+```
+
+O pacote DescTools (_default_ é o método 3), novamente mostra similaridade entre o teórico e os obtidos da simulação.
+
+Neste exemplo, portanto, a binomial simulada é aproximadamente mesocúrtica.
+
+# Distribuição de Poisson
+
+Esta distribuição é tipicamente aplicável quando há um evento relativamente raro, contável (i.e., variável quantitativa discreta) que ocorre a uma determinada taxa constante (um certo número de ocorrências em uma determinada população em um determinado intervalo de tempo). 
+
+Assume-se:
+
+ - as ocorrências dos eventos são independentes;
+ - a probabilidade de ocorrência de um evento em um certo intervalo é a mesma para todos os demais intervalos de tempo;
+ - a probabilidade de ocorrência dos eventos é proporcional ao tamanho do intervalo;
+ - em uma porção infinitesimal do intervalo, a probabilidade de mais de uma ocorrência do evento é desprezível.
+ - não há limite superior para o número de ocorrências;
+ - os eventos são raros; 
+
+Por exemplo, retomamos o exemplo das mortes de motociclistas em 2019 na Cidade de São Paulo, SP: 
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/MortesMotos.png")
+```
+<div align=right><span style="font-size:70%;">
+https://g1.globo.com/sp/sao-paulo/noticia/2019/05/23/mortes-de-motociclistas-ultrapassam-as-de-pedestres-no-transito-de-sp-pela-primeira-vez-diz-relatorio.ghtml</span></div>
+
+Desconsiderando qualquer variação sazonal, se há 366 mortes em São Paulo em um ano, esperamos ter, em média $366/12 = 30.5$ mortes por mês. No entanto, com qual variação isto ocorre? Já vimos que parece ser razoavelmente ampla. Em uma série de 12 meses simulados, podemos observar algo como:
+
+```{r echo=TRUE, comment=NA}
+lambda <- 366/12
+mortes <- rpois(n=12,lambda=lambda)
+cat ("Em doze meses, com taxa de ",lambda," mortes/mês, podemos observar:\n",sep="")
+print(mortes)
+```
+
+Como pode ter notado no código, a função <code>rpois()</code> faz o sorteio seguindo a distribuição de Poisson. caracterizada por um único parâmetro, $\lambda$. 
+
+## Anatomia da distribuição de Poisson
+
+Na Wikipedia (https://en.wikipedia.org/wiki/Poisson_distribution) encontramos o resumo de suas propriedades:
+
+```{r, echo=FALSE, out.width='30%'}
+knitr::include_graphics("image/WikipediaPoisson.png")
+```
+
+Neste exemplo, qual seria a probabilidade esperada para cada número de mortes?
+
+```{r echo=TRUE, eval=FALSE}
+source("eiras.numeric.summary.R")
+
+set.seed(3972) # para repetir este exemplo
+mortes <- 0:80
+valpois <- rpois(1e6, lambda=30.5)
+tabpois <- table(valpois) # em numeros
+tabpois <- tabpois/sum(tabpois) # em probabilidade
+plot(as.numeric(names(tabpois)),as.numeric(tabpois),
+      main="Distribuição de Poisson", 
+      xlab="Mortes por mês", ylab="Probabilidade",
+      lwd=2, type="h")
+cat("Sumário:\n")
+sumario <- numeric.summary(valpois)
+print(sumario)
+cat("\n")
+media <- mean(valpois)
+cat("Média = ",media,"\n", sep="")
+desvpad <- sd(valpois)
+cat("Desvio-padrão = ",desvpad,"\n", sep="")
+desvpad <- var(valpois)
+cat("Variância = ",desvpad,"\n", sep="")
+skewness <- DescTools::Skew(valpois)
+cat("Assimetria = ",skewness,"\n", sep="")
+curtose <- DescTools::Kurt(valpois)
+cat("Ex.curtose = ",curtose,"\n", sep="")
+```
+Obtendo-se:
+
+```{r echo=FALSE}
+source("eiras.numeric.summary.R")
+
+set.seed(3972) # para repetir este exemplo
+mortes <- 0:80
+valpois <- rpois(1e6, lambda=30.5)
+tabpois <- table(valpois) # em numeros
+tabpois <- tabpois/sum(tabpois) # em probabilidade
+plot(as.numeric(names(tabpois)),as.numeric(tabpois),
+      main="Distribuição de Poisson", 
+      xlab="Mortes por mês", ylab="Probabilidade",
+      lwd=2, type="h")
+cat("Sumário:\n")
+sumario <- numeric.summary(valpois)
+print(sumario)
+cat("\n")
+media <- mean(valpois)
+cat("Média = ",media,"\n", sep="")
+desvpad <- sd(valpois)
+cat("Desvio-padrão = ",desvpad,"\n", sep="")
+variancia <- var(valpois)
+cat("Variância = ",variancia,"\n", sep="")
+skewness <- DescTools::Skew(valpois)
+cat("Assimetria = ",skewness,"\n", sep="")
+curtose <- DescTools::Kurt(valpois)
+cat("Ex.curtose = ",curtose,"\n", sep="")
+```
+
+### média
+
+A média é igual à própria taxa das ocorrências. Obtivemos `r media` (em teoria `r 366/12`). 
+
+### variância e desvio-padrão
+
+Nesta distribuição, a variância é igual à média, por sua vez igual à própria taxa das ocorrências. Obtivemos `r variancia` (em teoria `r 366/12`). Consequentemente, desvio padrão de `r desvpad` (em teoria `r sqrt(366/12)`).
+
+### assimetria
+
+Embora não apareça tão obviamente no gráfico, posto que a taxa é relativamente alta, a distribuição de Poisson é assimétrica à direita; observe a simetria ao redor da média de 30.5 e note que a cauda da direita é mais longa (olhe a probabilidade de ocorrência de 20 e 40 mortes em um mês para notar melhor esta assimetria). 
+
+Segundo a Wikipedia, $\text{Skewness}=\lambda^{-0.5}={{1}\over{\sqrt{\lambda}}}$ $~\approx~$ `r round(30.5 ^ -0.5, 6)`. Obtivemos o valor de `r skewness`. 
+
+### excesso de curtose
+
+Esta distribuição é praticamente mesocúrtica. 
+
+Segundo a Wikipedia, $\text{Ex.Kurtosis}=\lambda^{-1}={{1}\over{\lambda}}$ $~\approx~$ `r round(30.5 ^ -1, 6)`. Obtivemos o valor de `r curtose`. 
+
+# Distribuição normal
+
+Medidas somatomatométricas costumam ser aproximadas por distribuições normais. Por exemplo, o arquivo [Biometria.xls](Biometria.xls) contém dados de estudantes de medicina que coletamos por alguns anos. A distribuição das estaturas dos homens é:
+
+```{r echo=TRUE}
+biometria <- readxl::read_excel("Biometria.xls")
+biometria.homens <- biometria[biometria$sexo=="M",]
+estaturas <- biometria.homens$estatura
+minx <- min(estaturas, na.rm=TRUE)
+maxx <- max(estaturas, na.rm=TRUE)
+densidade.estatura <- density(estaturas, na.rm=TRUE)
+maxy <- max(densidade.estatura$y, na.rm=TRUE)
+plot(densidade.estatura,
+     main="Distribuição das estaturas (homens)",
+     xlab="Estatura (cm)",
+     ylab="Densidade",
+     xlim=c(minx,maxx), 
+     lwd=2)
+```
+Podemos aproximar para uma distribuição normal, usando seus dois parâmetros, média e desvio-padrão:
+
+```{r, echo=FALSE}
+cat(readLines("BiometriaNormal.R"), sep = '\n')
+```
+```{r, echo=FALSE}
+source("BiometriaNormal.R")
+```
+
+## Anatomia da distribuição de normal
+
+Segundo a _Wikipedia_ (https://en.wikipedia.org/wiki/Normal_distribution), o resumo das propriedades de uma distribuição normal é:
+
+```{r, echo=FALSE, out.width='30%'}
+knitr::include_graphics("image/WikipediaNormal.png")
+```
+
+Simularemos uma distribuição normal, portanto, com as características das estaturas dos estudantes do sexo masculino:
+
+```{r, echo=FALSE}
+cat(readLines("AproximacaoNormal.R"), sep = '\n')
+source("AproximacaoNormal.R")
+```
+
+
+### média
+
+Pedimos média de `r media.med` e obtivemos da função <code>rnorm()</code> `r media`. 
+
+No gráfico, a média está representada pela linha pontilhada vertical.
+
+### variância e desvio-padrão
+
+Pedimos desvio-padrão de `r desvpad.med` e obtivemos da função <code>rnorm()</code> `r desvpad` (variância de `r variancia`).
+
+No gráfico, o desvio-padrão está representado pela linha pontilhada horizontal (fica na altura em que a normal muda de concavidade).
+
+### assimetria
+
+A distribuição normal é simétrica. Obtivemos a medida de `r skewness` em nossa distribuição simulada.
+
+### excesso de curtose
+
+A distribuição normal é a referência. Obtivemos a medida de `r curtose` em nossa distribuição simulada.
+
+## Outras propriedades
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+A distribuição normal tem dois parâmetros, média ($\mu$) e desvio-padrão ($\sigma$).
+</td></tr></table>
+
+### aparência
+Vamos assumir uma distribuição $N(\mu=15,\sigma=8)$:
+```{r, echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/distnormal.png", dpi=100)
+```
+
+### simetria
+É uma distribuição simétrica, portanto média, moda e mediana coincidem:
+```{r, echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/distnormal0dp.png", dpi=100)
+```
+
+
+Metade da área sob a curva está à esquerda e metade à direita da média.
+
+### probabilidades (áreas sob a curva)
+
+#### $\pm 1 dp$
+cerca de 68% da área entre -1 e +1 desvio-padrão:
+```{r, echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/distnormal1dp.png", dpi=100)
+```
+
+
+#### $\pm 2 dp$
+cerca de 95% da área entre -2 e +2 desvio-padrão:
+```{r, echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/distnormal2dp.png", dpi=100)
+```
+
+#### $\pm 3 dp$
+cerca de 99.7% da área entre -3 e +3 desvio-padrão:
+```{r, echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/distnormal3dp.png", dpi=100)
+```
+
+<br>
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Por que a distribuição normal é importante em estatística?
+
+Porque suas propriedades são conhecidas e ela aparece naturalmente sob determinadas circunstâncias. Veja, por exemplo, "Amostragem e Reamostragem".
+</td></tr></table>
+<br>
+
+#### variando média e desvio-padrão
+Para cada par de parâmetros $\mu$ e $\sigma$, define-se completamente uma distribuição normal. 
+
+Admita (não tome estes valores como variáveis da prática médica) que as seguintes variáveis tenham distribuições normais:
+
+```{r, echo=TRUE}
+# GraficoNormal.R
+source ("eiras.friendlycolor.R")
+variavel <- "Creatinina"
+unidade <- "mg/dl"
+media <- 0.95
+desvpad <- 0.125
+x <- seq(from=media-5*desvpad, to=media+5*desvpad, by=0.01)
+y <- dnorm(x, mean=media, sd=desvpad)
+xy <- data.frame(x,y)
+plot(x,y,
+     main=paste("N(",media,",",desvpad,")",sep=""), 
+     xlab=paste(variavel," (",unidade,")",sep=""), 
+     ylab=NA,
+     xlim=c(media-4*desvpad,media+4*desvpad),
+     col=friendlycolor(2),type="l",lwd=2
+     )
+```
+
+... com o mesmo código R, geramos:
+
+```{r, echo=FALSE}
+# GraficoNormal.R
+source ("eiras.friendlycolor.R")
+variavel <- "Hemoglobina"
+unidade <- "g/dl"
+media <- 15.5
+desvpad <- 1.25
+x <- seq(from=media-5*desvpad, to=media+5*desvpad, by=0.01)
+y <- dnorm(x, mean=media, sd=desvpad)
+xy <- data.frame(x,y)
+plot(x,y,
+     main=paste("N(",media,",",desvpad,")",sep=""), 
+     xlab=paste(variavel," (",unidade,")",sep=""), 
+     ylab=NA,
+     xlim=c(media-4*desvpad,media+4*desvpad),
+     col=friendlycolor(8),type="l",lwd=2
+     )
+```
+```{r, echo=FALSE}
+# GraficoNormal.R
+source ("eiras.friendlycolor.R")
+variavel <- "Hematócrito"
+unidade <- "%"
+media <- 45
+desvpad <- 3.5
+x <- seq(from=media-5*desvpad, to=media+5*desvpad, by=0.01)
+y <- dnorm(x, mean=media, sd=desvpad)
+xy <- data.frame(x,y)
+plot(x,y,
+     main=paste("N(",media,",",desvpad,")",sep=""), 
+     xlab=paste(variavel," (",unidade,")",sep=""), 
+     ylab=NA,
+     xlim=c(media-4*desvpad,media+4*desvpad),
+     col=friendlycolor(14),type="l",lwd=2
+     )
+```
+```{r, echo=FALSE}
+# GraficoNormal.R
+source ("eiras.friendlycolor.R")
+variavel <- "Eritrócitos"
+unidade <- "milhões/microlitro"
+media <- 5.5
+desvpad <- 0.425
+x <- seq(from=media-5*desvpad, to=media+5*desvpad, by=0.01)
+y <- dnorm(x, mean=media, sd=desvpad)
+xy <- data.frame(x,y)
+plot(x,y,
+     main=paste("N(",media,",",desvpad,")",sep=""), 
+     xlab=paste(variavel," (",unidade,")",sep=""), 
+     ylab=NA,
+     xlim=c(media-4*desvpad,media+4*desvpad),
+     col=friendlycolor(20),type="l",lwd=2
+     )
+```
+```{r, echo=FALSE}
+# GraficoNormal.R
+source ("eiras.friendlycolor.R")
+variavel <- "Cálcio sérico"
+unidade <- "mg/dl"
+media <- 9.75
+desvpad <- 0.375
+x <- seq(from=media-5*desvpad, to=media+5*desvpad, by=0.01)
+y <- dnorm(x, mean=media, sd=desvpad)
+xy <- data.frame(x,y)
+plot(x,y,
+     main=paste("N(",media,",",desvpad,")",sep=""), 
+     xlab=paste(variavel," (",unidade,")",sep=""), 
+     ylab=NA,
+     xlim=c(media-4*desvpad,media+4*desvpad),
+     col=friendlycolor(26),type="l",lwd=2
+     )
+```
+
+Parecem todas iguais, mas observe na mesma escala (desconsiderando as unidades de medida):
+```{r, echo=FALSE}
+# GraficoNormal.R
+source ("eiras.friendlycolor.R")
+variavel <- c("Creatinina", "Hemoglobina", "Hematócrito", "Eritrócitos", "Cálcio sérico")
+media <- c(0.95,15.5,45,5.5,9.75)
+desvpad <- c(0.125,1.25,3.5,0.425,0.375)
+cor <- c()
+p.cor <- 2
+p.lty <- 1
+plot(NA, NA,
+     main="Distribuições normais não padronizadas", 
+     xlab="Valor", 
+     ylab=NA,
+     xlim=c(min(media-4*desvpad),max(media+4*desvpad)),
+     ylim=c(0,4)
+     )
+for (e in 1:length(variavel))
+{
+  x <- seq(from=media[e]-5*desvpad[e], 
+           to=media[e]+5*desvpad[e], by=0.01)
+  y <- dnorm(x, mean=media[e], sd=desvpad[e])
+  lines(x,y,col=friendlycolor(p.cor),lty=p.lty,
+        type="l",lwd=2)
+  cor <- c(cor,friendlycolor(p.cor))
+  p.cor <- p.cor+6
+  p.lty <- p.lty+1
+}
+legend ("topright", 
+        variavel, 
+        lty=seq(1:length(variavel)),
+        lwd=2, 
+        col=cor,
+        box.lwd=0)
+```
+
+### distribuição normal padronizada
+
+Para padronizar **qualquer** distribuição, basta aplicar a todos os seus valores x:
+
+<font style="text-align:center; font-size:200%;">$z = { {x - \mu} \over \sigma }$</font>
+
+Subtrair a média faz com que a distribuição fique centrada em $0$ e dividir por $\sigma$ faz com que o desvio-padrão seja igual a $1$. A distribuição resultante é dada em escore $z$.
+
+Caso normalizemos todas as curvas acima, obteremos:
+```{r, echo=FALSE}
+source ("eiras.friendlycolor.R")
+variavel <- c("Creatinina", "Hemoglobina", 
+              "Hematócrito", "Eritrócitos", "Cálcio sérico")
+media <- c(0.95,15.5,45,5.5,9.75)
+desvpad <- c(0.125,1.25,3.5,0.425,0.375)
+cor <- c()
+p.cor <- 2
+lwd <- c()
+p.lwd <- 2+5*0.4
+p.lty <- 1
+plot(NA, NA,
+     main="Distribuições normais padronizadas", 
+     xlab="z", 
+     ylab=NA,
+     xlim=c(-4,4),
+     ylim=c(0,0.4)
+)
+for (e in 1:length(variavel))
+{
+  x <- seq(from=-5, to=+5, by=0.01)
+  y <- dnorm(x, mean=0, sd=1)
+  lines(x,y,col=friendlycolor(p.cor),lty=p.lty,
+        type="l",lwd=p.lwd)
+  cor <- c(cor,friendlycolor(p.cor))
+  lwd <- c(lwd,p.lwd)
+  p.cor <- p.cor+6
+  p.lty <- p.lty+1
+  p.lwd <- p.lwd-0.4
+}
+legend ("topright", 
+        variavel, 
+        lty=seq(1:length(variavel)),
+        lwd=lwd, 
+        col=cor,
+        box.lwd=0)
+```
+
+A vantagem é que conhecemos as propriedades de qualquer distribuição normal, mas da normal padronizada memorizamos facilmente seus principais valores.
+
+<br>
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png", dpi=150) 
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+A função R que (dado o valor q, devolve a probabilidade) é: 
+
+`pnorm(q, mean = 0, sd = 1, lower.tail = TRUE)`
+
+que calcula (por _default_) as probabilidades acumuladas de -infinito
+(lower.tail=TRUE) ao valor **q** solicitado. Assume, também por _default_, média igual a zero (mean=0) e desvio-padrão (em ingês, _standard deviation_) igual a 1 (sd=1), portanto uma normal padronizada.
+
+Não é necessário converter tudo para a normal padronizada quando quiser encontrar quaisquer as probabilidades.
+
+No exemplo, com média igual a 15 e desvio-padrão igual a 8, encontramos as áreas, respectivamente, para $\pm 1 sd$:
+```{r, echo=TRUE}
+2*(pnorm(15+8, mean=15, sd=8)-0.5)
+```
+ou, na versão da normal padronizada (que serve para simplificar):
+```{r, echo=TRUE}
+2*(pnorm(1)-0.5)
+```
+<small>a distribuição normal é simétrica, então achamos a probabilidade acumulada de $-\infty$ até 1 desvio-padrão, subtraímos a metade esquerda da distribuição (encontrando a área entre 0 e 1 desvio-padrão) e, então, multiplicamos por 2.</small>
+
+Similarmente, para $\pm 2 sd$:
+```{r, echo=TRUE}
+2*(pnorm(2)-0.5)
+```
+e para $\pm 3 sd$:
+```{r, echo=TRUE}
+2*(pnorm(3)-0.5)
+```
+Note que, entre $\pm 2 dp$, não temos exatamente 95% da área. Para
+achar o valor correto, a função R que faz o reverso de **_pnorm_** (dada a probabilidade, devolve o valor **q**) é:
+
+`qnorm(p, mean = 0, sd = 1, lower.tail = TRUE)`
+
+então obtemos (deixando $2.5\%$ em cada cauda):
+```{r, echo=TRUE}
+qnorm(0.025)
+```
+e
+```{r, echo=TRUE}
+qnorm(0.975)
+```
+Então, 95% da área fica, aproximadamente, no intervalo dado por $\pm 1.96 dp$.
+</td></tr></table>
+<br>
+
+### criando vetores com distribuição normal
+
+Para mulheres o valor de referência da creatinina sérica é de 0.5 a 1.1 mg/dl. Assumiremos, então, distribuição aproximadamente normal com média de 0.8 mg/dl e desvio-padrão de 0.15 mg/dl.
+
+O seguinte código usa a função _**rnorm()**_ para criar, usando um gerador de números pseudo-aleatórios (_**r**andom_), um vetor numérico com 10000 valores individuais:
+```{r, echo=TRUE}
+# numero de individuos
+n <- 10000
+# assumindo que a distribuicao eh simetrica%
+mu <- 0.8 # (0.5+1.1)/2
+# assumindo que deram o intervalo de 95%
+dp <- 0.15 # (1.1-0.5)/4
+# cria vetor e exibe o grafico
+v <- rnorm(n,mu,dp)
+d <- density(v)
+plot(d, type="l", 
+     main="Distribuicao ficticia",
+     xlim=c(mu-4*dp,mu+4*dp),
+     xlab="Creatinina", 
+     ylab="densidade", 
+     lty=1, lwd=2)
+```
+
+e o seguinte código exibe a distribuição padronizada
+```{r, echo=TRUE}
+v2 <- (v-mu)/dp
+d2<- density(v2)
+plot(d2, type="l", 
+     main="Distribuicao ficticia padronizada",
+     xlim=c(-4, 4),
+     xlab="z", 
+     ylab="densidade", 
+     lty=1, lwd=2)
+```
+
+Da mesma forma, assumindo-se que o valor de referência para  hemoglobina em mulheres é de $13.5 \pm 1.5 g/dl$, correspondendo estes valores à média $\pm$ 2 desvio-padrão, e que a distribuição da hemoglobina segue aproximadamente uma distribuição normal, criamos:
+```{r, echo=TRUE}
+# numero de individuos
+n <- 10000
+# media
+mu <- 13.5 
+# desvio-padrao
+dp <-1.5 
+# cria vetor e exibe o grafico
+v <- rnorm(n,mu,dp)
+d <- density(v)
+plot(d, type="l", 
+     main="Distribuicao ficticia",
+     xlim=c(mu-4*dp,mu+4*dp),
+     xlab="Hemoglobina", 
+     ylab="densidade", 
+     lty=1, lwd=2)
+```
+a qual é igualmente padronizada:
+```{r, echo=TRUE}
+v2 <- (v-mu)/dp
+d2<- density(v2)
+plot(d2, type="l", 
+     main="Distribuicao ficticia padronizada",
+     xlim=c(-4, 4),
+     xlab="z", 
+     ylab="densidade", 
+     lty=1, lwd=2)
+```
+
+### hachurando áreas sob distribuições
+
+Este código mostra as áreas sob uma distribuição normal, utilizando a regra 68.2%-95.4%-99.7% para 1, 2 e 3 desvios-padrão:
+
+```{r, echo=TRUE}
+# GraficoNormal.R
+source("eiras.friendlycolor.R")
+# normal
+media <- 40
+desvpad <- 20
+x <- seq(from=media-5*desvpad, to=media+5*desvpad, by=0.01)
+y <- dnorm(x, mean=media, sd=desvpad)
+xy <- data.frame(x,y)
+plot(x,y,
+     main="Distribuicao normal", xlab="x", ylab=NA,
+     xlim=c(media-4*desvpad,media+4*desvpad),
+     axes=FALSE,
+     type="l",lwd=2
+     )
+desvios <- c(-3,-2,-1, 0, 1, 2, 3)
+axis(side = 1, at = media+desvios*desvpad)
+# caudas
+prob.cauda <- pnorm(media+desvios*desvpad, mean=media, sd=desvpad)
+x.cauda <- qnorm(prob.cauda, mean=media, sd=desvpad)
+# amarelo, verde, azul, NA, azul, verde, amarelo
+cor <- c(24, 15, 9, NA, 9, 15, 24) 
+for(d in 1:3) # 3, 2 e 1 desvios-padrao
+{
+  polx <- xy$x[xy$x>=x.cauda[d] & xy$x<=x.cauda[8-d]]
+  poly <- xy$y[xy$x>=x.cauda[d] & xy$x<=x.cauda[8-d]]
+  polx <- c(min(polx), polx, max(polx))
+  poly<- c(0, poly, 0)
+  polygon(polx,poly,border=NA,col=friendlycolor(cor[d]))
+}
+```
+
+O seguinte código cria uma distribuição com 50 estaturas e hachura as caudas (2.5% da área em cada uma), encontrando os quantis:
+
+```{r, echo=TRUE}
+source("eiras.friendlycolor.R")
+estatura.masc <- rnorm(n=50, mean=177, sd=10)
+estatdens <- density(estatura.masc)
+plot(estatdens, 
+     main="Grafico de densidade", 
+     xlab="Estatura masculina (cm)", ylab="Densidade")
+# caudas
+limites <- quantile(estatura.masc, probs = c(0.025,0.975))
+polx <- estatdens$x[estatdens$x<=limites[1]]
+polx <- c(min(polx), polx, max(polx))
+poly <- estatdens$y[estatdens$x<=limites[1]]
+poly<- c(0, poly, 0)
+polygon(polx,poly,border=NA,
+        col=friendlycolor(8)
+        )
+polx <- estatdens$x[estatdens$x>=limites[2]]
+polx <- c(min(polx), polx, max(polx))
+poly <- estatdens$y[estatdens$x>=limites[2]]
+poly<- c(0, poly, 0)
+polygon(polx,poly,border=NA,
+        col=friendlycolor(8)
+        )
+```
+
+## Exemplo de aplicação na prática
+
+Em vários testes aplicados obtém-se um escore $z$ (por exemplo, o teste de QI ou a prova do ENEM). Há um problema para a comunicação do resultado. Imagine dizer aos pais que o QI de seu filho é -0.1, ou que a nota de um vestibulando foi zero (indicando que está na média). 
+
+Uma solução é fazer o reverso da padronização: multiplicar por certo valor para alargar a dispersão dos valores e somar para transladar a curva. No QI, multiplica-se por 15 e soma-se 100 (então o QI tem média 100 e desvio padrão de 15). No ENEM multiplica-se por 100 e soma-se 500 (média de 500 e desvio-padrão de 100). Quando dizem, para o ENEM, que a nota varia de 0 a 1000, na verdade estão apenas contando parte da verdade, cobrindo $\pm 5$ desvios-padrão (o que explica o ano em que apareceu um estudante com 1080 pontos, o que criou um problema para os gestores explicarem o ocorrido).
+
+```{r, echo=FALSE, out.width='80%'}
+knitr::include_graphics("image/normal_escalas.jpeg")
+```
+
+Nesta figura, aparece o escore T (multiplica por 10 e soma 50), mas também outras possibilidades como Estaninos (_Stanines_) com intervalos equiespaçados em $z$ no centro da distribuição normal criando uma escala ordinal de 1 a 9.
+
+# Transformações
+
+Há momentos em que precisamos alterar os números de variáveis quantitativas. As aplicações aparecerão em testes estatísticos, quando necessários.
+
+## lineares
+
+Operações que envolvem as operações básicas (soma, subtração, multiplicação e divisão) não alteram o formato da distribuição destas variáveis. É o caso da distribuição normal, quando padronizada. Por exemplo, criamos 100 valores de hemoblogina com a função <code>rnorm()</code>
+
+```{r, echo=FALSE}
+cat(readLines("hemoglobina.R"), sep = '\n')
+source("hemoglobina.R")
+```
+A distribuição, dado o número de indivíduos, é apenas aproximadamente normal. 
+
+A padronização destes valores, que estão armazenados no vetor <code>v</code> pode ser feito com a função <code>scale()</code>:
+```{r, echo=FALSE}
+cat(readLines("hemoglobina_padrao.R"), sep = '\n')
+source("hemoglobina_padrao.R")
+```
+Observe que a padronização torna a média nula e o desvio-padrão unitário. A unidade de medida deixou de existir, substituída por escores-$z$ (i.e., a medida está em desvios-padrão).
+
+Esta função, no entanto, permite apenas centrar ou escalonar isoladamente. Por exemplo:
+```{r, echo=FALSE}
+cat(readLines("hemoglobina_centrada.R"), sep = '\n')
+source("hemoglobina_centrada.R")
+```
+Neste caso a distribuição apenas desloca-se para que a média seja nula, mas o desvio-padrão fica inalterado. Observe que os valores originais foram transformados em valores negativos, nulos (se coincidiam com a média) ou positivos.
+
+## não lineares
+
+Transformações não lineares são úteis quando precisamos alterar o formato de uma distribuição. Tomemos, como exemplo a massa do cérebro de alguns mamíferos que estão no arquivo [CorpoCerebro.xlsx](CorpoCerebro.xlsx), usando o código disponível em [massacerebro.R](massacerebro.R):
+```{r, echo=TRUE}
+source("massacerebro.R")
+```
+
+A padronização executada com [massacerebro_padrao.R](massacerebro_padrao.R) não altera o formato da distribuição, mas faz a média ser nula, o desvio-padrão unitário e a variável medida em desvios padrão (escores-$z$):
+```{r, echo=TRUE}
+source("massacerebro_padrao.R")
+```
+
+Para encontrar uma distribuição mais simétrica, o que pode ser conveniente para vários procedimentos estatísticos, necessitamos de transformações não lineares. Criamos uma função, disponível em [eiras.tukey.try.R](eiras.tukey.try.R), que tenta as transformações potência de Tukey, indo de -3 a +3, e informa qual é a transformação que produz a transformação mais simétrica. São elas:
+
+```{r, echo=FALSE, out.width='80%'}
+knitr::include_graphics("image/TukeyLadder.png")
+```
+<div align=right><span style="font-size:70%">
+modificado de http://onlinestatbook.com/2/transformations/tukey.html
+</span></div>
+
+A função <code>tukey.try()</code> retorna uma lista com dois objetos: o primeiro com as informações da transformação escolhida e o segundo com os valores transformados. Adaptamos o código [massacerebro_tukeytry.R](massacerebro_tukeytry.R) para chamar <code>tukey.try()</code> exibindo todas as tentativas de transformação não linear (a função pode trabalhar silenciosamente também). Obtém-se:
+```{r, echo=TRUE}
+source("massacerebro_tukeytry.R")
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Para entender quais dados retornados de <code>tukey.try()</code> foram aproveitados no Rscript [massacerebro_tukeytry.R](massacerebro_tukeytry.R), veja que o retorno ficou armazenado em <code>v.transformados</code>. Esta variável é uma lista com dois objetos, contendo
+```{r, echo=TRUE}
+print(v.transformados)
+```
+Em uma lista deste tipo, os objetos são acessíveis separadamente com:
+```{r, echo=TRUE}
+print(v.transformados[[1]])
+print(v.transformados[[2]])
+```
+O primeiro objeto, <code>v.transformados[[1]]</code> é um _data frame_, portanto suas colunas podem ser obtidas com:
+```{r, echo=TRUE}
+print(v.transformados[[1]]$power)
+print(v.transformados[[1]]$asymmetry)
+print(v.transformados[[1]]$p.value)
+print(v.transformados[[1]]$equation)
+```
+O segundo objeto é um vetor numérico com os valores transformados (neste exemplo, o logaritmo da massa devido à melhor transformação obtida).
+</td></tr></table>
+
+<br>
+
+# Amostragem e Reamostragem
+
+```{r, echo=FALSE, out.width='35%'}
+knitr::include_graphics("image/BaraoMunchausen.jpg")
+```
+
+```{r, echo=FALSE, out.width='25%'}
+knitr::include_graphics("image/boot_strap.png")
+```
+
+Os processos de amostragem (_sampling_) e reamostragem (_bootstrapping_) servem para que mostremos o comportamento do teorema central do limite e o conceito de erro padrão.
+
+## TCL e EP
+
+O Teorema Central do Limite (TCL) é uma das descobertas mais poderosas para as análises estatísticas. 
+
+Assume-se:
+
+* delineamento entre-participantes,
+* variáveis intervalares,
+* amostras com pelo menos 30 observações.
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+As distribuições binomial e de Poisson vistas acima, quando $n$ aumenta, aproximam-se da distribuição normal. Você pode usar o R para verificar.
+</td></tr></table>
+
+<br>
+
+Enuncia que:
+
+> A distribuição das médias amostrais tem distribuição normal, com média igual à média populacional e erro padrão da média igual ao desvio padrão populacional dividido pela raiz quadrada do tamanho da amostra.
+
+O "desvio padrão populacional dividido pela raiz quadrada do tamanho da amostra" é o erro padrão, estimado pelo desvio-padrão amostral $s$ e o tamanho da amostra $n$ por $$EP={{s}\over{\sqrt{n}}}$$
+
+Para experimentar com ele e esclarecer o que isto significa, vamos criar uma população com uma variável fictícia que, intencionalmente, **não** tem distribuição normal:
+
+<div align=right><small>
+A íntegra do _Rscript_ que será desenvolvido adiante está em <font style="background-color:#F7CB45;">[bootstrapping_demo.R](bootstrapping_demo.R)</font>
+</small></div>
+
+Em primeiro lugar, ativamos algumas funções de apoio que desenvolvemos:
+
+```{r, echo=TRUE}
+source("eiras.friendlycolor.R")
+source("eiras.create.population.R")
+source("eiras.plot.density.withmeansd.R")
+source("eiras.sampling.R")
+```
+```{r, echo=FALSE}
+set.seed(27)
+```
+
+e criamos um vetor com uma população fictícia:
+
+```{r, echo=TRUE}
+# create a simulated population
+population <- create.population(kind="normal", round=0, 
+                                n=c(2000,6000,3500,3000),
+                                param1=c(160,200,230,280), # mean
+                                param2=c(5,10,30,15) # sd
+                                )
+```
+Esta população tem a seguinte distribuição:
+```{r, echo=TRUE}
+limits <- plot.density.withmeansd(population,
+                                  main="Populacao simulada\n(sampling)",
+                                  xlab="Valores",
+                                  ylab="Densidade",
+                                  col=friendlycolor(7), getlimits=TRUE)
+```
+A linha pontilhada vertical corresponde à media populacional e a barra horizontal que aparece na parte alta do gráfico mostra sua média $\pm 3$ desvios-padrão.
+
+## Amostragem (_sampling_)
+
+O primeiro exercício que faremos é retirar desta população $B$ amostras aleatórias simples, cada uma delas com $n$ indivíduos sem reposição (detalhes adiante, em reamostragem):
+
+```{r, echo=TRUE}
+limits <- plot.density.withmeansd(population,
+                                  main="Populacao simulada\n(sampling)",
+                                  xlab="Valores",
+                                  ylab="Densidade",
+                                  col=friendlycolor(7), getlimits=TRUE)
+B <- 1000
+n <- 36
+samples <- sampling(population,B=B,
+                    n=n,replace=FALSE,
+                    graph=TRUE,col=friendlycolor(3))
+amo.medias <- samples[[2]]
+amo.sds <- samples[[3]]
+legend("right", 
+       c("Distribuicao", 
+         "Media pop +-3 dp",
+         paste("amostras: ",B,sep=""),
+         "Media am. +-3 dp"
+         ), 
+       col=c(friendlycolor(7),
+             paste(friendlycolor(7),"88",sep=""),
+             friendlycolor(3),
+             paste(friendlycolor(3),"88",sep="")             
+             ),
+       lwd=c(2,10,2,10), 
+       lty=c(1,1,1,1), 
+       cex=0.7,
+       box.lwd=0, bg="transparent")  
+# distribuicao da populacao original, sobreposta para referencia
+plot.density.singleline(population,col=friendlycolor(7))
+```
+
+Neste último gráfico adotamos <code>B=`r sprintf("%d",B)`</code> e <code>n=`r sprintf("%d",n)`</code>, assim obtendo `r sprintf("%d",B)` linhas representando `r sprintf("%d",B)` amostras de `r sprintf("%d",n)` indivíduos, às quais a distribuição da população original foi sobreposta. Pode-se notar que as amostras, com imperfeições, seguem o perfil geral da população.
+
+A linha pontilhada vertical correspondente à media das medias amostrais e coincide com a média populacional. Na parte alta do grafico podemos verificar que os desvios-padrão populacionais são praticamente iguais à média dos desvios-padrão amostrais.
+
+Numericamente:
+```{r, echo=TRUE}
+pm <- mean(population,na.rm=TRUE)
+ps <- sd(population,na.rm=TRUE)
+am <- mean(amo.medias,na.rm=TRUE)
+as <- mean(amo.sds,na.rm=TRUE)
+v <- ""
+v <- paste(v,"Populacao:\n")
+v <- paste(v,"\tmedia populacional:",round(pm,4),"\n")
+v <- paste(v,"\tdp populacional:",round(ps,4),"\n")
+v <- paste(v,"\n")
+v <- paste(v,"Amostras:",B,"com n =",n,"\n")
+v <- paste(v,"\tmedia das medias amostrais:",round(am,4),"\n")
+v <- paste(v,"\tmedia dos dp amostrais:",round(as,4))
+cat(v)
+```
+
+Na variável **amo.medias** guardamos as `r sprintf("%d",B)` médias amostrais. Como são uma coleção de `r sprintf("%d",B)` números, podemos verificar sua distribuição e calcular sua média (a média das médias amostrais) e seu desvio padrão (o desvio-padrão das médias amostrais). 
+
+Mantendo a escala do eixo das abscissas, a distribuição das `r sprintf("%d",B)` médias amostrais é:
+ 
+```{r, echo=TRUE}
+plot.density.withmeansd(amo.medias,
+                        main="Distribuicao de medias amostrais\n(sampling)",
+                        xlab="Valores",
+                        ylab="Densidade",
+                        x.min=limits[1], x.max=limits[2],
+                        col=friendlycolor(3))
+```
+
+Comparada com a população e as `r sprintf("%d",B)` amostras feitas anteriormente, a média desta última distribuição coincide com a média das médias amostrais, mas seu desvio padrão é menor. 
+
+Ao mesmo gráfico adicionamos uma distribuição normal em pontilhado, mas deixando a escala das abscissas livre, observamos:
+
+```{r, echo=TRUE}
+# distribuicao das medias amostrais (deixando a escala livre)
+plot.density.withmeansd(amo.medias,
+                        main="Distribuicao de medias amostrais\n(sampling)",
+                        xlab="Valores",
+                        ylab="Densidade",
+                        col=friendlycolor(3))
+# ajustando distribuicao normal
+am <- mean(amo.medias,na.rm=TRUE)
+ep <- sd(amo.medias,na.rm=TRUE)
+x <- seq(am-4*ep,am+4*ep,length.out=100)
+y <- dnorm(x, mean=am, sd=ep)
+lines(x,y,lty=2,lwd=2,col=friendlycolor(3))
+```
+Surpreendemente, a distribuição observada e uma distribuição normal com média e desvio padrão iguais às médias e desvio padrão das médias amostrais são muito próximas. 
+
+Numericamente:
+
+```{r, echo=TRUE}
+am <- mean(amo.medias,na.rm=TRUE)
+ep <- sd(amo.medias,na.rm=TRUE)
+v <- ""
+v <- paste(v,"Amostras:",B,"com n =",n,"\n")
+v <- paste(v,"\tmedia das medias amostrais:",round(am,4),"\n")
+v <- paste(v,"\tdp das medias amostrais:",round(ep,4))
+cat(v)
+```
+Observe atentamente a sutileza, pois trocamos a variável **as** que continha a _média dos desvios-padrão amostrais_ com valor `r round(as,4)`, similar ao desvio-padrão populacional **ps**=`r round(ps,4)`, pela variável **ep** que contém o _desvio padrão das médias amostrais_ com valor `r round(ep,4)`. De fato, <code>ps/ep=`r round(ps,4)/round(ep,4)`</code>, valor próximo à raiz quadrada do tamanho de cada amostra, <code>sqrt(`r n`)=`r sqrt(n)`</code>.
+
+Este _desvio padrão das médias amostrais_ obtido por este experimento hipotético é conhecido como **erro padrão da média**, $EP$. 
+
+Na prática, quando obtemos uma única amostra, o $EP$ é estimado por $$EP={{s}\over{\sqrt{n}}}$$ onde $s$ é o desvio-padrão da amostra e $n$ é o tamanho da amostra, na esperança de que $s$ seja um valor próximo (i.e., um bom estimador) do desvio-padrão populacional $\sigma$, desconhecido. 
+
+Agora o enunciado do Teorema Central do Limite pode ser compreendido:
+
+> A distribuição das médias amostrais tem distribuição normal, com média igual à média populacional e erro padrão da média igual ao desvio padrão populacional dividido pela raiz quadrada do tamanho da amostra.
+
+Interessante é que, com $n \ge 30$, o TCL se verifica para qualquer distribuição da variável original. Não é necessário confiar em nossa palavra. Experimente trocar a população inicial em [`bootstrapping_demo.R`](bootstrapping_demo.R) e verifique.
+
+Ainda com esta simulação, podemos adicionar um intervalo de confiança 95% sobre a distribuição das médias amostrais:
+```{r, echo=TRUE}
+# distribuicao das medias amostrais (deixando a escala livre)
+plot.density.withmeansd(amo.medias,
+                        main="Distribuicao de medias amostrais\n(sampling)",
+                        xlab="Valores",
+                        ylab="Densidade",
+                        col=friendlycolor(3))
+# ajustando distribuicao normal
+am <- mean(amo.medias,na.rm=TRUE)
+ep <- sd(amo.medias,na.rm=TRUE)
+x <- seq(am-4*ep,am+4*ep,length.out=100)
+y <- dnorm(x, mean=am, sd=ep)
+lines(x,y,lty=2,lwd=2,col=friendlycolor(3))
+# intervalo de confianca 95%
+icx <- quantile(amo.medias,probs=c((1-0.95)/2,1-((1-0.95)/2)))
+icy <- mean(y[which(round(x,0)==round(icx,0))],na.rm=TRUE)
+h <- icy/5
+lines(c(icx[1],icx[1],icx[1],icx[2],icx[2],icx[2]),
+      c(icy-h ,icy+h ,icy   ,icy   ,icy+h ,icy-h ),
+      lwd=2, col=friendlycolor(3))
+# media amostral (ponto solido)
+points(am,icy,pch=21,cex=1.5,col=friendlycolor(3),bg=friendlycolor(3))
+# media populacional (ponto branco)
+points(pm,icy-h,pch=21,cex=1.5,col=friendlycolor(7),bg="white")
+```
+A linha horizontal representa o intervalo de confiança 96% com halteres nos limites que contém 95% da área sob a distribuição das médias amostrais simuladas. O círculo sólido está na posição da média das médias amostrais e o círculo branco no da média populacional. O IC95 é aquele intervalo que, com confiança de 95%, contém a média populacional.
+
+Calcular $EP = {s /\sqrt{n}}$ nada mais é do que obter uma estimativa daquilo que seria conseguido no caso de um experimento irrealizável (pois se pudéssemos fazer `r sprintf("%d",B)` estudos com amostras de mesmo tamanho, seria melhor investir em um único estudo mais elaborado), do qual obteríamos um número muito grande de amostras, cada qual com sua média, e calculássemos o desvio-padrão das médias amostrais. Como tal experimento é uma fantasia, o apresentação desta equação costuma ter dois caminhos habituais e opostos: seu entendimento através de uma demonstração matemática intransponível para quem não tem a formação adequada ou a dogmatização de sua existência através de exibi-la sem explicação alguma. Ambas as estratégias escondem do pesquisador aplicado a natureza da relação entre $s$ (estimador de $\sigma$) e $EP$ (estimador pontual do desvio-padrão de infinitas médias amostrais hipotéticas). Aqui oferecemos uma situação intermediária com a experimentação através de simulações.
+
+## Reamostragem (_bootstrapping_)
+
+Saindo da fantasia, vamos retomar a mesma população hipotética e obter dela uma única amostra:
+```{r, echo=TRUE}
+plot.density.withmeansd(population,
+                        main="Populacao simulada\n(amostra unica)",
+                        xlab="Valores",
+                        ylab="Densidade",
+                        x.min=limits[1], x.max=limits[2],
+                        y.min=limits[3], y.max=limits[4],
+                        col=friendlycolor(7))
+B2 <- 1
+samples <- sampling(population,B=B2,
+                    n=n,replace=FALSE,
+                    graph=TRUE,col=friendlycolor(1))
+amo.unique <- samples[[1]]
+legend("right", 
+       c("Distribuicao", 
+         "Media pop +-3 dp",
+         paste("amostras: ",B,sep=""),
+         "Media am. +-3 dp"
+       ), 
+       col=c(friendlycolor(7),
+             paste(friendlycolor(7),"88",sep=""),
+             friendlycolor(1),
+             paste(friendlycolor(1),"88",sep="")             
+       ),
+       lwd=c(2,10,2,10), 
+       lty=c(1,1,1,1), 
+       cex=0.7,
+       box.lwd=0, bg="transparent")  
+```
+Nesta situação, a amostra captura informação (com imperfeição) da população. Assim como é a população, esta amostra não tem distribuição normal. Repare que os "picos" e "vales" existentes na distribuição populacional foram incompletamente representados, mas a média e desvio padrão amostrais são similares àqueles da população.
+
+Ainda existe uma fantasia a eliminar: na prática temos tão somente uma única amostra, sem a referência populacional:
+```{r, echo=TRUE}
+# amostra unica
+plot.density.withmeansd(amo.unique,
+                        main="Amostra unica",
+                        xlab="Valores",
+                        ylab="Densidade",
+                        x.min=limits[1], x.max=limits[2],
+                        y.min=limits[3], y.max=limits[4],
+                        col=friendlycolor(1))
+legend("right", 
+       c("Amostra", 
+         "Media am. +-3 dp"
+       ), 
+       col=c(friendlycolor(1),
+             paste(friendlycolor(1),"88",sep="")             
+       ),
+       lwd=c(2,10), 
+       lty=c(1,1), 
+       cex=0.7,
+       box.lwd=0, bg="transparent")  
+```
+Com base nesta amostra precisamos chegar a conclusões que possam ser extrapoladas para a população de onde ela proveio. O procedimento conhecido como _bootstrapping_ é uma possível solução. Trata-se de um processo similar ao anterior, com a diferença de que faremos `r sprintf("%d",B)` reamostragens **com reposição** de `r sprintf("%d",n)` elementos sobre a única amostra de `r sprintf("%d",n)` elementos que temos para trabalhar. 
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Cada uma das reamostras tem que ser feita com reposição, enquanto as amostragens simples sobre a população eram feitas sem reposição. 
+
+Esta reposição implica em manter cada indivíduo, embora já sorteado para uma amostra, disponível para o sorteio seguinte, assim permitindo que este apareça na amostra mais de uma vez.  
+
+Por exemplo, imagine uma amostra que tenha cinco valores, da qual computamos a média e o desvio padrão:
+```{r, echo=TRUE}
+amostra <- c(1, 2, 7, 8, 9)
+t <- length(amostra)
+cat("amostra: ", amostra, 
+           " (média = ", round(mean(amostra),2), 
+           " e dp = ", round(sd(amostra),2), 
+           ")\n")
+```
+
+Com 9 reamostras de cinco elementos sejam feitas sem reposição, tudo que obteremos são 9 representações da amostra, permutando a ordem dos 5 valores, com a mesma média e desvio-padrão da amostra original:
+```{r, echo=TRUE}
+# 9 reamostragens sem reposicao
+for(r in 1:9)
+{
+  # <br> replace=FALSE por default <br>
+  reamostra <- sample(amostra,t)
+  cat("reamostra",r,": ", reamostra, 
+             ", média = ", round(mean(reamostra),2), 
+             "e dp = ", round(sd(reamostra),2), 
+             "\n")
+}
+```
+No entanto, fazendo este processo com reposição (utilizando o parâmetro <code>replace=TRUE</code> na função _sample()_):
+```{r, echo=TRUE}
+# 9 reamostragens com reposicao
+for(r in 1:9)
+{
+  # <br> replace=FALSE por default <br>
+  reamostra <- sample(amostra,t,replace=TRUE)
+  cat("reamostra",r,": ", reamostra, 
+             ", média = ", round(mean(reamostra),2), 
+             "e dp = ", round(sd(reamostra),2), 
+             "\n")
+}
+```
+obteremos a essência do _bootstrapping_: variantes da amostra original.
+</td></tr></table>
+
+<br>
+
+O procedimento, sobre a amostra obtida da população fictícia, resulta em: 
+```{r, echo=TRUE}
+# bootstrapping
+plot.density.withmeansd(amo.unique,
+                        main="Amostra unica\n(bootstrapping)",
+                        xlab="Valores",
+                        ylab="Densidade",
+                        x.min=limits[1], x.max=limits[2],
+                        y.min=limits[3], y.max=limits[4],
+                        col=friendlycolor(3))
+samples <- sampling(amo.unique,B=B,
+                    n=n,replace=TRUE,
+                    graph=TRUE,col=friendlycolor(29))
+boot.medias <- samples[[2]]
+boot.sds <- samples[[3]]
+legend("right", 
+       c("Amostra unica", 
+         "Media am. +-3 dp",
+         paste("bootstraps: ",B,sep=""),
+         "Media boot +-3 dp"
+       ), 
+       col=c(friendlycolor(3),
+             paste(friendlycolor(3),"88",sep=""),
+             friendlycolor(29),
+             paste(friendlycolor(29),"88",sep="")             
+       ),
+       lwd=c(2,10,2,10), 
+       lty=c(1,1,1,1), 
+       cex=0.7,
+       box.lwd=0, bg="transparent")  
+# distribuicao da amostra original, sobreposta para referencia
+plot.density.singleline(amo.unique,col=friendlycolor(3))
+```
+
+Obtemos `r sprintf("%d",B)` linhas representando `r sprintf("%d",B)` reamostras de `r sprintf("%d",n)` indivíduos, às quais a distribuição da amostra original foi sobreposta. Observe que até mesmo os "picos" e "vales" da população original reapareceram entre as reamostras, apesar deste procedimento ter sido executado sem que os dados da população original fossem utilizados.
+
+Como acontecia entre as amostras e a população, as reamostras seguem o perfil geral da amostra única que tomamos como ponto de partida. Na parte alta do gráfico vemos que as médias da amostra original e a média das `r sprintf("%d",B)` reamostras coincidem, e também o desvio-padrão da amostra original e a média dos desvios-padrão das `r sprintf("%d",B)` reamostras. Numericamente:
+
+```{r, echo=TRUE}
+um <- mean(amo.unique,na.rm=TRUE)
+us <- sd(amo.unique,na.rm=TRUE)
+bm <- mean(boot.medias,na.rm=TRUE)
+bs <- mean(boot.sds,na.rm=TRUE)
+v <- ""
+v <- paste(v,"Amostra:\n")
+v <- paste(v,"\tmedia amostral:",round(um,4),"\n")
+v <- paste(v,"\tdp amostral:",round(us,4),"\n")
+v <- paste(v,"\n")
+v <- paste(v,"Reamostras:",B,"com n =",n,"\n")
+v <- paste(v,"\tmedia das medias das reamostras:",round(bm,4),"\n")
+v <- paste(v,"\tmedia dos dp da media das reamostras:",round(bs,4))
+cat(v)
+```
+
+Novamente, observamos o comportamento da distribuição das médias das reamostras:
+
+```{r, echo=TRUE}
+# distribuicao das medias das reamostras (deixando a escala livre)
+plot.density.withmeansd(boot.medias,
+                        main="Distribuicao de medias das reamostras\n(bootstrapping)",
+                        xlab="Valores",
+                        ylab="Densidade",
+                        col=friendlycolor(29))
+# ajustando distribuicao normal
+um <- mean(amo.unique,na.rm=TRUE)
+us <- sd(amo.unique,na.rm=TRUE)
+bm <- mean(boot.medias,na.rm=TRUE)
+ep <- sd(boot.medias,na.rm=TRUE)
+x <- seq(bm-4*ep,bm+4*ep,length.out=100)
+y <- dnorm(x, mean=bm, sd=ep)
+lines(x,y,lty=2,lwd=2,col=friendlycolor(3))
+# intervalo de confianca 95%
+icx <- quantile(boot.medias,probs=c((1-0.95)/2,1-((1-0.95)/2)))
+icy <- mean(y[which(round(x,0)==round(icx,0))],na.rm=TRUE)
+h <- icy/5
+lines(c(icx[1],icx[1],icx[1],icx[2],icx[2],icx[2]),
+      c(icy-h ,icy+h ,icy   ,icy   ,icy+h ,icy-h ),
+      lwd=2, col=friendlycolor(29))
+# media das reamostras (ponto solido)
+points(bm,icy,pch=21,cex=1.5,col=friendlycolor(29),bg=friendlycolor(29))
+# media amostral (ponto solido)
+points(um,icy-h,pch=21,cex=1.5,col=friendlycolor(3),bg=friendlycolor(3))
+# media populacional (ponto branco)
+points(pm,icy-2*h,pch=21,cex=1.5,col=friendlycolor(7),bg="white")
+```
+Como fizemos com o exemplo do _sampling_, a linha horizontal representa o intervalo de confiança 95% com halteres indicando os limites de 95% da área sob a curva da distribuição das médias das reamostras. O círculo sólido na mesma cor da distribuição está na posição da média das médias das reamostras, mas adicionamos um círculo sólido na posição da média da amostra original e um círculo branco no da média populacional. Esta última, na prática, não conheceremos; por este motivo, precisamos estimar o IC95, um intervalo para o qual temos 95% de confiança em conter a média populacional (com sucesso, neste exemplo).
+
+A distribuição das médias das reamostras é normal (apesar da amostra não o ser) com média igual à da amostra original e desvio-padrão dado por $EP=s/\sqrt{n}$, verificado numericamente nesta simulação:
+
+```{r, echo=TRUE}
+um <- mean(amo.unique,na.rm=TRUE)
+us <- sd(amo.unique,na.rm=TRUE)
+bm <- mean(boot.medias,na.rm=TRUE)
+ep <- sd(boot.medias,na.rm=TRUE)
+v <- ""
+v <- paste(v,"Amostra:\n")
+v <- paste(v,"\tmedia da amostra:",round(um,4),"\n")
+v <- paste(v,"\tdp da amostra:",round(us,4))
+v <- paste(v,"\n")
+v <- paste(v,"Reamostras:",B,"com n =",n,"\n")
+v <- paste(v,"\tmedia das medias das reamostrais:",round(bm,4),"\n")
+v <- paste(v,"\tdp das medias das reamostras:",round(ep,4))
+cat(v)
+```
+Neste caso temos o desvio-padrão da amostra <code>us=`r round(us,4)`</code> e o desvio padrão das `r sprintf("%d",B)` médias das reamostras <code>ep=`r round(ep,4)`</code>. Podemos conferir que <code>us/ep=`r round(us,4)/round(ep,4)`</code> é valor próximo a <code>sqrt(`r sprintf("%d",n)`)=`r sqrt(n)`</code>. A concordância talvez fosse melhor se usássemos um _bootstrapping_ com mais reamostras; aqui exemplificamos, por razões gráficas, com `r sprintf("%d",B)` reamostras, mas é recomendado que se aplique entre `r sprintf("%d",1e4)` (`r sprintf("%.0e",1e4)`) e `r sprintf("%d",1e6)` (`r sprintf("%.0e",1e6)`) reamostras para fins de decisão estatística.
+
+O _bootstrapping_ é um procedimento sempre possível com o uso de computadores, de certa forma capturando o experimento imaginário da primeira parte deste exemplo e reconstituindo propriedades da população inalcançável de onde a amostra proveio.   
+
+## Intervalos de predição
+
+É necessário, na área da saúde, que testes laboratoriais apresentem a faixa dos valores de referência para que seja verificado se o resultado pode ser considerado alterado. 
+
+A norma para a glicemia de jejum em adultos saudáveis é computada a partir de uma amostra. Por exemplo, suponha:
+
+```{r, echo=FALSE, out.width='30%'}
+knitr::include_graphics("image/WikipediaGlicemia.png")
+```
+<div align=right><span style="font-size:70%">
+https://en.wikipedia.org/wiki/Reference_range
+</span></div>
+
+Segundo van Belle, 12 é o número mínimo de observações para calcular um intervalo de predição.
+<div align=right><span style="font-size:70%">
+van Belle, G (2008) Statistical rules of thumb. 2nd ed. NJ: Wiley.
+</span></div>
+
+Supondo que a distribuição da glicemia é aproximadamente normal, os laboratórios tradicionalmente estimam: o intervalo de predição 95% (IP95).
+
+```{r, echo=FALSE}
+cat(readLines("glicemia_normal.R"), sep = '\n')
+```
+obtendo:
+```{r, echo=FALSE}
+source("glicemia_normal.R")
+```
+Então a faixa de valores considerados normais vão de `r round(lowerlimit,1)` a  `r round(upperlimit,1)` mmol/l. Glicemia costuma ser considerada como variável que tem distribuição normal. 
+
+Nesta amostra reduzida, porém, apenas por inspeção visual, a distribuição não parece normal. Pelas medidas diretas, feitas nesta amostra, a distribuição é assimétrica à esquerda e platicúrtica. Caso estivéssemos na situação em que somente pudéssemos acessar estes 12 voluntários, a saída é utilizar métodos mais robustos.
+
+Um código para verificar normalidade, simetria e unimodalidade através de testes estatísticos antes de calcular intervalos centrados na média, optando por variantes no caso de uma das suposições não ser atendida, é:
+
+```{r, echo=FALSE}
+cat(readLines("glicemia_intervalos.R"), sep = '\n')
+```
+obtendo:
+```{r, echo=FALSE}
+source("glicemia_intervalos.R")
+```
+Neste caso, de acordo com os testes estatístico, foi calculado o intervalo com base na distribuição normal. As outras alternativas que este código poderia utilizar são
+
+* Gauss-Camp-Meidell unimodal simétrica não-normal
+* Gauss-Camp-Meidell unimodal assimétrica não-normal
+* Chebychev para qualquer distribuição
+
+Outra possibilidade é o _highest density interval_ (HDI):
+```{r, echo=FALSE}
+cat(readLines("glicemia_hdi.R"), sep = '\n')
+```
+obtendo:
+```{r, echo=FALSE}
+source("glicemia_hdi.R")
+```
+Compare os intervalos. O anterior (`r paste("IP95=[",round(lowerlimit,1),",",round(upperlimit,1),"]\n",sep="")`) supõe normalidade e é centrado na média amostral. Alternativamente, o HDI é o menor intervalo de predição de 95% não centrado na média: somando-se as áreas à esquerda e à direita das duas linhas verticais encontraremos 5% da área sob a curva.
+
+# Gráficos em R (apêndice)
+
+```{r, echo=FALSE}
+options(warn=-1)
+```
+Esta sessão serve para ajudá-lo a encontrar formatos gráficos para adaptar para seu caso, mostrando capacidades do R em gerá-los com maior facilidade e flexibilidade do que aquela encontrada em outros _softwares_.
+
+Há muitas funções de diversos pacotes para fazer gráficos em R. Muitas delas adotaram os mesmos nomes de parâmetros.
+
+Cores, por exemplo, (parâmetro <code>col</code> em muitas funções) aceita nomes de cores pré-definidos ("white", "black", "red", "darkgreen", etc.) ou no formato "#RRGGBBTT" (red, green, blue, transparência).
+
+Existem outros como <code>pch</code> para definir o símbolo dos pontos, <code>lty</code> para definir o padrão das linhas e <code>lwd</code> para definir a espessura das linhas. 
+```{r, echo=FALSE, out.width='70%'}
+knitr::include_graphics("image/plot_param.png")
+```
+
+O título dos graficos são colocados com <code>main="Título escrito aqui"</code> e os nomes dos eixos com <code>xlab="Nome no eixo x"</code> e <code>ylab="Nome no eixo y"</code>. As escalas do gráfico geralmente são definidas como <code>xlim=c(min,max)</code> e <code>ylim=c(min,max)</code>. 
+
+Muitas das funções têm _defaults_ e colocam elementos no gráfico, sem que o usuário precise pedi-los.
+
+## _pie chart_ (gráfico de setores, torta, pizza)
+```{r, echo=FALSE}
+cat(readLines("demo_pie.R"), sep = '\n')
+source("demo_pie.R")
+```
+
+<br>
+```{r fig.align="left", out.width='6%', echo=FALSE}
+knitr::include_graphics("image/coruja.png", dpi=150)
+```
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Qualquer gráfico, em vez de ser mostrado na tela, pode ser salvo em disco. Basta colocar antes e depois do ponto do Rscript que exibe o gráfico:
+
+* para gerar PDF (que pode conter múltiplos gráficos):
+
+<code>
+pdf("GraficoSetores.pdf")<br>
+# exibição do gráfico<br>
+dev.off()
+</code>
+
+* para EPS (cada arquivo em um gráfico separado):
+
+<code>
+setEPS()<br>
+postscript("GraficoSetores.eps")<br>
+# exibição do gráfico<br>
+dev.off()
+</code>
+
+* para PNG (cada arquivo em um gráfico separado):
+
+<code>
+png("GraficoSetores.png")<br>
+# exibição do gráfico<br>
+dev.off()
+</code>
+</td></tr></table>
+
+<br>
+
+## gráfico de barras
+<div align=right><span style="font-size:70%">
+https://www.statmethods.net/graphs/bar.html 
+</span></div>
+
+```{r, echo=FALSE}
+cat(readLines("demo_barra.R"), sep = '\n')
+source("demo_barra.R")
+```
+
+
+Caso pegue um _data frame_ com séries temporais, poderá usar R para construir este tipo de vídeo, que talvez já tenham encontrado na Web: https://www.youtube.com/watch?v=IHF6A5Tri1U&feature=youtu.be
+
+## combinação de gráficos:
+
+Veja diversas possibilidades em 
+[Plot Grouped Data: Box plot, Bar Plot and More](http://www.sthda.com/english/articles/32-r-graphics-essentials/132-plot-grouped-data-box-plot-bar-plot-and-more/#sinaplot). Por exemplo:
+
+```{r, echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/006-plot-boxpoint.png")
+```
+```{r, echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/006-plot-violin.png")
+```
+```{r, echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/006-plot-error.png")
+```
+```{r, echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/006-plot-boxline.png")
+```
+
+## linhas com máximo e mínimo
+
+```{r, echo=FALSE}
+cat(readLines("demo_lowhigh.R"), sep = '\n')
+source("demo_lowhigh.R")
+```
+
+## _stacked dot plot_ (gráfico de pontos empilhados)
+
+### para um grupo
+```{r, echo=FALSE}
+cat(readLines("demo_dotplot.R"), sep = '\n')
+source("demo_dotplot.R")
+```
+
+### para dois grupos
+```{r, echo=FALSE}
+cat(readLines("demo_dotplot2.R"), sep = '\n')
+source("demo_dotplot2.R")
+```
+
+## histograma
+
+### para um grupo
+```{r, echo=FALSE}
+cat(readLines("demo_histograma.R"), sep = '\n')
+source("demo_histograma.R")
+```
+
+### para dois grupos
+```{r, echo=FALSE}
+cat(readLines("demo_histograma2.R"), sep = '\n')
+source("demo_histograma2.R")
+```
+
+## _scatterplot_ (gráfico de dispersão)
+
+### para um grupo
+```{r, echo=FALSE}
+cat(readLines("demo_scatterplot.R"), sep = '\n')
+source("demo_scatterplot.R")
+```
+
+### para dois grupos
+```{r, echo=FALSE}
+cat(readLines("demo_scatterplot2.R"), sep = '\n')
+source("demo_scatterplot2.R")
+```
+
+## _bagplot_
+
+```{r, echo=FALSE}
+cat(readLines("demo_bagplot.R"), sep = '\n')
+source("demo_bagplot.R")
+```
+
+## _density plot_ (gráfico de densidade)
+
+### para um grupo
+```{r, echo=FALSE}
+cat(readLines("demo_density.R"), sep = '\n')
+source("demo_density.R")
+```
+
+### para dois grupos
+```{r, echo=FALSE}
+cat(readLines("demo_density2.R"), sep = '\n')
+source("demo_density2.R")
+```
+
+## _dot plot_ com médias para 2 grupos
+
+```{r, echo=FALSE}
+cat(readLines("demo_dotplot3.R"), sep = '\n')
+source("demo_dotplot3.R")
+```
+
+## médias para 2 grupos com intervalo de confiança
+
+```{r, echo=FALSE}
+cat(readLines("demo_mediaIC95.R"), sep = '\n')
+source("demo_mediaIC95.R")
+```
+
+## médias para 2 fatores com intervalo de confiança
+```{r, echo=FALSE}
+cat(readLines("demo_mediaIC95_2.R"), sep = '\n')
+source("demo_mediaIC95_2.R")
+```
+
+## _boxplot_ com dois fatores
+
+```{r, echo=FALSE}
+cat(readLines("demo_boxplot2.R"), sep = '\n')
+source("demo_boxplot2.R")
+```
+
+## itens Likert
+
+```{r, echo=FALSE}
+cat(readLines("demo_Likert.R"), sep = '\n')
+source("demo_Likert.R")
+```
+
+```{r, echo=FALSE}
+options(warn=0)
+```
+
+<br>
+```{r, echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/descriptive-statistics.png")
+```
+<div align=right><span style="font-size:70%">
+https://www.pngegg.com/en/png-ixtgv
+</span></div>
+

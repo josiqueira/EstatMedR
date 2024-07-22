@@ -1,0 +1,6 @@
+n <- sum(!is.na(estaturas))
+media.med <- mean(estaturas, na.rm=TRUE)
+desvpad.med <- sd(estaturas, na.rm=TRUE)
+cat("Estaturas, sexo masculino (n=",n,"):\n",sep="")
+cat("\tmedia = ",media.med,sep="")
+cat("\tdp = ",desvpad.med,sep="")
