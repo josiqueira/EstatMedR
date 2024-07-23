@@ -1,0 +1,59 @@
+
+# Pacotes, funções e arquivos necessários
+
+* packages
+```{r, echo=TRUE, class.source="bgcodigo", class.output="bgsaida"}
+options(warn=-1)
+suppressMessages(library(BSDA, warn.conflicts=FALSE))
+suppressMessages(library(EnvStats, warn.conflicts=FALSE))
+suppressMessages(library(ggimage, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(graphics, warn.conflicts=FALSE))
+suppressMessages(library(grid, warn.conflicts=FALSE))
+suppressMessages(library(png, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+
+* scripts
+
+    * [Binomial_com_caudas_2.R](Binomial_com_caudas_2.R)
+    * [Binomial_com_caudas.R](Binomial_com_caudas.R)
+    * [Binomial_H0.R](Binomial_H0.R)
+    * [Binomial_H0H1.R](Binomial_H0H1.R)
+    * [Binomial_H0H1variavel.R](Binomial_H0H1variavel.R)
+    * [demo_15jogadas_df_2.R](demo_15jogadas_df_2.R)
+    * [demo_15jogadas_df_p.R](demo_15jogadas_df_p.R)
+    * [demo_15jogadas_df.R](demo_15jogadas_df.R)
+    * [demo_5jogadas_df.R](demo_5jogadas_df.R)
+    * [demo_5jogadas_tab.R](demo_5jogadas_tab.R)
+    * [demo_5jogadas.R](demo_5jogadas.R)
+    * [demo_binomial_1a15.R](demo_binomial_1a15.R)
+    * [demo_binomial_1jogada.R](demo_binomial_1jogada.R)
+    * [demo_binomial_2jogadas.R](demo_binomial_2jogadas.R)
+    * [demo_binomial_3jogadas.R](demo_binomial_3jogadas.R)
+    * [demo_binomial_caudaD.R](demo_binomial_caudaD.R)
+    * [demo_compadrao.R](demo_compadrao.R)
+    * [demo_qui2dp_PRRN.R](demo_qui2dp_PRRN.R)
+    * [demo_sempadrao.R](demo_sempadrao.R)
+    * [demo_zbilateral1condicao_100.R](demo_zbilateral1condicao_100.R)
+    * [demo_zbilateral1condicao_100tmp.R](demo_zbilateral1condicao_100tmp.R)
+    * [demo_zbilateral1condicao_padrao_2.R](demo_zbilateral1condicao_padrao_2.R)
+    * [demo_zbilateral1condicao_padrao.R](demo_zbilateral1condicao_padrao.R)
+    * [demo_zbilateral1condicao_padrao100_2.R](demo_zbilateral1condicao_padrao100_2.R)
+    * [demo_zbilateral1condicao_padrao100.R](demo_zbilateral1condicao_padrao100.R)
+    * [demo_zbilateral1condicao.R](demo_zbilateral1condicao.R)
+    * [demo_ztest.R](demo_ztest.R)
+    * [demo_ztest100.R](demo_ztest100.R)
+    * [demo_zunilateral_PRRN.R](demo_zunilateral_PRRN.R)
+    * [eiras.friendlycolor.R](eiras.friendlycolor.R)
+    * [fig_compadrao1.R](fig_compadrao1.R)
+    * [fig_compadrao2.R](fig_compadrao2.R)
+    * [fig_sempadrao1.R](fig_sempadrao1.R)
+    * [Goodcoin.R](Goodcoin.R)
+
+
+* files
+
+    * [Table 8.2 RawBirthWeight.xls](Table 8.2 RawBirthWeight.xls)
