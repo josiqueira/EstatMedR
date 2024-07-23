@@ -1,0 +1,852 @@
+---
+title: "Teste t"
+author: |
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    font_adjustment: 1
+    css: style.css
+    df_print: tibble 
+    footer: "Teste_t.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  slidy_presentation:
+    font_adjustment: -1
+    css: style.css
+    footer: "Teste_t.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size:  18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 16px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts = FALSE))
+suppressMessages(library(ggplot2, warn.conflicts = FALSE))
+suppressMessages(library(gplots, warn.conflicts = FALSE))
+suppressMessages(library(effectsize, warn.conflicts = FALSE))
+suppressMessages(library(effsize, warn.conflicts=FALSE))
+suppressMessages(library(bootES, warn.conflicts=FALSE))
+suppressMessages(library(Rmisc, warn.conflicts=FALSE))
+suppressMessages(library(pwr, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+* Script R
+
+    * [Animacao_t_central.R](Animacao_t_central.R)
+    * [Animacao_t_nao_central.R](Animacao_t_nao_central.R)
+    * [demo_sodio.R](demo_sodio.R)
+    * [demo_sodio_descritiva.R](demo_sodio_descritiva.R)
+    * [demo_sodio_efeito.R](demo_sodio_efeito.R)
+    * [demo_sodio_eta2.R](demo_sodio_eta2.R)
+    * [demo_sodio_t.R](demo_sodio_t.R)
+    * [eiras.bartitle.R](eiras.bartitle.R)
+    * [eiras.tab.dCohen.R](eiras.tab.dCohen.R)
+    * [eiras.tab.eta2.R](eiras.tab.eta2.R)
+    * [Nifedipina.R](Nifedipina.R)
+    * [TestetRelacionadoBilateral_SemDadosBrutos.R](TestetRelacionadoBilateral_SemDadosBrutos.R)
+    * [TestetRelacionadoUnilateralDireita_SemDadosBrutos.R](TestetRelacionadoUnilateralDireita_SemDadosBrutos.R)
+    * [TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.R](TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.R)
+    * [TestetWelchBilateral_SemDadosBrutos.R](TestetWelchBilateral_SemDadosBrutos.R)
+    * [TestetWelchUnilatDir_SemDadosBrutos.R](TestetWelchUnilatDir_SemDadosBrutos.R)
+    * [TestetWelchUnilatEsq_SemDadosBrutos.R](TestetWelchUnilatEsq_SemDadosBrutos.R)
+
+
+* data files
+
+    * [Nutricao.xlsx](Nutricao.xlsx)
+    * [TestetRelacionadoBilateral_SemDadosBrutos.txt](TestetRelacionadoBilateral_SemDadosBrutos.txt)
+    * [TestetRelacionadoUnilateralDireita_SemDadosBrutos.txt](TestetRelacionadoUnilateralDireita_SemDadosBrutos.txt)
+    * [TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.txt](TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.txt)
+    * [TestetWelchBilateral_SemDadosBrutos.txt](TestetWelchBilateral_SemDadosBrutos.txt)
+    * [TestetWelchUnilatDir_SemDadosBrutos.txt](TestetWelchUnilatDir_SemDadosBrutos.txt)
+    * [TestetWelchUnilatEsq_SemDadosBrutos.txt](TestetWelchUnilatEsq_SemDadosBrutos.txt)
+    
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+# Objetivos
+
+Ao final desta aula (capítulo 7 do livro adotado) o aluno deve ser capaz de:
+
+* reconhecer e mencionar propriedades da distribuição t
+* reconhecer as indicações e aplicar um teste t:
+  * para uma condição
+  * relacionado (duas condições dependentes)
+  * independente (duas condições independentes)
+* definir as hipóteses estatísticas nula e alternativa
+* calcular e interpretar medidas de tamanho de efeito ($d$ e $\eta^2$ de Cohen)
+* computar as significância estatísticas e prática em suas versões _bootstrapping_
+* conceituar e executar com G*Power os requisitos principais para o planejamento de um estudo
+
+# Distribuição _t_ de Student
+
+* [Student's t-distribution: Wikipedia](https://en.wikipedia.org/wiki/Student%27s_t-distribution){target="_blank"}
+
+É uma distribuição de probabilidades que considera graus de liberdade ($\nu$, letra grega [ni](https://pt.wikipedia.org/wiki/%CE%9D){target="_blank"}).
+
+A distribuição _t_ central é simétrica e tem mais valores mais concentrados em torno de sua média nula do que a normal padrão (mesocúrtica), i.e., a distribuição _t_ central é leptocúrtica. A comparação gráfica da normal pradrão com a _t_ central está errada em quase todos os textos, exceto em Spanos (1998, p. 119-20, 205-7). 
+
+* Spanos, A (1998) _Probability theory and statistical inference_. UK: Cambridge.
+
+A distribuição _t_ não é uma única curva, mas uma família delas que varia com o os graus de liberdade. O número de graus de liberdade não é uma variável discreta (conjunto dos números naturais), um contínua (conjunto dos números reais positivos).
+
+Podemos pensar na distribuição _t_ como um avanço histórico em relação à distribuição normal padrão - em um teste _z_, o desvio-padrão populacional é conhecido; no teste _t_ usa-se o desvio-padrão amostral como seu estimador. A incerteza adicional pela falta de conhecimento do desvio-padrão populacional é considerada por meio dos graus de liberdade, alterando a distribuição sobre a qual a estatística do teste funciona.
+
+Os graus de liberdade dependem do tamanho da amostra e do delineamento do estudo; quanto menor o tamanho da amostra, mais pesadas são as suas caudas e, portanto, diferenças numéricas precisam que ser maiores para que consigamos rejeitar a hipótese nula.
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Experimente [Animacao_t_central.R](Animacao_t_central.R){target="_blank"} para ver o aspecto da distribuição _t_ central e observe:
+
+* a distribuição _t_ é simétrica e central em zero.
+* aproxima-se da distribuição normal se o número de graus de liberdade da distribuição _t_ tende para infinito.
+</td></tr></table>
+
+## Funções para distribuições em R
+
+R dispõe de uma família de funções básicas para cada tipo de distribuição. Estes pequenos conjuntos são análogos uns aos outros conjuntos, facilitando o aprendizado.
+
+### distribuição _t_ de Student central
+
+Para a distribuição _t_ as funções são similares:
+
+* `dt(x, df, ncp, log = FALSE)`
+* `pt(q, df, ncp, lower.tail = TRUE, log.p = FALSE)`
+* `qt(p, df, ncp, lower.tail = TRUE, log.p = FALSE)`
+* `rt(n, df, ncp)`
+
+Como as distribuições normais, as funções t são para variáveis quantitativas contínuas. Já são padronizadas e, portanto, não aparece média e desvio-padrão entre seus parâmetros. Em vez disto, aparecem duas novidades:
+
+* graus de liberdade (<code>df</code>, do inglês _degrees of freedom_) 
+* parâmetro de não centralidade (<code>ncp</code>) 
+
+No caso, o número de graus de liberdade está relacionado com o tamanho da amostra e o delineamento do estudo. A distribuição _t_ central tem <code>ncp = 0</code>. i.e., parâmetro de não centralidade nulo. 
+
+```{r}
+gl <- 5
+x <- seq(-4, 4, length.out = 100)
+densidade <- dt(x, df = gl)
+plot(x, densidade, type = "l", lwd = 2, col = "black", 
+     xlab = "t", ylab = "Densidade",
+     main = paste0("Distribuição t de Student\ncom ",gl," graus de liberdade"))
+```
+
+# Raciocínio inferencial
+
+Análise estatística inferencial é o processo de estimar características de uma população a partir de uma amostra, por meio do teste de hipótese nula.
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/pop_amostra.png", dpi=110)
+```
+
+# Teste _t_ para duas condições independentes (teste _t_ de Welch)
+
+"A quantidade diária de sódio disponível para consumo nos
+domicílios brasileiros foi de 4,7 g para ingestão diária de 2.000 kcal, 
+mantendo-se mais de duas vezes superior ao limite recomendado de 
+ingestão desse nutriente." 
+
+> SARNO et al. (2013) Estimativa de consumo de sodio pela populacao brasileira 2008-9. _Rev Saude Pública_ 47(3): 571-8.
+
+Quando temos duas condições independentes (como no exemplo das estaturas de mulheres e homens), i.e., delineamento entre participantes, com amostras provenientes de uma população cujos desvios-padrão são desconhecidos, podemos utilizar o teste _t_ para testar a igualdade das médias populacionais.
+
+Por exemplo, 
+
+```{r fig.align="left", echo=FALSE}
+knitr::include_graphics("./image/snaped.png", dpi=250)
+```
+
+> https://www.fns.usda.gov/snap/supplemental-nutrition-assistance-program-education-snap-ed
+
+O SNAP-Ed (_Supplemental Nutrition Assistance Program Education_) é um programa baseado em evidências que ajuda as pessoas a terem uma vida mais saudável.
+
+O SNAP-Ed ensina às pessoas que usam ou qualificam para o SNAP uma boa nutrição e como fazer com que o seu dinheiro de alimentação se estenda ainda mais.
+
+Os participantes do SNAP-Ed também aprendem a ser fisicamente ativos.
+
+## Exemplo: ingestão de sódio em delineamento entre participantes
+
+Brendon e McGuirk fazem com que seus alunos do SNAP-Ed mantenham diários do que comem por uma semana e depois calculem a ingestão diária de sódio em miligramas.
+
+Desde que as classes receberam diferentes programas de educação nutricional, eles querem ver se a ingestão média de sódio é a mesma para as duas turmas.
+
+$$H_0: \mu_{\text{Brendon}} = \mu_{\text{McGuirk}}$$
+$$H_1: \mu_{\text{Brendon}} \ne \mu_{\text{McGuirk}}$$
+$$\alpha=0.05$$
+
+O subscrito na média populacional $\mu$ das hipóteses nula e alternativa podem não ser os mais felizes. Note que, com o teste, nosso objetivo final é a inferência: não é avaliar a turma de Brendon  em comparação à do McGuirk que interessa aqui, mas se **populacionalmente** os efeitos dos programas adotados por Brendon e pelo McGuirk são iguais ou não, tendo por base o que acontecer em suas respectivas turmas de estudantes.
+
+## Dados
+
+```{r fig.align="left", echo=FALSE}
+knitr::include_graphics("./image/pinoquio.png", dpi=800)
+```
+
+```{r}
+Dados <- data.frame(readxl::read_excel("Nutricao.xlsx"))
+Dados$Instructor <- factor(Dados$Instructor)
+Dados$Student <- factor(Dados$Student)
+print(head(Dados))
+print(tail(Dados))
+print(summary(Dados))
+```
+
+## Estatística descritiva
+
+Começamos com a estatística descritiva ([demo_sodio_descritiva.R](demo_sodio_descritiva.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("demo_sodio_descritiva.R")
+```
+
+Observando se não há valores discrepantes, indicando possíveis erros na entrada de dados.
+
+## Significância estatística: valor _p_
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/defender.png", dpi=80)
+```
+<div align=right><Brendon>
+https://performancedrive.com.au/icon-land-rover-defender-90-6-2-chev-v8-1606/
+</Brendon></div>
+
+O teste _t_ a ser aplicado é de Satterthwaite (apesar do R exibir como teste de Welch), conforme as seguintes referências:
+
+* SATTERTHWAITE, FE (1946) Approximate distribution of estimates of variance components. _Biometrics Bulletin_ 2(6): 110-114
+* WELCH, BL (1947) The generalization of ‘Student’s’ problem when several different population variances are involved. _Biometrika_ 34(1/2): 28-35
+* Manuais do STATA
+
+Operacionalização do teste t de Welch com a função `t.test` ([demo_sodio_t.R](demo_sodio_t.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("demo_sodio_t.R")
+```
+
+Não rejeitamos $H_0$: não há elementos para afirmar que há diferença de resultado, quanto à ingestão de sódio, quando comparamos os dois grupos submetidos a diferentes programas educacionais.
+
+### Homocedastididade e Normalidade
+
+Uma das premissas para a aplicação do teste _t_ de Student, discutido adiante, é a homocedasticidade (a variância populacional da variável dependente deve ser igual nos dois grupos estudados). O teste _t_ de Welch (ou Satterthwaite) é um método mais robusto que o teste _t_ de Student tradicional: a modificação proposta por Satterthwaite e Welch prescinde da homocedasticidade, corrigindo os graus de liberdade (<code>df</code>). 
+
+Uma forma heurística para sabermos se há indícios de heterocedasticidade é comparar os desvios-padrão: se a razão do maior e menor desvios-padrão é maior que 2, é indício de heterocedasticidade. 
+
+Uma forma mais rigorosa é testar homocedasticidade estatisticamente, por exemplo com:
+
+```{r echo=TRUE}
+hmc <- fligner.test(Sodium ~ Instructor, data=Dados)
+print(hmc)
+```
+
+Este teste não rejeita a hipótese nula de homocedasticidade para qualquer nível de significância razoável.
+
+Uma forma mais rigorosa é testar normalidade para cada condição independente estatisticamente, por exemplo com:
+
+```{r echo=TRUE}
+print(shapiro.test(Dados[Dados$Instructor=="Brendon Small","Sodium"]))
+print(shapiro.test(Dados[Dados$Instructor=="Coach McGuirk","Sodium"]))
+```
+
+Este teste não rejeita a hipótese nula de normalidade para cada grupo para qualquer nível de significância razoável.
+
+Utilizaremos o teste t de Welch neste caso, mesmo sendo possível o uso do teste t de Student por meio do parâmetro `var.equal = TRUE` da função `t.test`.
+
+## Graus de liberdade
+
+No caso de duas condições independentes, $A$ e $B$, o número de graus de liberdade é dados por $\text{df}_{\text{max}} = n_A + n_B - 2=38$. A saída relata `r round(t_out$parameter,3)` graus de liberdade. No teste _t_ de Welch, quanto maior for a heterocedasticidade, menor será o número de graus de liberdade. Esta correção leva em conta a heterocedasticidade amostral, numérica, incorporando um ajuste gradual que traz uma vantagem sobre o teste _t_ de Student. Além disto, como a correção é sempre feita, prescinde da necessidade do teste de homocedasticidade.
+
+Como foi visto, menor número de graus de liberdade equivale a caudas mais pesadas para a distribuição _t_ e, portanto, mais incerteza é levada em conta para a decisão estatística quanto maior for a heterocedasticidade entre os grupos amostrados das duas condições experimentais, compensando o quanto a falta de homocedasticidade "atrapalha" o teste _t_. 
+
+Outra observação interessante sobre a correção de Welch é sobre seus valores extremos. O limite superior é $df_{\text{max}} = n_A + n_B - 2$. Temos, neste exemplo, dois grupos de 20 estudantes e $df_{\text{max}} = 38$. Também sabemos que na situação do teste _t_ relacionado, os graus de liberdade são dados por $df=n-1$. Este é o limite inferior dos graus de liberdade, como se fossem os mesmos indivíduos submetidos a ambas as condições: $df_{\text{min}} = \text{min}(n_A, n_B) - 1$ que, neste exemplo é $df_{\text{min}} = 19$, valor que seria alcançado se houvesse heterocedasticidade extrema.  
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+O número de graus de liberdade é a quantidade necessária de unidades experimentais para que o estimador da variância do estimador do efeito do teste (diferença padronizada das médias amostrais) usando todas as medidas independentes da amostra seja não-viesado. 
+
+> Adaptado de Wonnacott, T. & Wonnacott, R. (1990) _Introductory Statistics for Business and Economics_. 4ª ed. NJ: Wiley, p. 262
+
+Quando ouvimos sobre o tamanho da amostra, habitualmente estão se referindo ao tamanho **nominal** da amostra. O número de graus de liberdade constitui o tamanho **efetivo** da amostra.
+
+> Eisenhauer, JG (2008) Degrees of freedom. _Teaching Statistics_ 30(3): 75-8
+
+</td></tr></table>
+
+## Significância prática: tamanho de efeito
+
+Calculamos d de Cohen (tamanho de efeito) ([demo_sodio_efeito.R](demo_sodio_efeito.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("demo_sodio_efeito.R")
+```
+
+> Sawilowsky, S (2009) New effect size rules of thumb. _Journal of Modern Applied Statistical Methods_ 8(2): 467-74. 
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/tabela_eta2.png", dpi=120)
+```
+
+> Elis, P (2010) _The essential guide to effect sizes_. UK: Cambridge.
+
+Eta ao quadrado (notado como <code>eta^2</code> ou $\eta^2$) é uma medida de tamanho de efeito.
+
+Como qualquer medida de tamanho de efeito, estas características são necessárias, mas não suficientes:
+
+* não depende do tamanho da amostra,
+* varia entre 0 e 1,
+* adimensional.
+
+Existem equivalências do $\eta^2$ com outras medidas de tamanho de efeito:
+
+* é o quadrado da correlação de Pearson implícita entre a VI (nominal) e a VD (intervalar) do modelo linear geral (GLM).
+* é igual ao coeficiente de determinação $R^2$ do modelo de regressão linear.
+* é igual ao coeficiente de correlação de Pearson ao quadrado entre a VI (intervalar binária) e a VD (intervalar)
+
+A estimação pontual e por intervalo de confiança de $\eta^2$ está implementada em [demo_sodio_eta2.R](demo_sodio_eta2.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("demo_sodio_eta2.R")
+```
+
+Este exercício direto só pode ser feito com dois instrutores. Não podemos computar a correlação diretamente com três ou mais instrutores. Para calcular a correlação implícita entre uma VI nominal e uma VD intervalar quando a função <code>cor</code> não pode ser utilizada, basta computar $\sqrt{\eta^2}$.
+
+$\eta$ é correlação de Pearson absoluta implícita.
+
+Portanto, $\eta^2$ é uma forma mais geral para medirmos o tamanho de efeito. 
+
+O valor de $\eta^2$ é a proporção da variância da VD (`Sodium`) explicada pela VI (`Instructor`).
+
+$\eta^2$ é o tamanho de efeito global do modelo estatístico. 
+
+Neste caso existe apenas uma VI e, portanto, o tamanho de efeito global é também o atribuído à única VI existente. Veremos em capítulos adiante $\eta^2$ global para o modelo e $\eta^2$ parciais para os efeitos das VI.
+
+# Teste _t_ relacionado (duas condições dependentes)
+
+Aplica-se tipicamente às situações em que o mesmo indivíduo (ou a mesma unidade experimental) tem uma variável de desfecho intervalar medida em dois momentos ou em duas condições experimentais dependentes. As duas medidas feitas em um mesmo indivíduo não podem ser consideradas independentes: ao contrário, estão relacionadas entre si por tudo que for idiossincrático.
+
+## Exemplo: ingestão de sódio em delineamento intraparticipantes
+
+Retomamos o exemplo anterior, no qual Brendon e McGuirk fazem com que seus alunos do SNAP-Ed mantenham diários do que comem por uma semana e depois calculem a ingestão diária de sódio em miligramas. No entanto, vamos imaginar que os mesmos estudantes passaram pelos dois programas, e portanto pretendemos verificar se a ingestão média de sódio foi a mesma para estes indivíduos nas duas situações.
+
+Quando podemos submeter um grupo de indivíduos a duas situações e obtemos as mesmas medidas, podemos decidir com base na diferença entre as medidas **de cada indivíduo**, para sabermos se o efeito obtido é ou não similar (um teste bilateral). O mesmo raciocínio é aplicável a quaisquer duas condições: reações a drogas, sucessos em tratamentos, reações a influências ambientais ou respostas a estímulos.
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+O teste _t_ relacionado também costuma ser chamado de teste _t_ pareado. O problema de denominá-lo de _pareado_  é a confusão conceitual entre o cálculo estatístico, que é o mesmo, e o delineamento dos estudos, que é diverso. 
+
+Um desenho de estudo pareado não usa os mesmos indivíduos "antes e depois" nem "sob condição A e condição B", mas indivíduos diferentes. No entanto, não são indivíduos quaisquer, mas pares de indivíduos o mais similares possíveis em todas as variáveis outras, que não a que nos interessa estudar, das quais sabemos ter influência em nossa medida. Por exemplo, para ver o efeito do tratamento em pares de hipertensos, podemos utilizar pares de indivíduos com o mesmo IMC, idade, sexo, nível de colesterol, hábitos de dieta etc. 
+</td></tr></table>
+
+## Hipóteses
+
+Desde que cada participante foi submetido aos dois programas de educação nutricional, as hipóteses são:
+
+$$H_0: \mu_{\text{McGuirk}} - \mu_{\text{Brendon}} = 0$$
+$$H_1: \mu_{\text{McGuirk}} - \mu_{\text{Brendon}} \ne 0$$
+$$\alpha=0.05$$
+
+## Dados
+
+```{r fig.align="left", echo=FALSE}
+knitr::include_graphics("./image/pinoquio.png", dpi=800)
+```
+
+Utilizaremos os mesmos dados numéricos de antes, mas rearranjados como medidas de um mesmo participante nas duas condições, disponíveis na mesma planilha [Nutricao.xlsx](Nutricao.xlsx){target="_blank"}. Os dados podem ser lidos e exibidos assim:
+
+```{r echo=TRUE}
+suppressMessages(library(readxl, warn.conflicts = FALSE))
+Dtfrm <- readxl::read_excel("Nutricao.xlsx", sheet="dependente")
+print(Dtfrm)
+```
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+A planilha _Nutricao.xlsx_ tem duas abas. Os dados no formato adequado para o teste _t_ relacionado está na aba "dependente". Observe como usamos a função <code>read_excel()</code> para ler a aba correta (por _default_ esta função lê a primeira aba da planilha).
+</td></tr></table>
+
+## Teste _t_ relacionado bilateral
+
+Os _Rscripts_ são fundamentalmente os mesmos, com a importante diferença de que usaremos principalmente a coluna <code>dif</code> para a tomada de decisões. 
+
+Diferentemente da seção anterior, fornecemos aqui o código [demo_sodio.R](demo_sodio.R){target="_blank"}, o qual faz todos os passos sequencialmente: estatística descritiva,  significância estatística e significância prática. A saída é longa, e deve ser vista passo-a-passo:
+
+```{r echo=TRUE}
+alternative <- "two.sided"
+source("demo_sodio.R")
+```
+
+A primeira parte da saída é a análise descritiva. Na parte textual e nos gráficos verificamos que não há valores estranhos ou discrepantes. 
+Em seguida, aparece o teste _t_ relacionado usando a função `t.test` e o gráfico correspondente. Aqui o teste _t_ é feito com a diferença entre as medidas, e a conclusão é pela não rejeição da hipótese nula.
+Finalmente, fazemos a análise da significância prática.
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+No caso de duas condições dependentes, o número de graus de liberdade é dado por $df_{\text{max}} = n - 1$, igual a $19$ neste exemplo.
+
+Para analisar o tamanho de efeito, o $d$ de Cohen não é calculado aqui. A medida preferível é $\eta^2$.
+</td></tr></table>
+
+## Teste _t_ relacionado unilateral
+
+Suponha que tivéssemos conhecimento prévio de que o programa do instrutor McGuirk é mais bem sucedido (i.e., reduz mais a ingesta de sódio) que o do instrutor Brendon, e quiséssemos testar esta hipótese. O teste passa a ser unilateral. As hipóteses serão:
+
+$$H_0: \mu_{\text{McGuirk}} - \mu_{\text{Brendon}} = 0$$
+$$H_1: \mu_{\text{McGuirk}} - \mu_{\text{Brendon}} < 0$$
+$$\alpha=0.05$$
+
+O mesmo código está adaptado para esta situação, mudando o parâmetro <code>alternative</code>:
+
+```{r echo=TRUE}
+alternative <- "less"
+source("demo_sodio.R")
+```
+
+# Teste _t_ para uma condição
+
+## Exemplo: Nifedipina e frequência cardíaca
+
+Suspeita-se de que um medicamento vasodilatador (Nifedipina) para Hipertensão Arterial, amplamente receitado, esteja aumentando a frequência cardíaca dos pacientes.
+
+É sabido que a frequência cardíaca fisiológica tem distribuição normal com média 70 bpm.
+
+## Hipóteses
+
+Para verificar essa suspeita, planejou-se obter uma amostra aleatória de 50 pacientes que recebem Nifedipina para se medir a frequência cardíaca.
+
+$$H_0: \mu_{\text{nifedipina}} = \mu_0$$
+
+$$H_1: \mu_{\text{nifedipina}} > \mu_0$$
+
+Adota-se $\mu_0 = 70~\text{bpm}$.
+
+## Dados
+
+```{r fig.align="left", echo=FALSE}
+knitr::include_graphics("./image/pinoquio.png", dpi=800)
+```
+
+A amostra de 50 pacientes forneceu:
+
+72, 74, 70, 70, 69, 71, 72, 71, 69, 74, 
+71, 71, 70, 73, 69, 68, 68, 71, 71, 72, 
+70, 69, 73, 69, 71, 70, 72, 73, 70, 72, 
+67, 72, 67, 68, 69, 72, 70, 70, 70, 71, 
+74, 67, 69, 71, 71, 73, 71, 71, 70, 71
+
+## Estatística descritiva
+
+* Esquema de 5 pontos de Tukey:
+
+```{r echo=TRUE}
+bpm <- c(72, 74, 70, 70, 69, 71, 72, 71, 69, 74, 71, 71, 70, 73, 69, 68, 68,
+         71, 71, 72, 70, 69, 73, 69, 71, 70, 72, 73, 70, 72, 67, 72, 67, 68,
+         69, 72, 70, 70, 70, 71, 74, 67, 69, 71, 71, 73, 71, 71, 70, 71)
+sumario <- summary(bpm)
+print(sumario)
+```
+
+* _Boxplot_
+
+```{r echo=TRUE, eval=FALSE}
+par(mfrow=c(1,2))
+boxplot (bpm, 
+      main="Dados amostrais", 
+      ylab="Batimentos cardíacos", xlab="")
+boxplot (bpm, horizontal = TRUE, 
+      main="Dados amostrais", 
+      xlab="Batimentos cardíacos", ylab="")
+par(mfrow=c(1,1))
+```
+
+```{r echo=FALSE}
+par(mfrow=c(1,2))
+boxplot (bpm, 
+      main="Dados amostrais", 
+      ylab="Batimentos cardíacos", xlab="")
+boxplot (bpm, horizontal = TRUE, 
+      main="Dados amostrais", 
+      xlab="Batimentos cardíacos", ylab="")
+par(mfrow=c(1,1))
+```
+
+* _Density plot_ para ver o formato da distribuição dos dados:
+
+```{r echo=TRUE}
+densprob <- density(bpm)
+plot (densprob, 
+      main="Distribuição dos dados amostrais", 
+      xlab="Batimentos cardíacos", ylab="Densidade")
+```
+
+no "olhômetro", parece aproximar-se da distribuição normal?
+
+```{r echo=TRUE}
+# dados
+bpm <- c(72, 74, 70, 70, 69, 71, 72, 71, 69, 74, 71, 71, 70, 73, 69, 68, 68,
+         71, 71, 72, 70, 69, 73, 69, 71, 70, 72, 73, 70, 72, 67, 72, 67, 68,
+         69, 72, 70, 70, 70, 71, 74, 67, 69, 71, 71, 73, 71, 71, 70, 71)
+# density plot
+densprob <- density(bpm)
+plot(densprob, 
+     main="Distribuição dos dados amostrais", 
+     xlab="Batimentos cardíacos", ylab="Densidade")
+# distribuicao com media +- 4 desvios-padrao
+media_bpm <- mean(bpm, na.rm = TRUE)
+dp_bpm <- sd(bpm, na.rm = TRUE)
+x <- seq(media_bpm-4*dp_bpm,media_bpm+4*dp_bpm,by=0.1)
+distnormal <- dnorm(x, mean=media_bpm, sd=dp_bpm)
+lines(x, distnormal, lty=2)
+```
+
+## Estatística inferencial
+
+Para um teste _t_ para uma condição, unilateral à direita (note o uso de "_greater_"), é necessário fornecer o valor de referência (<code>mu_pop <- 70</code>) executado com:
+
+```{r echo=TRUE}
+bpm <- c(72, 74, 70, 70, 69, 71, 72, 71, 69, 74, 71, 71, 70, 73, 69, 68, 68,
+         71, 71, 72, 70, 69, 73, 69, 71, 70, 72, 73, 70, 72, 67, 72, 67, 68,
+         69, 72, 70, 70, 70, 71, 74, 67, 69, 71, 71, 73, 71, 71, 70, 71)
+mu_pop <- 70
+alfa <- 0.05
+t_out <- t.test(bpm, 
+                mu=mu_pop, 
+                conf.level = 1-alfa, 
+                alternative = "greater")
+print(t_out)
+```
+
+Para a decisão estatística, observe o valor da estatística do teste, guardada em  **t_out\$statistic**=`r t_out$statistic` e o valor-$p$ associado em **t_out\$p.value**=`r t_out$p.value`. 
+
+Para $\alpha=0.05$, rejeita-se $H_0$ e, portanto, o uso de nifedipina está associada ao aumento da frequência cardíaca neste estudo.
+
+Para $\alpha=0.01$, não se rejeita $H_0$ e, portanto, não há elementos neste estudo para afirmar-se que o uso de nifedipina está associada ao aumento da frequência cardíaca.
+
+**FALTOU escolher $\alpha$ no planejamento do estudo.**
+
+## Tamanho de efeito
+
+Neste caso é obtido por
+
+```{r echo=TRUE, eval=FALSE}
+cat("Significancia pratica:\n")
+df <- t_out$parameter # graus de liberdade
+t <- t_out$statistic # estatistica de teste t observada
+dC <- effsize::cohen.d(bpm~1, 
+                       mu=mu_pop,
+                       conf.level=1-alfa,
+                       na.rm=TRUE) # Classificação de Cohen (1988)
+print(dC)
+print(effectsize::interpret_cohens_d(d=dC$estimate, 
+                                     rules="sawilowsky2009"))
+
+F <- t^2 # estatistica de teste F de Fisher
+eta2 <- F/(F+df)
+cat("\tEta^2 = ",eta2 ,"\n",sep="")
+print(effectsize::interpret_eta_squared(es=eta2))
+```
+
+```{r echo=FALSE}
+bpm <- c(72, 74, 70, 70, 69, 71, 72, 71, 69, 74, 71, 71, 70, 73, 69, 68, 68,
+         71, 71, 72, 70, 69, 73, 69, 71, 70, 72, 73, 70, 72, 67, 72, 67, 68,
+         69, 72, 70, 70, 70, 71, 74, 67, 69, 71, 71, 73, 71, 71, 70, 71)
+mu_pop <- 70
+alfa <- 0.05
+t_out <- t.test(bpm, mu=mu_pop, 
+                conf.level = 1-alfa, alternative = "greater")
+
+cat("Significancia pratica:\n")
+
+df <- t_out$parameter # graus de liberdade
+t <- t_out$statistic # estatistica de teste t observada
+dC <- effsize::cohen.d(bpm~1, 
+                       mu=mu_pop,
+                       conf.level=1-alfa,
+                       na.rm=TRUE) # Classificação de Cohen (1988)
+print(dC)
+print(effectsize::interpret_cohens_d(d=dC$estimate, 
+                                     rules="sawilowsky2009"))
+
+F <- t^2 # estatistica de teste F de Fisher
+eta2 <- F/(F+df)
+cat("\tEta^2 = ",eta2,"\n",sep="")
+print(effectsize::interpret_eta_squared(es=eta2))
+```
+
+Disponibilizamos o RScript _[Nifedipina.R](Nifedipina.R){target="_blank"}_ que reúne os procedimentos acima.
+
+# Revendo o raciocínio
+
+1. Formular as hipóteses.
+1. Definir as variáveis e o delineamento do estudo.
+1. Escolher e executar o teste estatístico apropriado.
+1. Tomar as decisões de significância estatística e prática.
+
+$H_0$ é a hipótese nula (sempre abrange a igualdade).
+
+$H_1$ é a hipótese alternativa (complementar a $H_0$).
+
+$H_0$ pode ser não rejeitada ou rejeitada (a rejeição deve ser baseada em evidências obtidas a partir da amostra).
+
+A decisão estatística sempre envolve possíveis erros:
+
+<div align=center>
+<table center>
+<tr>
+<td></td>
+<td colspan=2 style="color:#1965B0; background-color:#cccccc; border:1px; padding:15px; text-align:center;">NA POPULAÇÃO:<br>
+Não sabemos se o efeito existe</td>
+</tr>
+<tr>
+<td></td>
+<td style="color:#26a169; background-color:#cccccc; border:1px; padding:15px; text-align:center;">Se o efeito<br>**não existe**</td>
+<td style="color:#E65518; background-color:#cccccc; border:1px; padding:15px; text-align:center;">Se o efeito<br>**existe**</td>
+</tr>
+<tr>
+<td style="color:#26a169; background-color:#cccccc; border:1px; padding:15px;">**sem** evidência<br>de efeito<br>na amostra</td>
+<td style="text-align: center;">Corretamente<br>não se rejeita $H_0$</td>
+<td style="font-size:180%; text-align: center;">$\beta$</td>
+</tr>
+<tr>
+<td style="color:#E65518; background-color:#cccccc; border:1px; padding:15px;">**com** evidência<br>de efeito<br>na amostra</td>
+<td style="font-size:180%; text-align: center;">$\alpha$</td>
+<td style="text-align: center;">Corretamente<br>rejeita-se $H_0$<br>
+<font style="font-size:180%;">$poder = 1-\beta$</font></td>
+</tr>
+</table>
+</div>
+
+que são: 
+
+* $\alpha$, a probabilidade de erro do tipo I, rejeitar $H_0$ e assumir, com base na amostra, que existe efeito, quando o efeito não existe na população;
+* $\beta$, a probabilidade de erro do tipo II, não rejeitar $H_0$ e falhar, com base na amostra, em detectar efeito, quando o efeito existe na população.
+
+Não rejeitar $H_0$ (não encontrar evidência para a existência de efeito com base na amostra) não é o mesmo que aceitar $H_0$ (assumir a ausência de efeito na população). Para aceitar $H_0$ com boa probabilidade de não cometer erro (supondo que não rejeitou $H_0$ e o efeito populacional existe), $\beta$ deve ser pequeno, mas há um cuidado fundamental: tem que ser o $\beta$ estabelecido _a priori_ (prospectivo), ao planejar o estudo. O $\beta$ _a posteriori_ (retrospectivo) que poderia ser visualizado nestes gráficos, pela sobreposição das curvas após o experimento ter sido realizado, **não** tem valor sobre a decisão.
+
+O mesmo vale para o poder do teste, $1-\beta$, complementar à probabilidade de erro do tipo II. Se $1-\beta$ for estabelecido _a priori_ e se, com a amostra, rejeitarmos $H_0$, então a probabilidade de acerto ao afirmar que o efeito existe na população é o poder do teste.
+
+A decisão sobre o teste depende da comparação entre a probabilidade de se observar uma diferença sob a hipótese nula, dada uma amostra de tamanho $n$ e a probabilidade do erro do tipo I ($\alpha$) escolhida previamente:
+
+* se a probabilidade de que a diferença seja observada ao acaso for “grande” ($p > \alpha$), não se rejeita $H_0$ (só podemos falar em aceitar $H_0$ se o poder _a priori_ for maior que $90\%$).
+* se a probabilidade de que a diferença seja observada ao acaso for “pequena” ($p < \alpha$), rejeita-se $H_0$.
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Entenda "_acaso_" como flutuação amostral: supondo que o efeito não exista na população, ocasionalmente uma amostra pode sair com valores compatíveis com a diferença, levando-nos a rejeitar $H_0$ e cometer um erro do tipo I. 
+
+Em outras palavras, o valor-$p$ é a probabilidade de se observar os valores que vieram em determinada amostra supondo-se que o efeito populacional não existe (i.e. sob $H_0$). Portanto, se tal probabilidade for alta ($p>\alpha$), não apostamos na existência da diferença (os valores amostrais são aqueles esperados a partir de uma população que não exibe o efeito) e, assim, não rejeitamos $H_0$. Por outro lado, se observar tais valores amostrais vindos de uma população que não tem o efeito é improvável ($p < \alpha$), apostamos que esta amostra não deve ter vindo de uma população que não tem efeito e rejeitamos $H_0$; por exclusão de $H_0$, aceitamos que há diferença na população que originou a amostra, com probabilidade $p$ (de acordo com esta amostra) de estarmos enganados; nós decidimos aceitar qualquer probabilidade de engano se encontrássemos qualquer probabilidade abaixo do nivel de significância adotado, $\alpha$.  
+</td></tr></table>
+
+# Testes _t_ de Welch e relacionado sem dados brutos
+
+É muito comum, em publicações, que somente tenhamos acesso às medidas-resumo (número de participantes, média, desvio-padrão e correlação). Nestes casos, os _RScripts_ acima não são utilizáveis. 
+
+Para fazer os testes _t_ relacionados (ou pareados) e testes _t_ de Welch (independentes), quando os dados brutos não estão disponíveis, criamos os seguintes scripts:
+
+* [TestetWelchBilateral_SemDadosBrutos.R](TestetWelchBilateral_SemDadosBrutos.R){target="_blank"}
+* [TestetWelchUnilatDir_SemDadosBrutos.R](TestetWelchUnilatDir_SemDadosBrutos.R){target="_blank"}
+* [TestetWelchUnilatEsq_SemDadosBrutos.R](TestetWelchUnilatEsq_SemDadosBrutos.R){target="_blank"}
+* [TestetRelacionadoBilateral_SemDadosBrutos.R](TestetRelacionadoBilateral_SemDadosBrutos.R){target="_blank"}
+* [TestetRelacionadoUnilateralDireita_SemDadosBrutos.R](TestetRelacionadoUnilateralDireita_SemDadosBrutos.R){target="_blank"}
+* [TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.R](TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.R){target="_blank"}
+
+Estude e aprenda a modificar estes _RScripts_ para seu uso.
+
+# Teste _t_ de Student
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("./image/carroantigo.png", dpi=80)
+```
+
+<div align=right><Brendon>http://unusual-cars.com/wp-content/uploads/2016/01/Ford-Model-T-1908.jpg</Brendon></div>
+
+```{r echo=FALSE, out.width='30%'}
+knitr::include_graphics("./image/William_Sealy_Gosset.jpg")
+```
+
+<div align=right><Brendon>https://en.wikipedia.org/wiki/Student%27s_t-test</Brendon></div>
+
+* [TestetStudentBilateral_SemDadosBrutos.R](TestetStudentBilateral_SemDadosBrutos.R){target="_blank"}
+
+Este teste foi inicialmente publicado por em 1908 por William Sealy Gosset sob o pseudônimo de Student, e posteriormente aprimorado por Ronald Fisher, que introduziu o conceito de graus de liberdade. 
+
+Em R, o teste _t_ default é executado com a correção de Satterthwaite (erroneamente exibido como Welch), mas é possível forçar o teste clássico, adicionando o parâmetro `var.equal`. O teste _t_ de Student bilateral do exemplo da ingesta de sódio é computado com:
+
+```{r echo=FALSE}
+cat(readLines("demo_sodio_student.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_sodio_student.R")
+```
+
+O parâmetro <code>var.equal = TRUE</code> é a indicação de que o teste clássico exige variâncias iguais (homocedasticidade). Em relação ao teste _t_ de Welch apresentado acima, a mudança mais visível são os graus de liberdade, aqui correspondendo a um número inteiro igual ao tamanho da amostra subtraído de duas unidades (uma para cada grupo).
+
+# Distribuição _t_ não central
+
+Quando definimos a hipótese alternativa para detectar determinado tamanho de efeito populacional, consideramos uma distribuição da estatística de teste não centrada em zero. É para isto que existe o parâmetro de não centralidade <code>ncp</code> na família de funções da distribuição _t_. Este parâmetro está relacionado com o tamanho de efeito.
+
+Além da translação da distribuição quando `ncp` não é zero, estas distribuições _t_ não centrais são assimétricas. Por exemplo, para 5 graus de liberdade:
+
+```{r echo=TRUE}
+t <- seq(from=-6, to=6, by=0.01)
+H0_t <- dt(x=t, df=5, ncp=0)
+plot(t, H0_t, 
+     xlab="t", ylab="densidade",
+     type="l")
+H1_t <- dt(x=t, df=5, ncp=2)
+lines(t, H1_t, lty=2)
+```
+
+Para observar o comportamento das distribuições _t_, implementamos  [Animacao_t_nao_central.R](Animacao_t_nao_central.R){target="_blank"}, que compara a curva observada sob a hipótese nula da animação anterior com diversas curvas representando as hipóteses alternativas. Observe, sob $H_1$, a assimetria das distribuições, e as áreas correspondentes a $\beta$ e ao poder do teste ($1 - \beta$) _a priori_.
+
+# Planejamento do teste t de Student com G*Power
+
+Ao planejar você deve se perguntar:
+
+* Qual é o delineamento: entreparticipantes ou intraparticipantes?
+* Qual será a estrutura do arquivo: _long_ ou _wide_?
+* Sobre as variáveis:
+    * Qual é a variável independente (VI)? 
+    * Qual é a variável dependente (VD)?
+    * Quais são seus níveis de mensuração: nominal, ordinal ou intervalar?
+* Este é um teste unilateral (atenção ao lado que será testado) ou bilateral?
+* Qual é a hipótese nula $H_0$? 
+* Qual  é a hipótese de pesquisa $H_1$?
+* Especificar (três dos quatro abaixo):
+  * nível de significância ($\alpha$),
+  * poder _a priori_ (1-$\beta$),
+  * tamanho de efeito mínimo a detectar,
+  * tamanho da amostra.
+
+Exemplificamos o planejamento de um estudo com o G\*Power. Temos a informação de que homens brasileiros que vivem em área urbana têm estatura diferente dos que vivem em área rural (https://www.ibge.gov.br/). Suponha que planejemos conduzir um estudo para saber se esta diferença persiste em 2021. Queremos determinar o tamanho da amostra. Para o G*Power informaremos:
+
+* teste _t_ de Student,
+* tipo de análise de poder: _a priori_ (calcular o tamanho da amostra),
+* teste unilateral à direita,
+* tamanho de efeito pequeno ($d$ de Cohen = 0.2),
+* poder _a priori_: 0.9,
+* razão de alocação nas condições independentes: ${n_1 \over n_2} = 1$ (balanceados).
+
+O G*Power calcula $n=429$ participantes em cada grupo, totalizando 858 participantes.
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/GPower_1.jpeg")
+```
+
+Suponha que não possamos realizar este estudo. No máximo temos recursos para 50 participantes em cada grupo. O G*Power nos permite verificar, escolhendo $\alpha$, $\beta$ e o número possível de participantes, saber qual é o tamanho de efeito que seremos capazes de detectar:
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/GPower_2.jpeg")
+```
+
+O G*Power calcula $d$ de Cohen = 0.59. Esta é uma medida em desvios-padrão da distância entre as médias populacionais que poderíamos detectar com este estudo. Temos que buscar, então, informação sobre o desvio-padrão da estatura em homens brasileiros na literatura. 
+
+Em 2012 o valor foi estimado em 8.6 cm (Figueroa et al., 2012): portanto, este estudo será capaz de detectar uma diferença de cerca de 5.08 cm. Caso não achemos possível que a diferença populacional seja igual ou superior a esta medida, não adianta levar o estudo adiante.
+
+> Figueiroa JN, Alves HGB, Lira PIC, Batista Filho M (2012) Evolução intergeracional da estatura no Estado de Pernambuco, Brasil, entre 1945 e 2006. _Cad Saúde Pública_ 28(7):1285-96. 
+
+Não parece impossível: homens em área urbana eram 3.6 cm mais altos que os de área rural em 2009  (https://www.ibge.gov.br/).
+
+Um terceiro exemplo é quando queremos encontrar o poder adequado (pelo menos 90%). Como a medida de estatura é simples, podemos buscar a detecção de efeitos muito pequenos. Imagine que optemos por adotar $d=0.1$ (corresponde a uma diferença de 0.86 cm de acordo com nossa referência). Usaremos o $\alpha=0.05$ tradicional. Tateando os tamanhos de amostra (artigos que estimam estatura em populações costumam ter amostras grandes), com 2000 indivíduos em cada grupo conseguimos alcançar poder de 93.5%. Assim, caso não rejeitemos a hipótese nula, poderemos afirmar com alguma segurança que a estatura dos brasileiros de área urbana e rural não diferem, em vez de termos dúvida sobre a insuficiência do tamanho de nossa amostra.
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/GPower_3.jpeg")
+```
+
+Portanto, com o G*Power, tendo quaisquer três medidas definidas ($\alpha$, $\beta$, $d$ ou $n$), a quarta é a incógnita a ser resolvida.
+
+__FIM__

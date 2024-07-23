@@ -1,0 +1,52 @@
+
+# Pacotes, funções e arquivos necessários
+
+* packages
+```{r, echo=TRUE, eval=FALSE, class.source="bgcodigo", class.output="bgsaida"}
+options(warn=-1)
+suppressMessages(library(bootES, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(effectsize, warn.conflicts=FALSE))
+suppressMessages(library(effsize, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(gplots, warn.conflicts=FALSE))
+suppressMessages(library(lattice, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(rcompanion, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(Rmisc, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+
+* scripts
+
+    * [Animacao_t_central.R](Animacao_t_central.R)
+    * [Animacao_t_nao_central.R](Animacao_t_nao_central.R)
+    * [demo_sodio.R](demo_sodio.R)
+    * [demo_sodio_descritiva.R](demo_sodio_descritiva.R)
+    * [demo_sodio_efeito.R](demo_sodio_efeito.R)
+    * [demo_sodio_eta2.R](demo_sodio_eta2.R)
+    * [demo_sodio_t.R](demo_sodio_t.R)
+    * [eiras.bartitle.R](eiras.bartitle.R)
+    * [eiras.tab.dCohen.R](eiras.tab.dCohen.R)
+    * [eiras.tab.eta2.R](eiras.tab.eta2.R)
+    * [Nifedipina.R](Nifedipina.R)
+    * [TestetRelacionadoBilateral_SemDadosBrutos.R](TestetRelacionadoBilateral_SemDadosBrutos.R)
+    * [TestetRelacionadoUnilateralDireita_SemDadosBrutos.R](TestetRelacionadoUnilateralDireita_SemDadosBrutos.R)
+    * [TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.R](TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.R)
+    * [TestetWelchBilateral_SemDadosBrutos.R](TestetWelchBilateral_SemDadosBrutos.R)
+    * [TestetWelchUnilatDir_SemDadosBrutos.R](TestetWelchUnilatDir_SemDadosBrutos.R)
+    * [TestetWelchUnilatEsq_SemDadosBrutos.R](TestetWelchUnilatEsq_SemDadosBrutos.R)
+
+
+* files
+
+    * [.txt](.txt)
+    * [Nutricao.xlsx](Nutricao.xlsx)
+    * [TestetRelacionadoBilateral_SemDadosBrutos.txt](TestetRelacionadoBilateral_SemDadosBrutos.txt)
+    * [TestetRelacionadoUnilateralDireita_SemDadosBrutos.txt](TestetRelacionadoUnilateralDireita_SemDadosBrutos.txt)
+    * [TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.txt](TestetRelacionadoUnilateralEsquerda_SemDadosBrutos.txt)
+    * [TestetWelchBilateral_SemDadosBrutos.txt](TestetWelchBilateral_SemDadosBrutos.txt)
+    * [TestetWelchUnilatDir_SemDadosBrutos.txt](TestetWelchUnilatDir_SemDadosBrutos.txt)
+    * [TestetWelchUnilatEsq_SemDadosBrutos.txt](TestetWelchUnilatEsq_SemDadosBrutos.txt)
