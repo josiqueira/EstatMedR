@@ -1,0 +1,78 @@
+
+# Pacotes, funções e arquivos necessários
+
+* packages
+```{r, echo=FALSE, class.source="bgcodigo", class.output="bgsaida"}
+options(warn=-1)
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(datasets, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts=FALSE))
+suppressMessages(library(estimatr, warn.conflicts=FALSE))
+suppressMessages(library(grDevices, warn.conflicts=FALSE))
+suppressMessages(library(lawstat, warn.conflicts=FALSE))
+suppressMessages(library(MASS, warn.conflicts=FALSE))
+suppressMessages(library(MVN, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+
+* scripts
+
+    * [Adm2008_descritiva.R](Adm2008_descritiva.R)
+    * [Adm2008_RLS.R](Adm2008_RLS.R)
+    * [Adm2008_RLS_z.R](Adm2008_RLS_z.R)
+    * [Adm2008_rPearson.R](Adm2008_rPearson.R)
+    * [BiNormal.R](BiNormal.R)
+    * [CorpoCerebro_distribuicoes.R](CorpoCerebro_distribuicoes.R)
+    * [CorpoCerebro_RLS.R](CorpoCerebro_RLS.R)
+    * [CorpoCerebro_RLS_bootstrapping.R](CorpoCerebro_RLS_bootstrapping.R)
+    * [CorpoCerebro_RLS_log.R](CorpoCerebro_RLS_log.R)
+    * [CorpoCerebro_RLS_problema.R](CorpoCerebro_RLS_problema.R)
+    * [Correlacao_r_de_Pearson.R](Correlacao_r_de_Pearson.R)
+    * [demo_Anscombe.R](demo_Anscombe.R)
+    * [demo_Anscombe2.R](demo_Anscombe2.R)
+    * [demo_Boston_ate20000.R](demo_Boston_ate20000.R)
+    * [demo_Boston_todas.R](demo_Boston_todas.R)
+    * [demo_corregEstMCT.R](demo_corregEstMCT.R)
+    * [demo_estatmct.R](demo_estatmct.R)
+    * [demo_HBnormal.R](demo_HBnormal.R)
+    * [demo_HEMnormal.R](demo_HEMnormal.R)
+    * [demo_HTnormal.R](demo_HTnormal.R)
+    * [demo_LEUCnormal.R](demo_LEUCnormal.R)
+    * [demo_minimos_quadrados.R](demo_minimos_quadrados.R)
+    * [demo_normalidade.R](demo_normalidade.R)
+    * [demo_r.R](demo_r.R)
+    * [demo_regEstMCT.R](demo_regEstMCT.R)
+    * [demo_regressao.R](demo_regressao.R)
+    * [demo_regressao_3.R](demo_regressao_3.R)
+    * [demo_regressao_3b.R](demo_regressao_3b.R)
+    * [demo_regressao_BC_boot.R](demo_regressao_BC_boot.R)
+    * [demo_regressao_centrada.R](demo_regressao_centrada.R)
+    * [demo_regressao_z.R](demo_regressao_z.R)
+    * [eiras.bartitle.R](eiras.bartitle.R)
+    * [eiras.col2rgbstring.R](eiras.col2rgbstring.R)
+    * [eiras.ConfidenceBand.R](eiras.ConfidenceBand.R)
+    * [eiras.correg.R](eiras.correg.R)
+    * [eiras.createobj.htest.R](eiras.createobj.htest.R)
+    * [eiras.density_and_normal.R](eiras.density_and_normal.R)
+    * [eiras.ellipseaxis.R](eiras.ellipseaxis.R)
+    * [eiras.findcommonchars.R](eiras.findcommonchars.R)
+    * [eiras.friendlycolor.R](eiras.friendlycolor.R)
+    * [eiras.jitter.R](eiras.jitter.R)
+    * [eiras.LambdaEstimate.R](eiras.LambdaEstimate.R)
+    * [eiras.text.leading.R](eiras.text.leading.R)
+    * [eiras.tukey.try.R](eiras.tukey.try.R)
+    * [Gestantes_RLS.R](Gestantes_RLS.R)
+    * [Gestantes_RLS_bootstrapping.R](Gestantes_RLS_bootstrapping.R)
+    * [Gestantes_RLS_robust.R](Gestantes_RLS_robust.R)
+
+
+* files
+
+    * [Adm2008.xlsx](Adm2008.xlsx)
+    * [CorpoCerebroVonBonin.xlsx](CorpoCerebroVonBonin.xlsx)
+    * [Gestantes.xlsx](Gestantes.xlsx)
+    * [p.txt](p.txt)
+    * [PEFRDATA.xls](PEFRDATA.xls)

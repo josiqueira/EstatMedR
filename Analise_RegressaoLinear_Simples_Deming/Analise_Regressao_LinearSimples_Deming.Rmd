@@ -1,0 +1,1486 @@
+---
+title: "Análise de Regressão Linear Simples & Regressão de Deming"
+author: |
+  | Paulo S. P. Silveira (silveira@usp.br)
+  | José O. Siqueira (siqueira@usp.br)
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    font_adjustment: 1
+    css: style.css
+    df_print: tibble 
+    footer: "Analise_Regressao_LinearSimples_Deming.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  slidy_presentation:
+    font_adjustment: -1
+    css: style.css
+    footer: "Analise_Regressao_LinearSimples_Deming.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width=80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size:  18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 16px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+options(warn=-1)
+suppressMessages(library(bootES, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts = FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts = FALSE))
+suppressMessages(library(estimatr, warn.conflicts = FALSE))
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(MASS, warn.conflicts = FALSE))
+suppressMessages(library(MVN, warn.conflicts = FALSE))
+suppressMessages(library(mcr, warn.conflicts = FALSE))
+suppressMessages(library(ppcor, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts = FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(sp, warn.conflicts = FALSE))
+suppressMessages(library(WebPower, warn.conflicts = FALSE))
+source("eiras.bartitle.R")
+source("BiNormal.R")
+source("eiras.col2rgbstring.R")
+source("eiras.ConfidenceBand.R")
+source("eiras.correg.R")
+source("eiras.createobj.htest.R")  
+source("eiras.deming.regression.R")
+source("eiras.density_and_normal.R")
+source("eiras.ellipseaxis.R")
+source("eiras.friendlycolor.R")
+source("eiras.jitter.R")
+source("eiras.LambdaEstimate.R")
+source("eiras.tukey.try.R")
+alfa <- 0.05
+```
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+# Objetivos
+
+* Distinguir os conceitos de regressão linear simples e correlação de Pearson.
+* Calcular e interpretar os coeficientes de correlação de Pearson e de determinação.
+* Definir e construir diagrama de dispersão.
+* Calcular e interpretar a reta de regressão (inclinação, intercepto, equação de regressão).
+* Avaliar o relacionamento entre a variável dependente/desfecho (VD) intervalar e uma ou mais variáveis explicativas/previsoras (VE) intervalares.
+* Prever o escore de uma unidade observacional na VD a partir dos valores conhecidos de uma VE.
+* Representar graficamente a relação entre as variáveis de um estudo e a reta de regressão a partir da equação de regressão obtida.
+* Testar a significância dos coeficientes obtidos em um estudo de regressão linear.
+* Determinar o tamanho de efeito da VE.
+
+# Regressão linear simples
+
+A análise de regressão linear simples (RLS) é uma extensão da análise de correlação. 
+
+Ao contrário da correlação, a RLS é direcional e dimensional. Queremos estabelecer uma equação (uma reta, no caso da regressão linear simples) que sirva para, a partir de uma variável explicativa (VE) conhecida, estimar o valor médio de uma variável de desfecho (VD). A equação de regressão preserva as respectivas unidades de medida.
+
+A pergunta é direcional: 
+
+**Quanto varia a VD em média se a VE variar?**
+
+```{r echo=FALSE, out.width='75%'}
+knitr::include_graphics("./image/Dancey_YouAreHere_Regressao.png")
+```
+
+Consideramos, portanto, que RLS pode ser utilizada para estimar a massa corpórea a partir da estatura de animal humano adulto. [Assim, ajustamos uma reta]{#rls_estatmassa} ([`demo_regEstMCT.R`](demo_regEstMCT.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("demo_regEstMCT.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_regEstMCT.R")
+```
+
+Neste gráfico:
+
+- A variável em $x$ é a VE (estatura); variável explicativa, independente.
+- A variável em $y$ é a VD (massa corporal); variável de desfecho, dependente.
+
+A reta foi estimada a partir da função `lm`, a qual é parte do pacote `stats`. Computa o modelo linear da massa (eixo $y$, VD) em função da estatura (eixo $x$, VE). Para traçar a reta, foram estimados os coeficientes (intercepto e inclinação) que utilizamos para calcular os valores médios da VD, usando a equação da reta. Esta equação corresponde, no código, à  linha
+
+$~~~~$`massa.medio <- intercepto + inclinacao*estatura`
+
+A variável <code>estatura</code> é um vetor numérico com os valores observados de estatura. Os parâmetros <code>intercepto</code> (corresponde a $\hat{\beta_0}$) e <code>inclinacao</code> (corresponde a $\hat{\beta_1}$) são valores ótimos e únicos. Consequentemente, esta linha de código computa <code>massa.medio</code> (corresponde a $\hat{y}$) como um vetor numérico de mesmo comprimento de <code>estatura</code>. Com estes valores foi traçada a reta de regressão.
+
+O intercepto fica em <code>modelo\$coefficients[1]</code>=`r round(modelo$coefficients[1],2)` ($\hat{\beta_0}$) e a inclinação em  <code>modelo\$coefficients[2]</code>=`r round(modelo$coefficients[2],2)` ($\hat{\beta_1}$). A equação de uma reta é
+
+$$\hat{y} = \hat{\beta_0} + \hat{\beta_1} x$$
+
+portanto a linha sólida do gráfico é :
+
+<div align=center>
+$\hat{y}$ $=$ `r round(modelo$coefficients[1],2)` $+$ `r round(modelo$coefficients[2],2)` $x$
+
+$min(x_i) \le x \le max(x_i)$
+</div>
+
+ou, particularizando este exemplo:
+
+<div align=center>
+$\widehat{mc}$ $=$ `r round(modelo$coefficients[1],2)` $+$ `r round(modelo$coefficients[2],2)` $\text{estatura}$
+
+$172 \le \text{estatura} \le 180$
+</div>
+
+Note o circunflexo sobre o valor $\hat{y}$ (ou $\hat{mc}$), indicando que este é o valor médio estimado da VD dado o valor da VE ($x$ ou $\text{estatura}$).
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+**Sinonímia**
+  
+Dependendo do contexto da análise encontramos:
+  
+- $x$ é a variável explicativa (VE) quantitativa, sem erro de mensuração, também chamada de variável independente (VI), variável preditiva, variável regressora, variável previsora, variável de exposição, covariável ou variável auxiliar.
+- $y$ é a variável de desfecho (VD) quantitativa, com erro de mensuração, também conhecida como variável dependente, variável-alvo (_target_), critério ou variável de resposta.
+</td></tr></table>
+
+A função que desenvolvemos, internamente, automatiza este procedimento e ainda adiciona a banda de confiança de 95% (que é larga porque a amostra, neste exemplo, é muito pequena) ([`demo_corregEstMCT.R`](demo_corregEstMCT.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("demo_corregEstMCT.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_corregEstMCT.R")
+```
+
+# Significado da reta de regressão
+
+A reta de regressão é o conjunto das médias de VD condicionadas a todos os valores contínuos da VE no seu intervalo observado.
+
+$$\widehat{VD}(VE) = \hat{\alpha}+\hat{\beta} \times VE$$
+
+sendo que:
+
+$$ VE \in \left[\min\{VE_{i}\}, \max\{VE_{i}\}\right]\\ i=1,2,\ldots,n$$
+
+Portanto, a reta de regressão é uma interpolação média da VD no domínio observado da VE.
+
+# Testes estatísticos
+
+* As suposições principais para <code>lm</code> são:
+  * independência entre os pares de observações.
+  * ausência de erro de mensuração da VE.
+  * distribuição normal da VD.
+  * homocedasticidade da VD nos níveis da VE.
+  * linearidade da relação entre VD e VE.
+
+Repare que existem estatísticas _t_ e seus valores _p_ calculados nas linhas dos coeficientes. O valor encontrado em **sumario$coefficients[2,4]**=`r sumario$coefficients[2,4]` está associado com a inclinação da reta. O intercepto não será interpretado por enquanto. O teste foi sobre a reta estar suficientemente inclinada para ser utilizada para predizer a massa corporal a partir da estatura:
+
+$$\begin{align}
+H_0:&\; \beta_1 = 0\\
+H_1:&\; \beta_1 \ne 0
+\end{align}$$
+
+$$\alpha = 0.05$$
+
+A hipótese nula indica que, caso não houvesse relação entre estatura e massa corpórea, esperaríamos uma horizontal: a massa corpórea oscilaria ao redor de seu valor médio, insensível à variação do valor da estatura. Adicionamos, então, uma linha tracejada horizontal na altura da média das massas corporais observadas para representar $H_0$; como há muitos elementos no gráfico, também incluímos uma legenda ([`demo_regressao.R`](demo_regressao.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("demo_regressao.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_regressao.R")
+```
+
+Como vimos acima, a hipótese nula é rejeitada para $\alpha=0.05$, pois $p=0.0328$ e, portanto, admitimos que a reta tem inclinação diferente de zero. Em outras palavras, existe modelo linear que nos permite, com a equação estimada pela RLS, calcular o valor médio da massa corporal a partir da estatura.
+
+Os testes estatísticos para correlação e RLS dão resultados coincidentes. Veja o valor _p_ computado para a correlação com <code>cor.test</code> associado à uma estatística _t_ com $n-2$ graus de liberdade, e o valor _p_ computado por <code>lm</code> para a inclinação da reta, igualmente associado à esta estatística _t_ (na RLS, também coincidente com o valor _p_ da estatística $F$ com $n-2$ graus de liberdade no denominador):  
+
+Para verificar se existe correlação testamos a hipótese da nulidade de $\rho$ (do qual _r_ é o estimador) para concluirmos se, populacionalmente, a correlação existe:
+  
+  $$H_0: \rho = 0$$
+  $$H_1: \rho \ne 0$$
+  $$\alpha=0.05$$
+  
+Calculamos _r_ e testamos $H_0$ com a função <code>cor.test</code> (esta função assume $\alpha=0.05$ por default), como no exemplo fornecido em [`Correlacao_r_de_Pearson.R`](Correlacao_r_de_Pearson.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("Correlacao_r_de_Pearson.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("Correlacao_r_de_Pearson.R")
+```
+
+Isto é dizer que, para modelos lineares simples, é equivalente testar a correlação ($H_0: \rho=0$) ou a inclinação da reta de regressão ($H_0: \beta_1=0$): variáveis não correlacionadas ($r=0$) produzem retas de regressão horizontais ($\beta_1=0$). No caso da RLS (em que existe somente uma VE), a existência do modelo está diretamente ligada à não nulidade da inclinação da reta populacional; i.e., se a inclinação desta reta for nula, a VD é insensível à variação da VE.
+
+Incluímos uma banda de confiança de 95% para a regressão. Esta banda de confiança foi estimada por _bootstrapping_. ([`demo_regressao_BC_boot.R`](demo_regressao_BC_boot.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("demo_regressao_BC_boot.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_regressao_BC_boot.R")
+```
+
+Dentro desta banda, com confiança de 95%, é onde está a reta de regressão populacional. Coerente com os testes estatísticos anteriores, uma outra forma de é verificar que não há uma reta horizontal que possa ser traçada para ficar inteiramente contida nesta banda. Portanto a reta populacional de onde esta amostra foi retirada, seja ela qual for, deve ter inclinação diferente de zero.
+
+# Coeficiente de determinação
+
+Quando imprimimos o resultado de <code>lm</code> observamos uma nova medida (R-squared), $R^2$=`r round(sumario$r.squared,2)`, conhecida como coeficiente de determinação (desconsidere o adjetivo 'Multiple' que aparece aqui, pois <code>lm</code> serve, também, para modelar regressão linear múltipla, usada quando há mais de uma VE para estimar a VD). Observe que, na RLS, seu valor é igual ao coeficiente _r_ elevado ao quadrado e armazenado na variável <code>correlacao\$estimate</code>=`r round(correlacao$estimate,2)`, calculado anteriormente:
+
+$~~~~~$ `r round(sumario$r.squared,2)` = $R^2=r^2$ = <code>correlacao\$estimate<sup>2</sup></code> = `r round(correlacao$estimate,2)`<sup>2</sup> = `r round(correlacao$estimate^2,2)`
+
+O valor de $R^2$ varia de 0 a 1. Neste exemplo, o coeficiente de determinação indica que aproximadamente `r round(sumario$r.squared*100,2)`% da variância amostral da VD foi explicada pela VE. Os restantes `r round((1-sumario$r.squared)*100,2)`% da variancia amostral da VD são explicados pelo termo de erro, i.e., por outras variáveis ou por outro formato de função (e.g., uma regressão não linear que se ajuste melhor aos dados). Assim como o $r^2$, $R^2$ também é medida de tamanho de efeito, equivalente ao $\eta^2$ global pois a RLS é um caso particular do modelo linear geral.
+
+Observe, também, o valor _p_ associado ao R-squared por uma estatística $F$. Seu valor é igual aos valores _p_ computados para a inclinação da reta e para a correlação. 
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/CohenEffectSizes_R2.png", dpi=80)
+```
+
+> Ellis, 2010
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Não confunda o coeficiente de determinação, $R^2$, com o $R^2$ ajustado (<code>Adjusted R-squared</code>), que também aparece aqui. Este serve para seleção de modelos, quando tentamos ajustar diferentes modelos aos dados e precisamos verificar qual é o melhor. $R^2$ ajustado não será discutido aqui.
+
+</td></tr></table>
+
+# Ajuste de reta
+
+Note, no gráfico acima, que adicionamos um centróide em $(\bar{x},\bar{y})$ localizado no cruzamento da reta ajustada com a reta horizontal pontilhada (um ponto preto). Seu valor é dado pela média dos pares de valores de estatura e de massa corpórea observados. 
+
+Infinitas retas passam pelo centróide. Construindo quadrados cujos lados sejam a distância entre os valores observados $y$ e valores os estimados $\hat{y}$ por uma reta, a que melhor se ajusta é aquela cuja somatória das áreas dos quadrados for mínima. Esta reta ajustada pelo **método de mínimos quadrados ordinários** é a que foi representada no gráfico (toda reta ajustada por este método passa obrigatoriamente pelo centróide).
+
+Execute [`demo_minimos_quadrados.R`](demo_minimos_quadrados.R){target="_blank"} para uma demonstração:
+
+```{r echo=TRUE, eval=FALSE}
+source("demo_minimos_quadrados.R")
+```
+
+## Resíduo
+
+Também adicionamos ao último gráfico de estatura e massa corporal algumas linhas verticais.
+
+As linhas tracejadas estão:
+
+* em azul e com tracejado mais fino, entre a reta horizontal na altura do valor médio da massa corporal ($\bar{y}$) e os valores estimados pela reta de regressão ($\hat{y_i}$);
+* em preto e com tracejado mais grosseiro, entre os valores estimados pela reta de regressão ($\hat{y_i}$) e os valores observados ($y_i$).
+
+Como a reta sólida é inclinada, diferencia da horizontal $H_0$ e, portanto, com a equação encontrada, dada a VE, poderemos calcular a VD. No entanto, observando os valores da amostra (círculos amarelos), vemos que nem tudo foi capturado pela RLS.
+
+Denominamos, aqui, de "parte explicada" pelo modelo, as distâncias verticais entre o valor médio calculado pela reta de regressão e a horizontal ($\hat{y_i} - \bar{y}$). É como considerar que o tanto de inclinação da reta em relação à horizontal corresponde a quanto da associação dos pontos observados foram capturados pelo modelo linear. Portanto, as partes "não explicadas" pelo modelo são as que sobram, os **resíduos**, correspondendo às distâncias verticais entre os pontos observados e os estimados pela reta de regressão ($y_i - \hat{y_i}$). 
+
+# Intercepto com significado
+
+Até aqui desprezamos o intercepto igual a `r round(modelo$coefficients[1],2)` quando fizemos a regressão linear. Este valor parece não fazer sentido, pelo motivo de que, neste contexto, não faz sentido mesmo.
+
+No entanto, a mesma regressão linear pode ser feita centrando a VE (i.e., subtraindo a média da estatura de todos os valores de estatura observados):
+
+```{r echo=TRUE}
+estatura <- c(172, 173, 174, 175, 176, 177, 178, 179, 180)
+media <- mean(estatura)
+estatura <- estatura - media
+cat(estatura)
+```
+
+A regressão com a estatura centrada está implementada em [`demo_regressao_centrada.R`](demo_regressao_centrada.R){target="_blank"}, resultando em:
+
+```{r echo=TRUE}
+cat(readLines("demo_regressao_centrada.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_regressao_centrada.R")
+```
+
+Observe que os valores da regressão foram preservados (coeficiente angular, resíduos, $R^2$ e estatísticas), exceto pelo intercepto que, agora, corresponde ao valor médio da massa corporal.
+
+# Padronização de variável {#padroniza-var}
+
+Outra observação interessante decorre de padronizarmos as duas variáveis (i.e., subtrair a média e dividir pelo desvio-padrão). A regressão com as variáveis padronizadas está implementada em [`demo_regressao_z.R`](demo_regressao_z.R){target="_blank"}, resultando em:
+
+```{r echo=TRUE}
+cat(readLines("demo_regressao_z.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_regressao_z.R")
+```
+
+Com a padronização não é surpresa que o centróide seja $(0,0)$ (as médias de $x$ e $y$ são nulas). Em uma RLS, a inclinação da reta é estimada por:
+
+$$\hat{\beta_1} = r \cdot { {sd(y)} \over {sd(x)} }$$
+
+e o intercepto é estimado por: 
+
+$$\hat{\beta_0} = mean(y) - \hat{\beta_1} \cdot mean(x)$$
+
+Com a padronização, no entanto, os desvios-padrão são unitários e as médias são nulas. Observe os valores obtidos pela regressão: 
+
+$~~~~~~~~\hat{\beta_1} = r$ 
+
+(a inclinação da reta é, agora, o próprio coeficiente angular) e 
+
+$~~~~~~~~\hat{\beta_0} = 0$ (o intercepto é igual a zero). 
+
+O valor de $R^2$ continua inalterado e assim concluímos que, em uma regressão linear qualquer, o coeficiente de determinação é a variância compartilhada das variáveis padronizadas, uma medida de tamanho de efeito que indica quanto uma reta ajustada explica da associação entre duas variáveis.
+
+# Planejamento amostral
+
+O planejamento amostral pode ser feito com a função <code>WebPower::wp.regression</code>. Por exemplo, adotando tamanho de efeito médio de acordo com os dados compilados por Ellis (2010), poder de 80% e nível de significância de 5%, obtemos
+
+```{r echo=TRUE, eval=FALSE}
+R2 <- 0.13
+f2 <- R2/(1-R2) # = 0.15 
+cat("f^2 = ",f2,"\n",sep="") 
+wp <- WebPower::wp.regression(power=0.8, alpha=0.05, p1=1, f2=f2)
+print(wp)
+```
+
+```{r echo=FALSE, eval=TRUE}
+R2 <- 0.13
+f2 <- R2/(1-R2) # = 0.15 
+cat("f^2 = ",f2,"\n",sep="") 
+wp <- WebPower::wp.regression(power=0.8, alpha=0.05, p1=1, f2=f2)
+print(wp)
+```
+
+Para poder de 90%, obtemos
+
+```{r echo=TRUE, eval=FALSE}
+R2 <- 0.13
+f2 <- R2/(1-R2) # = 0.15 
+cat("f^2 = ",f2,"\n",sep="") 
+wp <- WebPower::wp.regression(power=0.9, alpha=0.05, p1=1, f2=f2)
+print(wp)
+```
+
+```{r echo=FALSE, eval=TRUE}
+R2 <- 0.13
+f2 <- R2/(1-R2) # = 0.15 
+cat("f^2 = ",f2,"\n",sep="") 
+wp <- WebPower::wp.regression(power=0.9, alpha=0.05, p1=1, f2=f2)
+print(wp)
+```
+
+Esta função serve para planejamento de diversos modelos de regressão. O parâmetro <code>p1</code> é o número de VEs, que no caso da RLS é de apenas 1. O parâmetro <code>f2</code> é o $f^2$ de Cohen, calculado a partir do $R^2$ que foi fornecido. A implementação desta função está de acordo com Cohen (1992).
+
+# Cuidados com RLS
+
+## Verificar se um modelo linear é adequado
+
+RLS supõe que o modelo linear é adequado. Portanto, o primeiro passo a fazer é a estatística descritiva, tanto numérica quanto gráfica. O segundo é verificar se as duas variáveis estão correlacionadas. 
+
+Seus dados parecem seguir uma reta?
+
+Um exemplo que ilustra a necessidade da estatística descritiva é o quarteto de Anscombe. 
+
+Quarteto de Anscombe é o nome dado a quatro conjuntos de dados que têm estatísticas descritivas quase idênticas (como a média e a variância), mas que têm distribuições muito diferentes e **aparências muito distintas quando exibidos graficamente**. Cada conjunto de dados consiste de onze pontos (x,y). Eles foram construídos em 1973 pelo estatístico Francis Anscombe, com o objetivo de demonstrar tanto a importância de se visualizar os dados antes de analisá-los, quanto o efeito dos outliers e outras observações influentes nas propriedades estatísticas. Ele descreveu o artigo como tendo a finalidade de **combater a impressão entre os estatísticos de que "cálculos numéricos são exatos, mas gráficos são aproximados e grosseiros."**
+
+> https://pt.wikipedia.org/wiki/Quarteto_de_Anscombe
+
+Os quatro conjuntos (implementados em [`demo_Anscombe.R`](demo_Anscombe.R){target="_blank"}) resultam em:
+
+```{r echo=TRUE}
+cat(readLines("demo_Anscombe.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_Anscombe.R")
+```
+
+Em todos os gráficos computamos as regressões lineares simples com as respectivas bandas de confiança. 
+
+Um modelo linear só é adequado para o primeiro conjunto, mas é somente a saída gráfica que revela este fato. Média, mediana, quartis, os valores de _r_ e $R^2$, os valores de intercepto e coeficiente angular e os valores _p_ associados são todos similares ([`demo_Anscombe2.R`](demo_Anscombe2.R){target="_blank"}): 
+
+```{r echo=TRUE}
+cat(readLines("demo_Anscombe2.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_Anscombe2.R")
+```
+
+# Atenção aos limites
+
+Repare, em todos os gráficos anteriores, que as retas de regressão e respectivos intervalos de confiança não vão além dos valores de $x_i$ observados. 
+
+O motivo é que não sabemos se o fenômeno manterá o comportamento linear além deste ponto.
+
+Por exemplo, vamos utilizar os dados disponíveis no pacote `MASS`, contendo o valor de 506 residências nos subúrbios de Boston, MA, Estados Unidos. Duas variáveis nos interessam aqui:
+
+* medv ... o valor mediano das casas (em milhares de dólares americanos)
+* lstat ... a porcentagem da população que tem baixo _status_ social (BSS)
+
+Suponha que queiramos usar BSS como preditor do valor das residências com valor igual ou menor que 20 mil dólares (_Rscript_ em [`demo_Boston_ate20000.R`](demo_Boston_ate20000.R){target="_blank"}): 
+
+```{r echo=TRUE}
+cat(readLines("demo_Boston_ate20000.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_Boston_ate20000.R")
+```
+
+Encontramos a reta de regressão:
+
+$$\hat{\text{medv}} = 22.24 - 0.38 \cdot \text{lstat}$$
+Como era de se esperar, a relação é negativa: quando maior a porcentagem de BSS, menor o valor das casas do bairro. Podemos, com esta equação, predizer, por exemplo, que em um bairro com 14% de habitantes com baixo _status_ social, o valor mediano das casas é
+
+$$\hat{\text{medv}} = 22.24 - 0.38 \cdot 14 \approx 16.9$$
+quase 17 mil dólares. 
+
+Qual o valor mediano de uma casa em um baixo mais rico, como por exemplo, onde 1% dos habitantes são de classe social mais baixa? A equação prediz:
+
+$$\hat{\text{medv}} = 22.24 - 0.38 \cdot 1 \approx 21.85$$
+quase 22 mil dólares.
+
+No entanto, a consequência de termos estudado as casas com valor de 20 mil dólares ou menos é que só encontramos uma regra válida para esta faixa de valores. Ao estudarmos as casas mais baratas, sem perceber separamos os bairros mais pobres com 7.79% ou mais de pessoas de classe social baixa:
+
+```{r echo=TRUE}
+cat(min(Boston$lstat[Boston$medv<=20]),"\n")
+```
+
+Portanto, os bairros com menos do que 7.79% da população com BSS estão fora da faixa que avaliamos e, portanto, a equação da regressão pode não ser boa estimadora para um bairro com 1% de BSS. Caso considerássemos todos os dados disponíveis ([`demo_Boston_todas.R`](demo_Boston_todas.R){target="_blank"}), teríamos:
+
+```{r echo=TRUE}
+cat(readLines("demo_Boston_todas.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_Boston_todas.R")
+```
+
+A primeira equação não pode ser usada porque subestima o valor da casa ao utilizar **lstat** fora da faixa de valores que foi utilizada para estimar a reta. No entanto, esta segunda reta também não pode ser usada porque, claramente, a relação entre as duas variáveis não é linear.    
+
+# Alavancagem
+
+O terceiro conjunto de dados do Quarteto de Anscombe mostra este efeito, com um único ponto visivelmente deslocando a inclinação da reta de regressão. Veja o efeito, em dois exemplos (modificações de [`demo_regressao.R`](demo_regressao.R){target="_blank"}) nas quais apenas o ponto $(174, 68)$ foi deslocado:
+
+* em [`demo_regressao_3.R`](demo_regressao_3.R){target="_blank"} para $(172, 78)$:
+
+```{r echo=TRUE}
+cat(readLines("demo_regressao_3.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_regressao_3.R")
+```
+
+* em [`demo_regressao_3b.R`](demo_regressao_3b.R){target="_blank"} para $(180, 63)$:
+
+```{r echo=TRUE}
+cat(readLines("demo_regressao_3b.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_regressao_3b.R")
+```
+
+# Métodos robustos
+
+Para os métodos mais robustos:
+
+- <code>estimatr::lm_robust</code> não precisa da suposição de homocedasticidade.
+
+- métodos por _bootstrapping_ só requerem independência entre os pares de observações.
+
+> Sempre que possível, utilize método robusto.
+
+# Primeiro estudo: hematócrito
+
+* Arquivo de dados: [`Gestante.rds`](Gestante.rds){target="_blank"}
+
+Já observamos nos gráficos de dispersão do hematócrito contra hemoglobina, hemácias e leucócitos porque os pares de medida (dos indivíduos nos quais as quatro variáveis foram medidas) podem ser considerados independentes e seus gráficos de dispersão pareciam acomodar bem o ajuste de uma reta. 
+
+No entanto, não verificamos as outras duas suposições necessárias para os testes estatísticos:
+
+- uninormalidade da VD (regressão) e binormalidade (correlação)
+- homocedasticidade da VD nos níveis da VE (regressão)
+
+A função utilizada até aqui foi <code>lm</code> do pacote <code>stats</code>. Existe uma alternativa, mais robusta, <code>estimatr::lm_robust</code> que dispensa a suposição de homocedasticidade. Recomenda adotá-la sempre no lugar de <code>lm</code>.
+
+> Judkins, 2015, https://doi.org/10.1002/sim.6839
+
+<br>
+
+Para situações ainda mais difíceis, lancaremos mão de _bootstrapping_, que tolera todas as violações, com exceção de dependência entre os pares de observações. 
+
+Quanto à normalidade, verificaremos a aparência de seus _density plots_ (linhas sólidas) sobre os quais apresentaremos a distribuição normal que tem a mesma média e desvio-padrão dos dados (linhas pontilhadas). É possível testá-la, assim como a binormalidade (algo como um chapéu mexicano em 3 dimensões), que é ainda mais difícil de abordar.
+
+* hematócrito ([`demo_HTnormal.R`](demo_HTnormal.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("demo_HTnormal.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_HTnormal.R")
+```
+
+* concentração de hemoglobina ([`demo_HBnormal.R`](demo_HBnormal.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("demo_HBnormal.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_HBnormal.R")
+```
+
+* contagem de hemácias ([`demo_HEMnormal.R`](demo_HEMnormal.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("demo_HEMnormal.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_HEMnormal.R")
+```
+
+* contagem de leucócitos ([`demo_LEUCnormal.R`](demo_LEUCnormal.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("demo_LEUCnormal.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_LEUCnormal.R")
+```
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Um teste satisfatório de binormalidade (normalidade bivariada) e de normalidade
+são os de Henze-Zirkler e de Shapiro-Wilk, respectivamente. Estão implementados 
+em <code>MVN::mvn</code> que utilizamos em [`demo_normalidade.R`](demo_normalidade.R){target="_blank"}.
+
+A saída é:
+
+```{r echo=TRUE}
+cat(readLines("demo_normalidade.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_normalidade.R")
+```
+
+Observe que a não rejeição da binormalidade não implica na não-rejeição das uninormalidades (e.g., HT x LEUC). 
+
+Observe os valores _p_. As hipóteses nulas de binormalidade e a uninormalidade são rejeitadas em alguns casos. No entanto, como $n$=`r nrow(Gestantes)`, seguiremos com a regressão linear simples com base no teorema central do limite (o número de pares independentes é maior que 30).
+
+Pode acontecer o reverso, quando a binormalidade for rejeitada, mas para cada variável isoladamente não houver rejeição. Neste caso temos um situação que poderíamos chamar de binormalidade fraca. A binormalidade é condição suficiente, mas não necessária para a validade do teste da regressão.
+
+Para amostras de tamanho pequeno, pode executar a regressão com cautela, mas não há garantias. Uma alternativa é utilizar _bootstrapping_, que prescinde da suposição de binormalidade.
+</td></tr></table>
+
+Neste caso, vamos inicialmente assumir que as regressões lineares serão válidas, mesmo porque verificamos que, visualmente, as quatro variáveis têm distribuição, se não normal, razoavelmente simétricas. 
+
+A função disponível em [`eiras.correg.R`](eiras.correg.R){target="_blank"} pode ser chamada para correlação e regressão, usando <code>lm</code> (método clássico), <code>estimatr::lm_robust</code> (método robusto) ou _bootstrapping_, bastando alterar seus parâmetros. 
+
+Vejamos a diferença de resultados nas três situações. [`Gestantes_RLS.R`](Gestantes_RLS.R){target="_blank"} implementa a chamada com <code>lm</code> (consulte o código para verificar como isto foi feito):
+
+```{r echo=TRUE}
+cat(readLines("Gestantes_RLS.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Gestantes_RLS.R")
+```
+
+Observamos nas saídas as retas de regressão, a equação da reta, o coeficiente de determinação ($R^2$), e a banda de confiança de 95% (linhas tracejadas), onde esperamos que a reta de regressao populacional esteja contida.
+
+O valor _p_ é referente ao teste da hipótese nula:
+
+$$\begin{align}
+H_0:&\; \beta_1 = 0\\
+H_1:&\; \beta_1 \ne 0
+\end{align}$$
+
+Portanto, para $\alpha=0.05$, há modelo estatisticamente válido para estimar a concentração de hemoglobina e a contagem de hemácias a partir do hematócrito: 
+
+- para hemoglobina: $\widehat{HB} = 0.00 + 0.35 HT, \; R^2=75\%$
+- para hemácia: $\widehat{HEM} = 0.52 + 0.10 HT, \; R^2=47\%$
+
+A impressão visual de que a predição para hemoglobina devia ser melhor que a para hemácias tem apoio na análise de regressão linear simples.
+
+Compare os resultados com o uso de <code>estimatr::lm_robust</code>
+implementada em [`Gestantes_RLS_robust.R`](Gestantes_RLS_robust.R){target="_blank"}:
+
+```{r echo=TRUE}
+cat(readLines("Gestantes_RLS_robust.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Gestantes_RLS_robust.R")
+```
+
+Note que, neste caso, há pequenas diferenças na estimativa dos valores _p_. A função mais robusta leva em conta quanto os valores originais divergem de uma distribuição normal.
+
+Em [`Gestantes_RLS_bootstrapping.R`](Gestantes_RLS_bootstrapping.R){target="_blank"} chamamos as mesmas funcões, mas agora usamos _bootstrapping_ (veja o código para ver como as chamadas foram modificadas):
+
+```{r echo=TRUE}
+cat(readLines("Gestantes_RLS_bootstrapping.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("Gestantes_RLS_bootstrapping.R")
+```
+
+Esta modalidade robusta não reporta valores _p_. A decisão é tomada pelo intervalo de confiança: veja que o intervalo de $R^2$ não inclui o zero para hemoglobina ou contagem de hemácias em função do hematócrito, portanto podemos assumir que suas inclinações são diferentes de zero. No caso de hematócrito vs. contagem de leucócitos, aparece o valor 0 no intervalo.
+
+Esta versão de nossa função com _bootstrapping_ cria uma sombra feita por várias retas e a banda de confiança 95% baseada nestas retas. A banda é a região dentro da qual espera, com confiança de 95%, encontrar o segmento de reta populacional. 
+
+Portanto, a outra forma de se ver a significância destes três casos é verificar se é possível traçar uma reta horizontal que fique inteiramente contida na banda, o que apenas acontece quando não rejeitamos $H_0$. Verifique que não é possível acomodar uma reta horizontal no caso da hemoblogina ou da contagem de hemácias, mas podemos fazê-lo no caso da contagem de leucócitos.
+
+O preço a pagar em _bootstrapping_ é tempo de processamento. Em geral precisamos de 10000 (dez mil, 1e4) a 1000000 (um milhão, 1e6) reamostragens, o que demanda mais tempo do que as versões analíticas de <code>lm</code> e <code>lm_robust</code>. 
+
+Neste exemplo chegamos às mesmas conclusões com os três métodos
+
+<table id="t02">
+  <tr>
+  <th>Variáveis</th>
+  <th>Método</th>
+  <th>Coeficiente angular</th>
+  <th>Equação obtida</th>
+  </tr>
+  
+  <tr>
+  <td>HT x HB</td>
+  <td>Convencional (lm)</td>
+  <td>`r round(reslm_hb[[5]]$coefficients[2,1],3)` [`r round(confint(lm(Gestantes$HB~Gestantes$HT))[2,1],3)`,`r round(confint(lm(Gestantes$HB~Gestantes$HT))[2,2],3)`] (p=`r sprintf("%1.2e",reslm_hb[[5]]$coefficients[2,4])`)</td>
+  <td>`r reslm_hb[[6]]`</td>
+  </tr>
+  <tr>
+  <td></td>
+  <td>Robusto (lm_robust)</td>
+  <td>`r round(reslmr_hb[[5]]$coefficients[2,1],3)` [`r round(reslmr_hb[[5]]$coefficients[2,5],3)`,`r round(reslmr_hb[[5]]$coefficients[2,6],3)`] (p=`r sprintf("%1.2e",reslmr_hb[[5]]$coefficients[2,4])`)</td>
+  <td>`r reslmr_hb[[6]]`</td>
+  </tr>
+  <tr>
+  <td></td>
+  <td>Bootstrapping</td>
+  <td>`r round(reslmb_hb[[5]]$coefficients[2,1],3)` [`r round(reslmb_hb[[5]]$coefficients[2,6],3)`,`r round(reslmb_hb[[5]]$coefficients[2,7],3)`] </td>
+  <td>`r reslmb_hb[[6]]`</td>
+  </tr>
+  
+  <tr>
+  <td>HT x HEM</td>
+  <td>Convencional (lm)</td>
+  <td>`r round(reslm_hem[[5]]$coefficients[2,1],3)` [`r round(confint(lm(Gestantes$HEM~Gestantes$HT))[2,1],3)`,`r round(confint(lm(Gestantes$HEM~Gestantes$HT))[2,2],3)`] (p=`r sprintf("%1.2e",reslm_hem[[5]]$coefficients[2,4])`)</td>
+  <td>`r reslm_hem[[6]]`</td>
+  </tr>
+  <tr>
+  <td></td>
+  <td>Robusto (lm_robust)</td>
+  <td>`r round(reslmr_hem[[5]]$coefficients[2,1],3)` [`r round(reslmr_hem[[5]]$coefficients[2,5],3)`,`r round(reslmr_hem[[5]]$coefficients[2,6],3)`] (p=`r sprintf("%1.2e",reslmr_hem[[5]]$coefficients[2,4])`)</td>
+  <td>`r reslmr_hem[[6]]`</td>
+  </tr>
+  <tr>
+  <td></td>
+  <td>Bootstrapping</td>
+  <td>`r round(reslmb_hem[[5]]$coefficients[2,1],3)` [`r round(reslmb_hem[[5]]$coefficients[2,6],3)`,`r round(reslmb_hem[[5]]$coefficients[2,7],3)`] </td>
+  <td>`r reslmb_hem[[6]]`</td>
+  </tr>
+  
+  <tr>
+  <td>HT x LEUC</td>
+  <td>Convencional (lm)</td>
+  <td>`r round(reslm_leuc[[5]]$coefficients[2,1],3)` [`r round(confint(lm(Gestantes$LEUC~Gestantes$HT))[2,1],3)`,`r round(confint(lm(Gestantes$LEUC~Gestantes$HT))[2,2],3)`] (p=`r sprintf("%1.2e",reslm_leuc[[5]]$coefficients[2,4])`)</td>
+  <td>`r reslm_leuc[[6]]`</td>
+  </tr>
+  <tr>
+  <td></td>
+  <td>Robusto (lm_robust)</td>
+  <td>`r round(reslmr_leuc[[5]]$coefficients[2,1],3)` [`r round(reslmr_leuc[[5]]$coefficients[2,5],3)`,`r round(reslmr_leuc[[5]]$coefficients[2,6],3)`] (p=`r sprintf("%1.2e",reslmr_leuc[[5]]$coefficients[2,4])`)</td>
+  <td>`r reslmr_leuc[[6]]`</td>
+  </tr>
+  <tr>
+  <td></td>
+  <td>Bootstrapping</td>
+  <td>`r round(reslmb_leuc[[5]]$coefficients[2,1],3)` [`r round(reslmb_leuc[[5]]$coefficients[2,6],3)`,`r round(reslmb_leuc[[5]]$coefficients[2,7],3)`] </td>
+  <td>`r reslmb_leuc[[6]]`</td>
+  </tr>
+</table>
+
+* A função <code>lm</code> não fornece o intervalo de confiança, mas pudemos obtê-los com <code>confint(lm(y~x))</code>.
+
+# Segundo estudo: corpo e cérebro
+
+Podemos usar o tamanho do corpo para prever o tamanho do cérebro em mamíferos a partir de alguns animais conhecidos?
+
+Vamos utilizar os dados colecionados em [`CorpoCerebroVonBonin.xlsx`](CorpoCerebroVonBonin.xlsx){target="_blank"} (von Bonin, 1937).
+
+Esta planilha tem a massa, em gramas, de corpos e cérebros de 119 animais. Adicionamos um _Homo sapiens_, que não fazia parte da tabela original.
+
+A regressão linear dada por `lm_robust` mostra o seguinte:
+
+```{r echo=TRUE}
+CorpoCerebro <- readxl::read_excel("CorpoCerebroVonBonin.xlsx")
+modelo <- estimatr::lm_robust(CorpoCerebro$Cerebro ~ CorpoCerebro$Corpo)
+sumario <- summary(modelo)
+print(sumario)
+```
+
+A saída textual mostra, aproximadamente: 
+
+* $R^2$ =  `r round(sumario$r.squared*100,1)`% e 
+* _p_ = `r sprintf("%.2e",modelo$p.value[2])`
+
+Portanto, para $\alpha=0.05$, rejeitamos $H_0$ e assumimos que existe modelo. Podemos, então, utilizar os valores de intercepto e inclinação da reta para prevermos a massa cerebral (mais complicado para medir, especialmente com o animal vivo) a partir da massa corporal (talvez mais fácil, dependendo do animal), ambas dadas em gramas, aproximadamente, com a reta de regressão:
+
+$$\widehat{\text{cérebro}} = 251 + 7.31 \cdot 10^{-5} \cdot \text{corpo}$$
+
+Pode parecer que está tudo bem. No entanto, não fizemos uma análise descritiva e gráfica, a qual é sempre recomendada. Observe, verificando com a RLS com `lm_robust()` e as funções gráficas desenvolvidas ([`CorpoCerebro_RLS.R`](CorpoCerebro_RLS.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("CorpoCerebro_RLS.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("CorpoCerebro_RLS.R")
+```
+
+Os dados estão muito concentrados no lado inferior-esquerdo do gráfico (difícil aferir linearidade). Há elefantes (com cérebros maiores do que 3.5 kg) e baleias (com corpos maiores que 40 toneladas) afastados dos demais; os valores parecem tornar mais dispersos com os corpos maiores (sinal de heterocedasticidade). A banda de confiança 95% é uma versão analítica e podemos ver boa parte dos dados longe dela, outro sinal de má escolha do modelo linear para ajustar estes dados ([`CorpoCerebro_RLS_problema.R`](CorpoCerebro_RLS_problema.R){target="_blank"}).
+
+```{r echo=TRUE}
+cat(readLines("CorpoCerebro_RLS_problema.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("CorpoCerebro_RLS_problema.R")
+```
+
+Usar versão mais robusta, com _bootstrapping_, não resolve bem o problema. A banda de confiança torna muito mais larga e inclui melhor os dados, mas a reta de regressão muda para passar onde não há dados, portanto não parece uma boa reta para predizer seus valores ([`CorpoCerebro_RLS_bootstrapping.R`](CorpoCerebro_RLS_bootstrapping.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("CorpoCerebro_RLS_bootstrapping.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("CorpoCerebro_RLS_bootstrapping.R")
+```
+
+Além disto, as distribuições dos pesos dos corpos e dos cérebros não são aproximadamente normais. Observe os gráficos ([`CorpoCerebro_distribuicoes.R`](CorpoCerebro_distribuicoes.R){target="_blank"}):
+
+```{r echo=TRUE}
+cat(readLines("CorpoCerebro_distribuicoes.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("CorpoCerebro_distribuicoes.R")
+```
+
+Este exemplo, portanto, não atende às premissas da RLS clássica usada no exemplo anterior.
+
+# Transformação potência de Tukey
+
+A transformação potência de Tukey de variável intervalar é uma transformação não linear que pode alterar o formato da distribuição dos dados. Sugerimos utilizar o gráfico de densidade para visualizar o formato da distribuição de variável intervalar.
+
+Desenvolvemos uma função que seleciona a transformação potência de Tukey da variável intervalar que minimiza a sua simetria: [`eiras.tukey.try.R`](eiras.tukey.try.R){target="_blank"}. 
+
+Este método de simetrização é indicado se a amostra tem pelo menos 30 observações independentes. 
+
+Com esta função verificamos:
+
+* para o peso do corpo (mostrando todas as transformações):
+
+```{r echo=TRUE}
+CorpoCerebro <- readxl::read_excel("CorpoCerebroVonBonin.xlsx")
+
+source("eiras.tukey.try.R")
+potencia <- tukey.try(CorpoCerebro$Corpo, xlab="Corpo (g)", show="all")
+```
+
+deve ser transformado por logaritmo.
+
+* para o peso do cérebro (mostrando só a melhor escolha ao final):
+
+```{r echo=TRUE}
+CorpoCerebro <- readxl::read_excel("CorpoCerebroVonBonin.xlsx")
+potencia <- tukey.try(CorpoCerebro$Cerebro, xlab="Cérebro (g)", show="final")
+```
+
+também deve ser transformado por logaritmo.
+
+Então executamos a regressão implementada em [`CorpoCerebro_RLS_log.R`](CorpoCerebro_RLS_log.R){target="_blank"}, que cria duas colunas adicionais com a transformação sugerida:
+
+```{r echo=TRUE, eval=FALSE}
+CorpoCerebro$Corpo_log <- log(CorpoCerebro$Corpo)
+CorpoCerebro$Cerebro_log <- log(CorpoCerebro$Cerebro)
+```
+
+obtendo:
+
+```{r echo=TRUE}
+cat(readLines("CorpoCerebro_RLS_log.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("CorpoCerebro_RLS_log.R")
+```
+
+Observe que os dados estão muito mais bem arranjados no gráfico, mais uniformemente distribuídos ao longo da reta. Para $\alpha=0.05$ o modelo é estatisticamente válido ($p<2.2 \cdot 10^{-16}$). O coeficiente de determinação é $R^2 \approx 85.7\%$ (grande). A equação é (ambos, cérebro e corpo em gramas): 
+
+$$\ln(\widehat{\text{Cérebro}}) = -1.7165208 + 0.6557576 \cdot \ln(\text{Corpo})$$
+
+ou
+
+$$\widehat{\text{Cérebro}} = \exp(-1.7165208 + 0.6557576 \cdot \ln(\text{Corpo}))$$
+
+ou, ainda, utilizando https://www.wolframalpha.com/, podemos encontrar que esta fórmula é equivalente a 
+
+$$\widehat{\text{Cérebro}} = 0.17969 \cdot {\text{Corpo}}^{0.655758}$$
+
+* [`ln(y) = -1.7165208 + 0.6557576 ln(x)`](https://www.wolframalpha.com/input?i=ln%28y%29+%3D+-1.7165208+%2B+0.6557576+ln%28x%29){target="_blank"}
+
+Interessantemente, no trabalho original de 1936/1937, Gerhardt von Bonin utilizando apenas papel e paciência chegou à expressão:
+$$\widehat{\text{Cérebro}} = 0.18 \cdot {\text{Corpo}}^{0.655}$$
+
+Este resultado é um feito notável!
+
+```{r fig.align="center", echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/vonBoninloglog.png")
+```
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Outro feito notável é [`WolframAlpha`](https://www.wolframalpha.com/){target="_blank"}. Há muitos recursos nele. Neste exemplo, para obtermos a simplificação da equação $\widehat{\text{Cérebro}} = \exp(-1.7165208 + 0.6557576 \cdot \ln(\text{Corpo}))$ para $\widehat{\text{Cérebro}} = 0.17969 \cdot {\text{Corpo}}^{0.655758}$, tudo que fizemos foi incluir a equação na mesma notação que usamos em R, assim:
+
+```{r echo=FALSE, out.width='80%'}
+knitr::include_graphics("image/WolframAlpha.png")
+```
+
+Observe que o sistema tenta "adivinhar" nossas possíveis intenções, oferecendo a versão simplificada que transcrevemos, elaborando gráficos e encontrado propriedades sobre a equação solicitada.
+</td></tr></table>
+
+Outro aspecto interessante é que, usando uma regressão linear, por causa das transformações não lineares, encontramos um ajuste de uma função não linear para a predição da massa do cérebro a partir da massa corpórea. Podemos verificar que a solução é adequada, gerando o gráfico:
+
+```{r echo=TRUE}
+CorpoCerebro <- readxl::read_excel("CorpoCerebroVonBonin.xlsx")
+
+# equacao obtida
+corpo_range <- seq(min(CorpoCerebro$Corpo,na.rm=TRUE), 
+                   max(CorpoCerebro$Corpo,na.rm=TRUE),
+                   length.out = 10000)
+cerebro_estimado <- 0.183502*(corpo_range^0.651679)
+
+# grafico
+plot(CorpoCerebro$Corpo, CorpoCerebro$Cerebro,
+     xlab="Corpo (g)", ylab="Cérebro (g)", 
+     pch=21, col="#000088cc", bg="transparent")
+lines(corpo_range,cerebro_estimado,
+      col="black",lwd=2)
+```
+
+A predição parece funcionar bem para a maior parte dos animais, excetuando os três que têm corpos maiores (acima de $4 \cdot 10^7 = 40000000~g = 40000~kg~~\text{ou}~~40~\text{toneladas}$). Para saber quais são, usamos:
+
+```{r echo=TRUE}
+print(CorpoCerebro[CorpoCerebro$Corpo>=4e7,])
+```
+
+São baleias:
+
+* uma [_Megaptera boops_](https://en.wikipedia.org/wiki/Humpback_whale){target="_blank"} e 
+* duas [_Balaenoptera rostrata_](https://en.wikipedia.org/wiki/Minke_whale){target="_blank"}
+
+Para melhor observarmos o acerto da solução, podemos alterar a escala dos eixos, excluindo estes animais muito grandes que estão à direita e parecem _outliers_.
+
+```{r echo=TRUE}
+plot(CorpoCerebro$Corpo, CorpoCerebro$Cerebro,
+     xlab="Corpo (g)", ylab="Cérebro (g)", 
+     xlim=c(0,6e6),
+     pch=21, col="#000088cc", bg="transparent")
+lines(corpo_range,cerebro_estimado,
+      col="black",lwd=2)
+```
+
+Quem são os três animais com cérebro acima de 3 kg?
+
+```{r echo=TRUE}
+print(CorpoCerebro[CorpoCerebro$Cerebro>3000 & 
+                   CorpoCerebro$Cerebro<6000 & 
+                   CorpoCerebro$Corpo<=6e6,])
+```
+
+São os elefantes africano e indiano, e a baleia azul:
+
+* [Elephas africanus](https://en.wikipedia.org/wiki/African_bush_elephant){target="_blank"}
+* [Elephas indicus](https://en.wikipedia.org/wiki/Indian_elephant){target="_blank"}
+* [Balaenoptera musculus](https://en.wikipedia.org/wiki/Blue_whale){target="_blank"}
+
+E qual é este com corpo acima de uma tolenada, mas cérebro abaixo de 1 kg?
+
+```{r echo=TRUE}
+print(CorpoCerebro[CorpoCerebro$Cerebro<1000 & 
+                   CorpoCerebro$Corpo>=1e6,])
+```
+
+Interessantemente, outro ungulado: o hipopótamo.
+
+Ainda, para observar melhor o canto inferior-esquerdo onde está a maioria dos animais considerados (corpos de até 300 kg e cérebros de até 2 kg), alteramos novamente a escala do gráfico:
+
+```{r echo=TRUE}
+plot(CorpoCerebro$Corpo, CorpoCerebro$Cerebro,
+     xlab="Corpo (g)", ylab="Cérebro (g)", 
+     xlim=c(0,300000), ylim=c(0,2000),
+     pch=21, col="#000088cc", bg="transparent")
+lines(corpo_range,cerebro_estimado,
+      col="black",lwd=2)
+```
+
+Quais são os dois animais de 70 kg com cérebro entre 1 e 2 kg? Podemos encontrá-los facilmente:
+
+```{r echo=TRUE}
+print(CorpoCerebro[CorpoCerebro$Corpo>=50000 & CorpoCerebro$Corpo<=100000 &
+                   CorpoCerebro$Cerebro>=1000 & CorpoCerebro$Cerebro<=1500,])
+```
+
+Dois animais: um cetáceo e o ser humano. Com uma rápida pesquisa no Google  encontramos um golfinho:
+
+* [_Lagenorrhynchus albirostris_](https://en.wikipedia.org/wiki/White-beaked_dolphin){target="_blank"} 
+
+Qual é o outro, com cérebro de quase 2 kg e maior peso que aparece no canto superior-direito do gráfico? 
+
+```{r echo=TRUE}
+print(CorpoCerebro[CorpoCerebro$Corpo>=250000 & CorpoCerebro$Corpo<=300000 &                                 CorpoCerebro$Cerebro>=1800 & CorpoCerebro$Cerebro<=2000,])
+```
+
+Outro golfinho: 
+
+* [_Tursiops tursio_](https://en.wikipedia.org/wiki/Bottlenose_dolphin){target="_blank"}
+
+E podemos prosseguir mais, explorando o canto inferior-esquerdo do gráfico:
+
+```{r echo=TRUE}
+plot(CorpoCerebro$Corpo, CorpoCerebro$Cerebro,
+     xlab="Corpo (g)", ylab="Cerebro (g)", 
+     xlim=c(0,50000), ylim=c(0,400),
+     pch=21, col="#000088cc", bg="transparent")
+lines(corpo_range,cerebro_estimado,
+      col="black",lwd=2)
+```
+
+Procurando os maiores cérebros deste trecho:
+
+```{r echo=TRUE}
+print(CorpoCerebro[CorpoCerebro$Corpo<=50000 &
+                   CorpoCerebro$Cerebro>170 & CorpoCerebro$Cerebro<400,])
+```
+
+Encontramos, agora, primatas:
+
+* chimpanzé: _Anthropopithecus troblodytes_ é o nome arcaico, hoje renomeado como [_Pan troglodytes_](https://en.wikipedia.org/wiki/Chimpanzee){target="_blank"}
+
+* Babuíno: [_Papio sp_](https://en.wikipedia.org/wiki/Baboon){target="_blank"}.
+
+Não encontramos somente uma função média que relaciona massa de corpo e cérebro, mas também podemos utilizá-la para localizar animais atípicos. 
+
+Cetáceos, elefantes e primatas próximos aos animais humanos são atípicos. Golfinhos têm uma relação tamanho corpo/cérebro parecida com a de nossa espécie. Em uma planilha com 120 animais, encontrar uma função geral e _linear_ é muito interessante.
+
+# Revisitando a correlação
+
+## Diferença entre correlação e regressão 
+
+A correlação é sempre confundida com a regressão linear simples. A confusão é natural, por causa de suas similaridades: ambas tratam de relações entre duas variáveis intervalares (quantitativas), relação esta que deve ser linear; calculam, respectivamente, $r$ e $R^2$, sendo $r^2=R^2$; são testáveis estatisticamente para $H_0: \rho=0$ e $H_0: \beta_1=0$ chegando à mesma conclusão (variáveis não correlacionadas, i.e., $\rho=0$ correspondem a retas de regressão horizontais, i.e., $\hat{\beta_1}=0$) com o mesmo valor _p_ quando computamos com os métodos clássicos implementados em `cor.test` e `lm`.
+
+É necessário, então, ter clareza sobre as diferenças, além da finalidade propriamente dita: a correlação mede o grau de linearidade entre duas variáveis, sem direção e sem dimensão, enquanto a regressão linear simples pretende obter uma equação para, a partir do valor de uma variável explicativa (ou independente), estimar o valor médio de uma variável de desfecho (ou dependente), nesta direção e com dimensão.
+
+Ser adimensional ou dimensional neste contexto corresponde, respectivamente, a tratar com números puros ou com unidades de medida. Como mostramos acima, a correlação é computada com as variáveis padronizadas. Como o procedimento de padronização elimina as unidades de medida, dizer que a correlação utiliza as variáveis padronizadas implica que a correlação é adimensional. A regressão linear simples, ao contrário, busca previsão e, portanto, precisa manter as unidades de medida das variáveis originais, i.e., é dimensional.
+
+Volte a observar os gráficos da seção [valores do _r_ de Pearson](#valores_r). Mostramos exemplos de nuvens de pontos com $-1 \le r \le 1$. Repare que não procuramos traçar retas entre os pontos; as nuvens esboçam elipses, mais estreitas quanto mais próximos os valores de _r_ se aproximam de $-1$ ou $1$ e com aspecto de círculo quando $r=0$. Todas as elipses têm eixo principal com inclinação próxima a 45<sup>o</sup> em relação ao eixo das abscissas, pois este é o efeito causado pela padronização. Caso alguém tentasse imaginar uma reta que passasse entre os pontos destas nuvens, provavelmente traçaria a reta data por $\hat{y}=x$, i.e., com $\hat{\beta_1}=1, \hat{\beta_0}=0$, correspondendo à bissetriz do primeiro quadrante do plano cartesiano, inclinada em 45<sup>o</sup>.
+
+No entanto, na seção [padronização das variáveis](#padroniza-var) encontramos para a regressão linear simples com as variáveis padronizadas os valores $\hat{\beta_1} = r$ (a inclinação da reta é o coeficiente angular) e $\hat{\beta_0} = 0$ (o intercepto é igual a zero). Não parece estranho? As retas de regressão calculadas para as nuvens, com exceção de $r=-1$ e $r=1$, não têm inclinação correspondente ao eixo principal das nuvens de pontos que observamos, sempre com ângulos de 45<sup>o</sup>. Que retas e que ângulos são estes? O entendimento destes comportamentos da correlação e da regressão linear simples é o que mostra mais claramente suas diferenças.
+
+Para entender o que ocorre, vamos usar os dados da planilha [Adm2008.xlsx](Adm2008.xlsx). Entre outras variáveis, esta planilha traz a estatura e a massa corpórea relatadas por 89 estudantes de uma classe de graduação de uma faculdade de administração em 2008. Uma relação linear pode ser considerada? Executando [`Adm2008_descritiva.R`](Adm2008_descritiva.R){target="_blank"}:
+
+```{r echo=TRUE}
+cat(readLines("Adm2008_descritiva.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("Adm2008_descritiva.R")
+```
+
+Admitindo que sim, 
+
+* a correlação entre estas duas variáveis (implementada em [`Adm2008_rPearson.R`](Adm2008_rPearson.R){target="_blank"}) é:
+
+```{r echo=TRUE}
+cat(readLines("Adm2008_rPearson.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("Adm2008_rPearson.R")
+```
+
+para o qual computamos o coeficiente de correlação igual a `r corAdm<-lst[[5]]$estimate`_r_=`r round(corAdm,2)`.
+
+* a regressão linear (implementada em [`Adm2008_RLS.R`](Adm2008_RLS.R){target="_blank"}) é:
+
+```{r echo=TRUE}
+cat(readLines("Adm2008_RLS.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("Adm2008_RLS.R")
+```
+
+Estatura e massa corpórea têm unidades de medida, respectivamente cm e kg. A regressão linear simples encontrou a equação: 
+<div align=center>
+$\widehat{\text{massa (kg)}} =$ `r round(lst[[5]]$coefficients[1,1],2)` + `r round(lst[[5]]$coefficients[2,1],2)` $~ \cdot ~ \text{estatura (cm)}$
+</div>
+
+* e a regressão linear com as variáveis padronizadas (implementada em [`Adm2008_RLS_z.R`](Adm2008_RLS_z.R){target="_blank"}) é:
+
+```{r echo=TRUE}
+cat(readLines("Adm2008_RLS_z.R"), sep = '\n')
+```
+
+```{r echo=TRUE}
+source("Adm2008_RLS_z.R")
+```
+
+encontrando 
+<div align=center>
+$\widehat{\text{massa(z)}} =$ `r sprintf("%.3e",lst[[5]]$coefficients[1,1])` + `r round(lst[[5]]$coefficients[2,1],2)` $~ \cdot ~ \text{estatura(z)}$
+</div>
+
+Exceto por arredondamento, a reta calculada comprova o que esperávamos da teoria: é praticamente igual a $$\widehat{\text{massa(z)}} = 0 + r \cdot \text{estatura(z)}$$
+
+É difícil visualizar a elipse neste exemplo por causa da distorção da escala. Então, vamos exibir os dados padronizados com os eixos utilizando escalas idênticas:
+
+```{r echo=TRUE, fig.width=6, fig.height=6}
+col <- friendlycolor(2) # violeta
+pch <- 23
+
+Dados <- readxl::read_excel("Adm2008.xlsx")
+# padroniza os valores
+Dados$Estatura <- scale(Dados$Estatura)
+Dados$MCT <- scale(Dados$MCT)
+plot(add.jitter(Dados$Estatura),add.jitter(Dados$MCT),
+     xlim=c(-4,4), ylim=c(-4,4), 
+     xlab="Estatura (z)", ylab="Massa (z)", 
+     pch=pch,col=col,bg=col,cex=0.6)
+# bissetriz
+lines(c(-4,4),c(-4,4),lty=2)
+```
+
+Note que a dispersão dos pontos é próxima a $r=0.8$ vista na seção [valores do _r_ de Pearson](#valores_r). A orientação de uma reta imaginária que passa pelo meio da nuvem de pontos poderia ser próxima à bissetriz (coeficiente angular igual a $1$), como nos gráficos que observamos na seção de [padronização das variáveis](#padroniza-var). No entanto, o valor de _r_ $\approx$ `r round(corAdm,2)` desvia da bissetriz, como teorizamos. 
+
+Para verificar como a reta de regressão se relaciona com a correlação, adicionamos ao código anterior a regressão linear simples dos dados gerados e a plotamos:
+
+```{r echo=TRUE, fig.width=6, fig.height=6}
+plot(add.jitter(Dados$Estatura),add.jitter(Dados$MCT),
+     xlim=c(-4,4), ylim=c(-4,4), 
+     xlab="Estatura (z)", ylab="Massa (z)", 
+     pch=pch,col=col,bg=col,cex=0.6)
+# bissetriz
+lines(c(-4,4),c(-4,4),lty=2)
+# regressao linear y~x dos valores gerados 
+rls <- lm_robust(Dados$MCT~Dados$Estatura) 
+xhat <- seq(min(Dados$Estatura,na.rm=TRUE),
+        max(Dados$Estatura,na.rm=TRUE), length.out = 10) 
+yhat <- rls$coefficients[1] + rls$coefficients[2]*xhat 
+lines(xhat,yhat,lwd=4) 
+``` 
+
+Para melhorar a visualização, podemos adicionar a elipse de confiança 90% (poderia ser qualquer outra) com seu eixo principal e duas verticais pontilhadas em seus limites, à esquerda e à direita: 
+
+```{r echo=TRUE, fig.width=6, fig.height=6}
+plot(add.jitter(Dados$Estatura),add.jitter(Dados$MCT),
+     xlim=c(-4,4), ylim=c(-4,4), 
+     xlab="Estatura (z)", ylab="Massa (z)", 
+     pch=pch,col=col,bg=col,cex=0.6)
+# bissetriz
+lines(c(-4,4),c(-4,4),lty=2)
+# regressao linear y~x dos valores gerados
+lines(xhat,yhat,lwd=4)
+ellipse <- ellipseaxis(x=Dados$Estatura, 
+            y=Dados$MCT, 
+            draw=FALSE, col=col, level=0.9)
+lines(ellipse, col=col, lwd=2,lty=2)
+abline(v=min(ellipse[,1]),col=col, lwd=2,lty=2)
+abline(v=max(ellipse[,1]),col=col, lwd=2,lty=2)
+```
+
+É pelos pontos em que estas verticais tocam a elipse que passa a reta de regressão computada pelo modelo `lm_robust(y~x)`.
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Para ser mais completo, como a correlação é adirecional, poderíamos computar uma segunda reta de regressão, invertendo as variáveis, com `lm_robust(x~y)`. 
+
+Caso queira, pode experimentar com [`demo_r.R`](demo_r.R){target="_blank"}. Este programa permite gerar distribuições artificiais com correlação próxima ao valor de _r_ desejado e o número de pontos $n$, para observar da regressão linear simples, mostrando as duas retas de regressão `y~x` e `x~y` tocando os pontos extremos da elipse de confiança 95%. 
+</td></tr></table> 
+ 
+# Exemplo de aplicação
+
+Padronizar as variáveis e proceder à regressão linear não é apenas uma curiosidade. Pode ajudar em explorar melhor as relações. Observe o que acontece com os dados de  [`Adm2008.xlsx`](Adm2008.xlsx){target="_blank"} quando exibimos separadamente as medidas de estatura e massa corpórea total (MCT) de homens e mulheres obtidos entre estudantes do curso de graduação de Administração da Faculdade de Economia e Administração da Universidade de São Paulo.
+
+```{r echo=TRUE}
+Dados <- readxl::read_excel("Adm2008.xlsx")
+DadosF <- Dados[Dados$Sexo=="Feminino",]
+DadosM <- Dados[Dados$Sexo=="Masculino",]
+nF <- min(sum(!is.na(DadosF$Estatura)), 
+           sum(!is.na(DadosF$MCT)))
+nM <- min(sum(!is.na(DadosM$Estatura)), 
+           sum(!is.na(DadosM$MCT)))
+
+# Elipse de predicao 95%
+matriz <- as.matrix(Dados[, 3:4])
+n <- nrow(matriz)
+car::dataEllipse(matriz[,1], matriz[,2],
+                 groups=factor(Dados$Sexo),
+                 group.labels=c("F", "M"),
+                 levels=c(.95,.999),
+                 robust=TRUE,
+                 main=paste("Elipses de predicao de 95% e 99.9%\n",
+                            "n = ",n," (Fem.=",nF,", Masc.=",nM,")",sep=""),
+                 xlab="Estatura (m)",
+                 ylab="MCT (kg)",
+                 xlim=c(1.3, 2.1),
+                 ylim=c(25, 120),
+                 lwd=0.8, lty=2)
+
+```
+
+```{r echo=FALSE}
+# saida textual
+cat(bartitle("Estatística descritiva"))
+cat(bartitle("- sexo feminino"))
+print(summary(Dados[Dados$Sexo=="Feminino",3:4]))
+cat(bartitle("- sexo masculino"))
+print(summary(Dados[Dados$Sexo=="Masculino",3:4]))
+```
+
+As elipses externas (confiança de 99.9\%) mostram que não há _outliers_ se considerarmos que as distribuições dos grupos são binormais.
+
+A elipse tinha uma aparência estranha porque há dois grupos misturados. Pelas localização e inclinação das elipses parece que os homens são mais altos e mais pesados que as mulheres, e também são maiores suas variabilidades em estatura e em peso.
+
+Será que a relação entre estatura (m) e peso (kg) é a mesma em mulheres e homens?
+
+Há duas formas de observar o comportamento das variáveis.
+
+# Regressões lineares simples (para cada grupo)
+
+```{r echo=TRUE}
+# split F & M
+DadosF <- Dados[Dados$Sexo=="Feminino",]
+DadosM <- Dados[Dados$Sexo=="Masculino",]
+# regressao
+rlsF <- estimatr::lm_robust(DadosF$MCT ~ DadosF$Estatura)
+xF <- seq(min(DadosF$Estatura,na.rm=TRUE),
+          max(DadosF$Estatura,na.rm=TRUE),length.out=10)
+yF <- rlsF$coefficients[1] + rlsF$coefficients[2]*xF
+rlsM <- estimatr::lm_robust(DadosM$MCT ~ DadosM$Estatura)
+xM <- seq(min(DadosM$Estatura,na.rm=TRUE),
+          max(DadosM$Estatura,na.rm=TRUE),length.out=10)
+yM <- rlsM$coefficients[1] + rlsM$coefficients[2]*xM
+plot(NA,
+     main="Regressão Linear Simples",
+     xlab="Estatura (m)",
+     ylab="MCT (kg)",
+     xlim=c(1.3, 2.1),
+     ylim=c(25, 120))
+text(min(xF),min(yF),col="black",pos=2,"F")
+points(DadosF$Estatura,DadosF$MCT,col="black",pch=1)
+lines(xF,yF,col="black",lwd=2)
+text(max(xM),max(yM),col="blue",pos=3,"M")
+points(DadosM$Estatura,DadosM$MCT,col="blue",pch=2)
+lines(xM,yM,col="blue",lwd=2)
+```
+
+As retas de regressão linear acompanham o perfil das elipses, com inclinação aparentemente maior para os homens. Então, para os homens, a variação em estatura corresponde a uma variação maior na massa corpórea do que a observada entre as mulheres.
+
+# Correlações (para cada grupo)
+
+Será que a correlação entre estatura e massa corpórea é diferente para os dois sexos? 
+
+Considerando que são membros da mesma espécie, não deveríamos observar a mesma correlação?
+
+Podemos, para responder a esta questão, comparar as correlações. 
+
+Para a parte gráfica, pelo que vimos acima, é mais coerente expressar graficamente com as variáveis padronizadas (lembre: não é apropriado traçar retas para a correlação; retas são para RLS). Assim, observamos:
+
+```{r echo=TRUE}
+# padronizacao
+Dados$Estatura_z <- NA
+Dados$MCT_z <- NA
+DadosF$Estatura_z <- scale(DadosF$Estatura)
+Dados$Estatura_z[Dados$Sexo=="Feminino"] <- scale(Dados$Estatura[Dados$Sexo=="Feminino"])
+DadosF$MCT_z <- scale(DadosF$MCT)
+Dados$MCT_z[Dados$Sexo=="Feminino"] <- scale(Dados$MCT[Dados$Sexo=="Feminino"])
+DadosM$Estatura_z <- scale(DadosM$Estatura)
+Dados$Estatura_z[Dados$Sexo=="Masculino"] <- scale(Dados$Estatura[Dados$Sexo=="Masculino"])
+DadosM$MCT_z <- scale(DadosM$MCT)
+Dados$MCT_z[Dados$Sexo=="Masculino"] <- scale(Dados$MCT[Dados$Sexo=="Masculino"])
+```
+
+```{r echo=TRUE, fig.width=6, fig.height=6}
+car::dataEllipse(Dados$Estatura_z, Dados$MCT_z,
+                 groups=factor(Dados$Sexo),
+                 group.labels=c("F", "M"),
+                 levels=c(.95),
+                 robust=TRUE,
+                 main=paste("Elipses predição 95% e RLS padronizadas\n",
+                            "n = ",n," (Fem=",nF,", Masc=",nM,")",sep=""),
+                 xlab="Estatura (z)",
+                 ylab="MCT (z)",
+                 xlim=c(-4,4),
+                 ylim=c(-4,4))
+# RLS padronizada
+rlsF <- estimatr::lm_robust(DadosF$MCT_z ~ DadosF$Estatura_z)
+xF <- seq(min(DadosF$Estatura_z,na.rm=TRUE),
+          max(DadosF$Estatura_z,na.rm=TRUE),length.out=10)
+yF <- rlsF$coefficients[1] + rlsF$coefficients[2]*xF
+lines(xF,yF,col="black",lwd=2)
+rlsM <- estimatr::lm_robust(DadosM$MCT_z ~ DadosM$Estatura_z)
+xM <- seq(min(DadosM$Estatura_z,na.rm=TRUE),
+          max(DadosM$Estatura_z,na.rm=TRUE),length.out=10)
+yM <- rlsM$coefficients[1] + rlsM$coefficients[2]*xM
+lines(xM,yM,col="blue",lwd=2)
+```
+
+Visualmente, a regressão linear simples da massa corporal em função da estatura parece diferente e a correlação parece igual para mulheres e homens. Esta observação é acompanhada pelas elipses de predição 95% bastante coincidentes e retas de regressão com as variáveis padronizadas sobrepostas. 
+Implementamos, com testes estatísticos apropriados em [`demo_estatmct.R`](demo_estatmct.R){target="_blank"}, resultando:
+
+```{r echo=TRUE}
+cat(readLines("demo_estatmct.R"), sep = '\n')
+```
+
+```{r echo=TRUE, fig.width=6, fig.height=6}
+source("demo_estatmct.R")
+```
+
+Podemos observar os dois últimos gráficos. O teste de duas correlações independentes foi feito no capítulo de Análise de Correlação. Também é possível testar se as duas regressões são iguais, i.e. paralelas e coincidentes. Os testes aparecem no final da saída textual.
+
+Concluímos, estatisticamente, que estatura e massa corpórea para mulheres e homens são, portanto, igualmente correlacionadas, mas as respectivas regressões lineares simples diferem. São dois teste hierárquicos: o primeiro verifica se as retas são paralelas e o segundo, caso sejam paralelas, verifica se os interceptos são iguais. Como são dois testes, adotamos $\alpha=0.025$ (correção de Bonferroni). Assim, não rejeitamos a hipótese nula de que são paralelas, mas os interceptos diferem e, portanto, as retas não são coincidentes.
+
+Graficamente, podemos acomodar retas paralelas dentro das respectivas bandas de confiança no domínio comum aos dois grupos:
+
+```{r echo=FALSE, out.width='70%'}
+knitr::include_graphics("./image/MascFemParalelas.png")
+```
+
+As bandas de confiança delimitam a região onde a reta de regressão populacional pode existir, portanto a possibilidade de haver pelo menos este par de retas significa que a hipótese nula (sempre populacional) de paralelismo da regressão para homens e mulheres não é rejeitada. No entanto, nenhum par de retas paralelas com interceptos iguais podem ser acomodada neste caso, e a igualdade populacional dos interceptos (consequentemente a coincidência completa das retas populacionais) foi rejeitada.
+
+# Regressão de Deming
+
+* Silveira PSP, Vieira JE, Siqueira JO (2024) Is the Bland-Altman plot method useful without inferences for accuracy, precision, and agreement? _Rev Saude Publica_ 58:01. https://doi.org/10.11606/s1518-8787.2024058005430. https://www.scielo.br/j/rsp/a/z8LgrxcgX7PCmGvrtHRhsFK/?format=pdf&lang=en
+
+Há situações em que queremos estabelecer a equivalência de duas técnicas de medição, especialmente quando queremos substituir um procedimento tradicional por outro que seja mais barato, mais rápido ou menos invasivo.
+
+Por exemplo, suponha que queremos medir a massa corporal total de indivíduos usando uma balança profissional e pedindo-lhes que relatem seus pesos. A segunda técnica de medição é menos cara e possivelmente mais fácil de aplicar.
+
+Outras técnicas candidatas também podem ser levadas em consideração. Avaliadores treinados podem estimar o peso dos indivíduos por sua aparência ou, ainda mais barato, esses árbitros podem ser recrutados sem serem treinados anteriormente. Outra opção é uma balança doméstica não profissional como instrumento de medida.
+
+Em um experimento hipotético, voluntários foram mensurados com as quatro técnicas disponíveis ([`MCT4tecnicas.xlsx`](MCT4tecnicas.xlsx){target="_blank"}). A balança profissional é a técnica de referência.
+
+Uma simples inspeção desta tabela ([`MCT4tecnicas.xlsx`](MCT4tecnicas.xlsx){target="_blank"}) mostra:
+
+```{r echo=FALSE}
+cat(readLines("demo_MCT4sumario.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_MCT4sumario.R")
+```
+
+Em relação à balança profissional, o autorrelato forneceu média e desvio padrão semelhantes. Árbitros treinados conseguiram aproximar os pesos individuais em média, mas mostraram maior variância. Árbitros não treinados subestimaram os pesos e também mostraram maior variância. A balança doméstica apresentou variância ligeiramente maior, mas parece enviesada para superestimar os pesos.
+
+> Como avaliar qual técnica de medição candidata pode substituir o uso de uma balança profissional?
+
+Intuitivamente, avaliar a correlação ou executar regressão linear simples poderia resolver o problema. Iniciamos pelos gráficos de correlação e regressão para verificar se um modelo linear parece adequado ([`demo_MCT4correg.R`](demo_MCT4correg.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("demo_MCT4correg.R")
+```
+
+Todos os quatro métodos estão fortemente correlacionados com as medidas da balança profissional de acordo com os tamanhos de efeito de Cohen. Os coeficientes de correlação de Pearson [com intervalos de confiança de 95%] são (A) autorrelato: `r round(as.numeric(cor[[5]]$estimate),3)` [`r round(as.numeric(cor[[5]]$conf.int)[1],3)`, `r round(as.numeric(cor[[5]]$conf.int)[2],3)`]; (B) árbitros treinados: `r round(as.numeric(cor[[5+6]]$estimate),3)` [`r round(as.numeric(cor[[5+6]]$conf.int)[1],3)`, `r round(as.numeric(cor[[5+6]]$conf.int)[2],3)`]; (C) árbitros não treinados: `r round(as.numeric(cor[[5+6*2]]$estimate),3)` [`r round(as.numeric(cor[[5+6*2]]$conf.int)[1],3)`, `r round(as.numeric(cor[[5+6*2]]$conf.int)[2],3)`]; e (D) balança doméstica: `r round(as.numeric(cor[[5+6*3]]$estimate),3)` [`r round(as.numeric(cor[[5+6*3]]$conf.int)[1],3)`, `r round(as.numeric(cor[[5+6*3]]$conf.int)[2],3)`].
+
+Uma segunda abordagem possível é a regressão linear simples. Se escolhida, não pode ser aplicada de forma grosseira. Para avaliar a concordância, espera uma linha de regressão próxima à bissetriz, indicando que as técnicas de referência e candidata fornecem a mesma medida.
+
+Para a reta de regressão, dada por $$y = \alpha + \beta x + \epsilon$$ onde, para a bissetriz, $\alpha=0$ e $\beta=1$, não adianta verificar a existência de modelo, como é habitual, testando $H_0: \beta=0$, que é uma reta horizontal. O artifício para testar $H_0: \beta=1$ é subtrair $x$ dos dois lados da equação, obtendo:
+
+$$y-x = \alpha + \beta x -x + \epsilon$$
+$$y-x = \alpha + (\beta-1)x + \epsilon$$
+$$y-x = \alpha + \beta'x + \epsilon$$
+e testamos:
+$$H_0: \beta'=0$$
+de forma que, agora, o teste da inclinação da regressão linear equivale a $H_0: \beta=1$. Isto é testável com funções implementadas em [`demo_MCT4linreg.R`](demo_MCT4linreg.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("demo_MCT4linreg.R")
+```
+
+Observe que todos os testes da regressão não rejeitam a hipótese nula, testando $H_{0,1}: \alpha=0$ e $H_{0,2}: \beta=1$. Portanto, poderíamos considerar os quatro métodos como vicários para a balança profissional. No entanto, em dois casos a bissetriz não está totalmente contida na banda de confiança 95%.
+
+Os autores citados afirmam que a correlação de Pearson (Bland & Altman, 1986) e a regressão linear simples (Bland & Altman, 2003) não são adequadas para resolver este tipo de problema. Por isso, propuseram seu famoso método (implementado em [`demo_MCT4baclassic.R`](demo_MCT4baclassic.R){target="_blank"}):
+
+```{r echo=FALSE}
+source("demo_MCT4baclassic.R")
+```
+
+O método gráfico de Bland-Altman não tem teste estatístico e sua interpretação é subjetiva. Em suma, os gráficos de Bland-Altman avaliam os limites de concordância de 95% (LoA) dados pela diferença média das medições individuais fornecidas por duas técnicas mais ou menos 1.96 vezes seu desvio padrão plotado como linhas horizontais. Quando os LoA são menores do que uma dada tolerância (diferenças pequenas o suficiente para serem consideradas clinicamente sem importância), as duas técnicas são consideradas como tendo equivalência aceitável. Mais recentemente, intervalos de confiança foram adicionados em torno da LoA superior e inferior. Embora forneça um pouco mais de espaço para a tolerância, as LoAs podem ser consideradas um teste estatístico para os limites da banda, mas não fornecem qualquer decisão para a equivalência das técnicas.
+
+Nos gráficos de Bland-Altman a distância entre a linha sólida em vermelho e o valor zero em preto é o viés (_bias_, em inglês). Precisamos definir se este viés é nulo. Este teste pode ser feito com funções implementadas em [`demo_MCT4bias.R`](demo_MCT4bias.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("demo_MCT4bias.R")
+```
+
+Note que nestes gráficos o eixo das ordenadas é o mesmo da regressão linear simples modificada, $y-x$. De acordo com esta análise, os árbitros não treinados (subestimando) e a balança doméstica (superestimando) não obtiveram os mesmos valores que a balança profissional em média porque a linha horizontal pontilhada na altura da diferença nula (i.e., ausência de viés) não está totalmente contida na banda de confiança de 95%.
+
+Até aqui as análises não consideraram que toda técnica de mensuração tem erro e, portanto, a balança profissional que adotamos como referência não é exceção. A regressão linear simples não é suficiente porque assume que a VE ($x$) não tem erro de medida. A regressão que considera erros de medida em $x$ e $y$ e permite testar a equivalência de técnicas é a Regressão de Deming.
+
+De acordo com Shukla (1973), ao calcular a regressão linear como $y-x = \alpha + \beta(y+x) + \theta$, a inclinação será diferente de zero quando a variância de duas técnicas de medição for diferente, sendo a variância um sucedâneo das precisões da técnica de medição.
+
+Aqui observamos que os eixos propostos por Shukla são os mesmos usados pelo conceito original de Bland e Altman em 1986: a diferença entre as medidas representadas no eixo $y$ e a soma (ou a média, que não altera a regressão) na eixo $x$. Este arranjo, no entanto, é projetado para comparar a variância entre as técnicas de medição e não uma equivalência completa como os gráficos de Bland-Altman sugeririam.
+
+A precisão de uma técnica de medida é a variância de seus erros de medida. Supõe que os erros de medida são independentes intra e entre técnicas (aqui, cada técnica é aplica somente uma vez em cada sujeito). Então, para avaliar igualdade das precisões das duas técnicas de medida estimaremos o intervalo de confiança 95% de $\lambda$. Assuma lambda como a razão das precisões das duas técnicas e, portanto, serão iguais quando $\lambda=1$ estiver contido ao IC95. O cálculo de lambda está implementado em [`demo_MCT4shukla.R`](demo_MCT4shukla.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("demo_MCT4shukla.R")
+```
+
+De acordo com esta análise, os árbitros treinados e não treinados têm precisão menor do que a balança profissional (intervalo de confiança de $\lambda$ está acima de 1), enquanto o autorrelato e a balança doméstica tem precisão estatisticamente não diferente da balança profissional ($\lambda=1$ está contido no intervalo de confiança de 95%).
+
+Esta relação entre as precisões é calculada porque a regressão de Deming a leva em conta. As regressões de Deming estão implementadas em [`demo_MCT4deming.R`](demo_MCT4deming.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("demo_MCT4deming.R")
+```
+
+Observando as bissetrizes e as bandas de confiança, concluímos que o autorrelato é a única técnica equivalente ao uso da balança profissional.
+
+Tomamos as decisões por inspeção visual. Ainda podemos formalizar com um teste estatístico.
+
+Note que a saída textual das regressões de Deming exibiram intervalos de confiança 95% para o intercepto (não rejeitando a hipótese nula quando o intervalo contém $0$) e coeficiente angular (não rejeitando a hipótese nula quando o intervalo contém $1$). Não é suficiente:
+
+* No caso do autorrelato, não se rejeita $H_0$ nos dois casos e a bissetriz está graficamente dentro da banda, coerentemente.
+* Nos casos dos árbitros treinados ou não treinados, ambas $H_0$ são rejeitadas e a bissetriz não está inteiramente dentro das bandas de confiança 95%, dando a falsa impressão de que se pode confiar nesta saída textual.
+* No entanto, no caso da balança doméstica, não se rejeita $H_0$ pelos intervalos de confiança do intercepto e do coeficiente angular, mas a bissetriz está quase inteiramente fora da banda de confiança 95%.
+
+Para testar conjuntamente o intercepto e o coeficiente angular, é necessário verificar se a hipótese nula $H_0: (\alpha,\beta) = (0,1)$ encontra dentro da região elíptica de confiança 95% (Francq & Govaerts B, 2014 e 2016). Está implementado em  [`demo_MCT4elipse.R`](demo_MCT4elipse.R){target="_blank"}:
+
+```{r echo=FALSE, , out.width='70%', fig.width=5, fig.height=5}
+source("demo_MCT4elipse.R")
+```
+
+O gráfico da regressão de Deming mostra a bissetriz em linha pontilhada e a reta de regressão em linha sólida preta. As bandas de confiança 95% foram estimadas analiticamente e por bootstrapping. As elipses de confiança foram estimadas a partir da regressão de Deming analiticamente e por _bootstrapping_; para comparação, a elipse obtida pela regressão linear simples tradicional também é exibida.
+
+Por esta última análise, as duas técnicas mais elegíveis para reproduzir as medições da balança profissional são o autorrelato e o emprego de árbitros treinados.
+
+Os árbitros não treinados estão no limite, mas $H_0$ é rejeitada.
+
+A balança doméstica mostra $H_0$ claramente fora da elipse de confiança 95%, possivelmente devido a serem estes os dois métodos que têm viés das medidas.
+
+Neste exemplo é necessário notar que em todos os casos a regressão linear simples também conduz às mesmas conclusões. Isto nem sempre ocorre.
+
+# FIM
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/trem.png")
+```
+
+# Referências
+
+* Bland JM, Altman DG (2003) Applying the right statistics: analyses of measurement studies. _Ultrasound Obst Gyn._ 22(1):85-93.
+* Bland JM, Altman DG (1986) Statistical methods for assessing agreement between two methods of clinical measurement. _Lancet_ 1(8476):307‑10.
+* Cohen, J (1992) A power primer. _Quantitative methods in Psychology_ 112(1): 155-159.
+* Dancey CP, Reidy J (2019) _Estatística sem Matemática para Psicologia_ 7ª ed. Porto Alegre: Penso.
+* Ellis PD (2010) _The essential guide to effect sizes_. 1st ed.  Cambridge University Press.
+* Francq BG, Govaerts B (2014) Hyperbolic confidence bands of errors-in-variables regression lines applied to method comparison studies. _Journal de la Société Française de Statistique_ 155(1). http://www.numdam.org/item/JSFS_2014__155_1_23_0.pdf
+* Francq BG, Govaerts B (2016) How to regress and predict in a Bland-Altman plot? Review and contribution based on tolerance intervals and correlated-errors-in-variables models. _Statist. Med._, 35: 2328-58. https://doi.org/10.1002/sim.6872
+* Judkins DR, Porter KE (2015) Robustness of ordinary least squares in randomized clinical trials. _Statistics in Medicine_ 35(11): 1763-73. doi: 10.1002/sim.6839.
+* Nihad Mohammed, University of Anbar. Traduzido e modificado de https://www.researchgate.net/post/What_is_the_key_differences_between_correlation_and_regression, 08Aug2018
+* Revelle W (2014) _Personality Project_. http://personality-project.org/revelle.html.
+* Shinohara, Elvira Maria Guerra. Prevalência de anemia em gestantes de primeira consulta em centros de saúde do estado no Subdistrito de Paz do Butantã, Município de São Paulo [dissertação]. São Paulo: Universidade de São Paulo, Faculdade de Ciências Farmacêuticas; 1989 [citado 2019-04-23]. [doi:10.11606/D.9.1989.tde-27032008-142216](https://www.teses.usp.br/teses/disponiveis/9/9136/tde-27032008-142216/pt-br.php). <small>Os dados utilizados nos exemplos deste capítulo são dados parciais relativos a este trabalho, gentilmente fornecidos pelo Prof. Raymundo Soares de Azevedo Neto, Departamento de Patologia, Faculdade de Medicina da USP.</small>
+* Silveira PSP, Vieira JE, Siqueira JO (2024) Is the Bland-Altman plot method useful without inferences for accuracy, precision, and agreement? _Rev Saude Publica_ 58:01. https://doi.org/10.11606/s1518-8787.2024058005430. https://www.scielo.br/j/rsp/a/z8LgrxcgX7PCmGvrtHRhsFK/?format=pdf&lang=en
+* Shukla GK(1973) Some exact tests of hypotheses about Grubbs's estimators. _Biometrics_ 29(2):373-7.
+* Viraj Bhagat, Aspiring Algo Trader, Tech Enthusiast at Self-Employment. Traduzido e modificado de https://www.quora.com/What-is-the-difference-between-correlation-analysis-and-regression-analysis, 13Apr2018
+* von Bonin, G (1937). Brain-weight and body-weight of mammals. _The Journal of General Psychology_ 16 (1937): 379-89.  https://doi.org/10.1080/00221309.1937.9917959.
+* Zhang, Z & Yuan, K-H (2018). _Practical statistical power analysis using WebPower and R_ (Eds). Granger, IN: ISDSA Press.
+
