@@ -1,0 +1,6 @@
+max(dp)/min(dp) =  2.264934 
+
+Analise de significancia estatistica: valor-p
+	F(3,36) = 1.514856, p = 0.2272074
+Analise de significancia pratica: tamanho de efeito
+	eta^2 = R^2 = 0.1120882 (Intermediario)

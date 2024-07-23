@@ -1,0 +1,51 @@
+
+# Pacotes, funções e arquivos necessários
+
+* packages
+```{r, echo=TRUE, eval=FALSE, class.source="bgcodigo", class.output="bgsaida"}
+options(warn=-1)
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(data.table, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts=FALSE))
+suppressMessages(library(effectsize, warn.conflicts=FALSE))
+suppressMessages(library(emmeans, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(jmv, warn.conflicts=FALSE))
+suppressMessages(library(lmboot, warn.conflicts=FALSE))
+suppressMessages(library(lmerTest, warn.conflicts=FALSE))
+suppressMessages(library(multcomp, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(rstatix, warn.conflicts=FALSE))
+suppressMessages(library(WRS2, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+
+* scripts
+
+    * [demo_AnimacaoF.R](demo_AnimacaoF.R)
+    * [demo_ANOVA_Independente_Unifatorial_Fisher_SemDadosBrutos.R](demo_ANOVA_Independente_Unifatorial_Fisher_SemDadosBrutos.R)
+    * [demo_ANOVA_Independente_Unifatorial_Welch_SemDadosBrutos.R](demo_ANOVA_Independente_Unifatorial_Welch_SemDadosBrutos.R)
+    * [demo_ANOVA1f_dep_balanc_sodio.R](demo_ANOVA1f_dep_balanc_sodio.R)
+    * [demo_ANOVA1f_dep_desbalanc_sodio.R](demo_ANOVA1f_dep_desbalanc_sodio.R)
+    * [demo_ANOVA1f_indep_Bootstrap_sodio.R](demo_ANOVA1f_indep_Bootstrap_sodio.R)
+    * [demo_ANOVA1f_indep_Welch_sodio.R](demo_ANOVA1f_indep_Welch_sodio.R)
+    * [demo_HardyWeinberg.R](demo_HardyWeinberg.R)
+    * [demo_Testes_t_2a2.R](demo_Testes_t_2a2.R)
+    * [demo_Testes_t_AlfaPoder.R](demo_Testes_t_AlfaPoder.R)
+    * [demo_WRS2_ANOVA_dependente.R](demo_WRS2_ANOVA_dependente.R)
+    * [demo_WRS2_ANOVA_independente.R](demo_WRS2_ANOVA_independente.R)
+    * [eiras.OneWayANOVA.Welch.WORD.R](eiras.OneWayANOVA.Welch.WORD.R)
+    * [eiras_plotIC.r](eiras_plotIC.r)
+    * [friendlycolor.R](friendlycolor.R)
+    * [ps_jitter.R](ps_jitter.R)
+    * [summarySEwithin2.R](summarySEwithin2.R)
+
+
+* files
+
+    * [ANOVA_Fisher_SemDadosBrutos_Schizo.txt](ANOVA_Fisher_SemDadosBrutos_Schizo.txt)
+    * [ANOVA_Welch_SemDadosBrutos.txt](ANOVA_Welch_SemDadosBrutos.txt)
+    * [Nutricao3.xlsx](Nutricao3.xlsx)
+    * [Nutricao3rm.xlsx](Nutricao3rm.xlsx)
+    * [Nutricao3rmdesb.xlsx](Nutricao3rmdesb.xlsx)

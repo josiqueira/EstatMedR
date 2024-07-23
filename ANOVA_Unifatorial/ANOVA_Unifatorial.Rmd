@@ -1,0 +1,1183 @@
+---
+title: "ANOVA Unifatorial"
+author: | 
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+subtitle: ""
+date: "`r format(Sys.time(), '%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    css: style.css
+    font_adjustment: 1 
+    df_print: tibble
+    footer: "ANOVA_Unifatorial.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  slidy_presentation:
+    css: style.css
+    font_adjustment: -1
+    footer: "ANOVA_Unifatorial.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+.pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+# Linux
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r}
+options(warn=-1)
+suppressMessages(library(bootES, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts = FALSE))
+suppressMessages(library(effectsize, warn.conflicts = FALSE))
+suppressMessages(library(emmeans, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts = FALSE))
+suppressMessages(library(gplots, warn.conflicts = FALSE))
+suppressMessages(library(jmv, warn.conflicts=FALSE))
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(lmboot, warn.conflicts=FALSE))
+suppressMessages(library(lmerTest, warn.conflicts=FALSE))
+suppressMessages(library(multcomp, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(pwr, warn.conflicts=FALSE))
+suppressMessages(library(RcmdrMisc, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(Rmisc, warn.conflicts=FALSE))
+suppressMessages(library(rstatix, warn.conflicts=FALSE))
+suppressMessages(library(WRS2, warn.conflicts=FALSE))
+suppressMessages(library(bruceR, warn.conflicts=FALSE))
+source("summarySEwithin2.R")
+source("eiras_plotIC.r")
+source("eiras.OneWayANOVA.Welch.WORD.R")
+```
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+
+<!-- # Incluir -->
+
+<!-- <pre> -->
+<!-- plot(emmeans::emmip(fit, ~ Severity ~ Complexity, CIs=TRUE)) -->
+<!-- plot(emmeans::emmip(fit, ~ Severity ~ Complexity ~ Experience, CIs=TRUE)) -->
+<!-- plot(emmeans::emmip(fit, ~ Severity : Complexity, CIs=TRUE)) -->
+<!-- plot(emmeans::emmip(fit, ~ Severity : Complexity : Experience, CIs=TRUE)) -->
+
+<!-- cat("\nSimple main effect test") -->
+<!-- plot(emmeans::emmip(fit, ~ Severity | Complexity, CIs=TRUE)) -->
+<!-- print(phia::testInteractions(fit,  -->
+<!--                              fixed="Complexity",  -->
+<!--                              across="Severity")) -->
+<!-- plot(emmeans::emmip(fit, ~ Complexity | Severity, CIs=TRUE)) -->
+<!-- print(phia::testInteractions(fit,  -->
+<!--                              fixed="Severity",  -->
+<!--                              across="Complexity")) -->
+
+<!-- out <- bruceR::MANOVA(data = Data,  -->
+<!--                       dv=c("Assessment"),  -->
+<!--                       between=c("Severity", "Complexity", "Experience")) -->
+<!-- bruceR::EMMEANS(out, "Experience") -->
+<!-- </pre> -->
+
+# Objetivos
+
+* reconhecer e mencionar propriedades da distribuição _F_.
+* reconhecer as indicações e aplicar ANOVA para três ou mais condições independentes.
+* reconhecer as indicações e aplicar ANOVA para três ou mais condições dependentes (medidas repetidas).
+* definir hipóteses estatísticas nula e alternativa.
+* executar e interpretar os testes estatísticos _omnibus_ e _post hoc_.
+* conceituar estatísticas de tamanho de efeito.
+
+# ANOVA unifatorial em R
+
+0. Planejamento de ANOVA unifatorial
+
+* Independente de Fisher
+    * `pwr::pwr.anova.test`
+    * `WebPower::wp.anova`
+    
+* Relacionada
+  * `WebPower::wp.rmanova`
+
+1. ANOVA unifatorial independente
+
+a. Fisher (homocedástico):
+* teste _omnibus_: `lm`, `car::Anova`  
+  * testes _post hoc_: `emmeans::emmeans`, `multcomp::cld`
+* teste _omnibus_: `oneway.test(var.equal=TRUE, ...)`  
+  * testes _post hoc_: `rstatix::tukey_hsd`
+
+b. Fisher sem dados brutos:
+* teste _omnibus_: `demo_ANOVA_Independente_Unifatorial_Fisher_SemDadosBrutos.R`  
+  * testes _post hoc_: ?
+    
+c. Fisher-White (heterocedástico): 
+* teste _omnibus_: `lm`, `car::Anova(white.adjust="hc2", ...))`
+  * testes _post hoc_: `emmeans::emmeans`, `multcomp::cld`
+    
+d. Welch (heterocedástico):     
+* teste _omnibus_: `jmv::anovaOneW`
+  * testes _post hoc_: `jmv::anovaOneW`
+* teste _omnibus_: `oneway.test(var.equal=FALSE, ...)`  
+  * testes _post hoc_: `rstatix::games_howell_test`
+    
+e. Welch sem dados brutos:
+* teste _omnibus_: `eiras.OneWayANOVA.Welch.WORD.R`  
+  * testes _post hoc_: `eiras.OneWayANOVA.Welch.WORD.R`
+    
+f. Reamostragem (_bootstrapping_):      
+* teste _omnibus_: `lmboot::ANOVA.boot`
+  * testes _post hoc_: ?
+* teste _omnibus_: `WRS2::t1waybt`
+  * testes _post hoc_: `WRS2::mcppb20`
+
+2. ANOVA unifatorial relacionada ou para medidas repetidas 
+  
+a. rmANOVA  
+* teste _omnibus_: `lmerTest::lmer` e `car::Anova(test.statistic="F", ...)`
+  * testes _post hoc_: `emmeans::emmeans` e `multcomp::cld`
+      
+b. Reamostragem (_bootstrapping_):
+* teste _omnibus_: `WRS2::rmanovab`  
+  * testes _post hoc_: `WRS2::pairdepb`
+ 
+# Introdução
+
+* [One-way analysis of variance: Wikipedia](https://en.wikipedia.org/wiki/One-way_analysis_of_variance){target="_blank"}
+* [Analysis of variance: Wikipedia](https://en.wikipedia.org/wiki/Analysis_of_variance){target="_blank"}
+
+As variáveis envolvidas no teste estatístico são:
+
+* VI (variável independente) nominal com **três ou mais** categorias (nominal politômica, fator): unifatorial, _one way_ 
+* VD (variável dependente) intervalar com distribuição normal por condição: univariada
+    
+ANOVA unifatorial pode ser:
+
+* independente (fator entre participantes)
+* relacionada (fator intraparticipantes)
+
+ANOVA unifatorial independente (_One-way Analysis of Variance_) é uma extensão do teste $t$ independente.
+    
+As suposições de normalidade homocedasticidade são condições suficientes e a suposição de independência é necessária para ANOVA unifatorial.
+
+## Exemplo de condições suficientes: lei do equilíbrio genético de Hardy-Weinberg 
+
+Ilustramos com uma analogia, recordando o a lei do equilíbrio genético de Hardy-Weinberg.
+
+* [Hardy-Weinberg Law: Wikipedia](https://en.wikipedia.org/wiki/Hardy%E2%80%93Weinberg_principle){target="_blank"}
+
+Em 1908, G. Hardy e W. Weinberg propuseram independentemente que a frequência de alelos e genótipos em uma população permanecerá constante de geração para geração se a população for estável e em equilíbrio genético. 
+
+Cinco condições são necessárias para que uma população permaneça em equilíbrio de Hardy-Weinberg:
+
+1. Uma grande população reprodutiva
+1. Acasalamento aleatório
+1. Nenhuma mudança na frequência alélica devido a mutação
+1. Nenhuma imigração ou emigração
+1. Nenhuma seleção natural
+
+> http://www.phschool.com/science/biology_place/labbench/lab8/concepts.html
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/HW_teoria.png", dpi=110)
+```
+
+Violando as condições de H-W, em simulação (implementada em [demo_HardyWeinberg.R](demo_HardyWeinberg.R){target="_blank"}) com: 
+
+- 500 indivíduos, 
+- mutação alterando a frequência dos alelos,
+- selecionando para o alelo **A**.
+
+```{r  eval=FALSE}
+source("demo_HardyWeinberg.R")
+```
+
+Observamos, por exemplo:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/HW.png", dpi=110)
+```
+
+As condições matemáticas de população muito grande (ou infinita), sem mutação e sem seleção garantem a população no equilíbrio de Hardy-Weinberg; porém, dentro de certos limites, ainda encontramos predição aceitável para o Equilíbrio de Hardy-Weinberg e poderíamos utilizá-los em populações biológicas.
+
+## O que é independência?
+
+Um delineamento entre participantes é aquele em que cada unidade experimental só é submetida a uma condição experimental. 
+
+Por exemplo, três grupos com 5 indivíduos cada um (total de 15 participantes, nomeados de A a J) são alocados assim:
+
+<div align=center>
+<table cellpadding=10 cellspacing=10 border=1>
+<tr>
+<td></td><td><b> Condição 1 </b></td><td><b> Condição 2 </b></td><td><b> Condição 3 </b></td>
+</tr>
+<tr>
+<td></td><td align=center>A</td><td align=center>F</td><td align=center>K</td>
+</tr>
+<tr>
+<td></td><td align=center>B</td><td align=center>G</td><td align=center>L</td>
+</tr>
+<tr>
+<td></td><td align=center>C</td><td align=center>H</td><td align=center>M</td>
+</tr>
+<tr>
+<td></td><td align=center>D</td><td align=center>I</td><td align=center>N</td>
+</tr>
+<tr>
+<td></td><td align=center>E</td><td align=center>J</td><td align=center>O</td>
+</tr>
+</table>
+</div>
+
+Em um delineamento intraparticipantes, o mesmo indivíduo é submetido a todas as condições experimentais. Os mesmos 15 participantes seriam alocados assim:
+
+<div align=center>
+<table cellpadding=10 cellspacing=10 border=1>
+<tr>
+<td></td><td><b> Condição 1 </b></td><td><b> Condição 2 </b></td><td><b> Condição 3 </b></td>
+</tr>
+<tr>
+<td></td><td align=center>A</td><td align=center>A</td><td align=center>A</td>
+</tr>
+<tr>
+<td></td><td align=center>B</td><td align=center>B</td><td align=center>B</td>
+</tr>
+<tr>
+<td></td><td align=center>C</td><td align=center>C</td><td align=center>C</td>
+</tr>
+<tr>
+<td></td><td align=center>D</td><td align=center>D</td><td align=center>D</td>
+</tr>
+<tr>
+<td></td><td align=center>E</td><td align=center>E</td><td align=center>E</td>
+</tr>
+<tr>
+<td></td><td align=center>F</td><td align=center>F</td><td align=center>F</td>
+</tr>
+<tr>
+<td></td><td align=center>G</td><td align=center>G</td><td align=center>G</td>
+</tr>
+<tr>
+<td></td><td align=center>H</td><td align=center>H</td><td align=center>H</td>
+</tr>
+<tr>
+<td></td><td align=center>I</td><td align=center>I</td><td align=center>I</td>
+</tr>
+<tr>
+<td></td><td align=center>J</td><td align=center>J</td><td align=center>J</td>
+</tr>
+<tr>
+<td></td><td align=center>K</td><td align=center>K</td><td align=center>K</td>
+</tr>
+<tr>
+<td></td><td align=center>L</td><td align=center>L</td><td align=center>L</td>
+</tr>
+<tr>
+<td></td><td align=center>M</td><td align=center>M</td><td align=center>M</td>
+</tr>
+<tr>
+<td></td><td align=center>N</td><td align=center>N</td><td align=center>N</td>
+</tr>
+<tr>
+<td></td><td align=center>O</td><td align=center>O</td><td align=center>O</td>
+</tr>
+</table>
+</div>
+
+## O que é balanceamento?
+
+Em delineamentos em que os grupos são balanceados, o número de participantes em cada condição é aproximadamente igual. Por exemplo, com 15 participantes em ANOVA independente, desbalanceada, poderíamos ter algo como. 
+
+<div align=center>
+<table cellpadding=10 cellspacing=10 border=1>
+<tr>
+<td></td><td><b> Condição 1 </b></td><td><b> Condição 2 </b></td><td><b> Condição 3 </b></td>
+</tr>
+<tr>
+<td></td><td align=center>A</td><td align=center>H</td><td align=center>K</td>
+</tr>
+<tr>
+<td></td><td align=center>B</td><td align=center>I</td><td align=center>L</td>
+</tr>
+<tr>
+<td></td><td align=center>C</td><td align=center>J</td><td align=center>M</td>
+</tr>
+<tr>
+<td></td><td align=center>D</td><td align=center></td><td align=center>N</td>
+</tr>
+<tr>
+<td></td><td align=center>E</td><td align=center></td><td align=center>O</td>
+</tr>
+<tr>
+<td></td><td align=center>F</td><td align=center></td><td align=center></td>
+</tr>
+<tr>
+<td></td><td align=center>G</td><td align=center></td><td align=center></td>
+</tr>
+</table>
+</div>
+
+Em um delineamento intraparticipantes, o desbalanceamento ocorre quando um dos participantes deixa de aparecer em uma das condições experimentais, por exemplo:
+
+
+<div align=center>
+<table cellpadding=10 cellspacing=10 border=1>
+<tr>
+<td></td><td><b> Condição 1 </b></td><td><b> Condição 2 </b></td><td><b> Condição 3 </b></td>
+</tr>
+<tr>
+<td></td><td align=center>A</td><td align=center>A</td><td align=center>A</td>
+</tr>
+<tr>
+<td></td><td align=center bgcolor=#444444></td><td align=center>B</td><td align=center>B</td>
+</tr>
+<tr>
+<td></td><td align=center>C</td><td align=center>C</td><td align=center>C</td>
+</tr>
+<tr>
+<td></td><td align=center>D</td><td align=center>D</td><td align=center>D</td>
+</tr>
+<tr>
+<td></td><td align=center>E</td><td align=center>E</td><td align=center>E</td>
+</tr>
+<tr>
+<td></td><td align=center>F</td><td align=center>F</td><td align=center>F</td>
+</tr>
+<tr>
+<td></td><td align=center>G</td><td align=center>G</td><td align=center>G</td>
+</tr>
+<tr>
+<td></td><td align=center>H</td><td align=center>H</td><td align=center>H</td>
+</tr>
+<tr>
+<td></td><td align=center>I</td><td align=center>I</td><td align=center>I</td>
+</tr>
+<tr>
+<td></td><td align=center>J</td><td align=cente bgcolor=#444444r></td><td align=center>J</td>
+</tr>
+<tr>
+<td></td><td align=center>K</td><td align=center>K</td><td align=center>K</td>
+</tr>
+<tr>
+<td></td><td align=center>L</td><td align=center>L</td><td align=center>L</td>
+</tr>
+<tr>
+<td></td><td align=center>M</td><td align=center>M</td><td align=center>M</td>
+</tr>
+<tr>
+<td></td><td align=center>N</td><td align=center>N</td><td align=center>N</td>
+</tr>
+<tr>
+<td></td><td align=center>O</td><td align=center>O</td><td align=center>O</td>
+</tr>
+</table>
+</div>
+
+Basta uma participação faltando (_missing_) para caracterizar o desbalanceamento. O procedimento com as estatísticas padrão do R não funcionarão e temos que usar um modelo com efeitos aleatórios; lidaremos com esta situação adiante.
+
+# Teste F
+
+* [F-test: Wikipedia](https://en.wikipedia.org/wiki/F-test){target="_blank"}
+
+O teste F na ANOVA unifatorial é usado para testar se há diferenças significantes entre as médias populacionais de três ou mais condições independentes. A hipótese nula (\(H_0\)) do teste F afirma que todas as médias populacionais das condições são iguais. A hipótese alternativa (\(H_a\)) afirma que pelo menos uma das médias das condições é diferente.
+
+A distribuição da estatística de teste F tem distribuição F de Fisher-Snedecor.
+
+* [F-distribution: Wikipedia](https://en.wikipedia.org/wiki/F-distribution){target="_blank"}
+
+Para a comparação de três ou mais condições, com base no teste _F_, os graus de liberdade do numerador dependem do número de condições e os do denominador dependem do tamanho da amostra.
+
+Familiarize-se com a distribuição _F_, observando _[demo_AnimacaoF.R](demo_AnimacaoF.R){target="_blank"}_: 
+
+- _F_ é um valor maior que zero.
+- sob $H_0$ a distribuição _F_ tem um parâmetro de não centralidade (<code>ncp</code>) igual a zero; sob $H_1$ o parâmetro de não centralidade é maior do que zero e é função do tamanho de efeito e do tamanho da amostra.
+- a distribuição é assimétrica positiva.
+- consideramos somente a cauda superior.
+- localize $\alpha$ e $\beta$.
+- há dois valores para graus de liberdade: para o numerador (número de grupos - 1) e denominador (número de sujeitos - número de grupos).
+- observe o que acontece com a distribuição sob $H_0$ e com o valor de _F_ crítico ($F_c$) à medida que os graus de liberdade aumentam.
+
+O delineamento dos estudos, o tipo de variável e, consequentemente, a estatística adequada mudam, mas o problema é sempre o mesmo: incerteza porque lidamos com uma amostra.
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/pop_amostra.png", dpi=170)
+```
+
+A diferença, aqui, é que teremos que lidar com 3 ou mais condições simultaneamente.
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/pop_amostra_3.png", dpi=110)
+```
+
+A hipótese nula é pela igualdade de todos as médias populacionais dos $m$ grupos. Caso não rejeitemos $H_0$:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/pop_amostra_3_H0.png", dpi=110)
+```
+
+Quando rejeitamos $H_0$, concluímos que as médias populacionais não são todas iguais:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/pop_amostra_3.png", dpi=110)
+```
+
+<div align=center><big>ou</big></div>
+
+que pelo menos uma destoe das demais (i.e., basta que uma das condições ser diferente das demais para rejeitarmos $H_0$), por exemplo:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/pop_amostra_3_H1.png", dpi=110)
+```
+
+## Teste $t$ independente 
+
+Brendon Small e Coach McGuirk fazem com que seus alunos do SNAP-Ed mantenham diários do que comem por uma semana e depois calculem a ingestão diária de sódio em miligramas.
+
+Desde que as classes receberam diferentes programas de educação nutricional, eles querem ver se a ingestão média de sódio é a mesma para as duas turmas.
+
+Aplicamos o teste $t$ de Welch, robusto à heterocedasticidade e _default_ da função `t.test`:
+
+```{r}
+Dtfrm <- readxl::read_excel("Nutricao.xlsx")
+print(head(Dtfrm))
+print(tail(Dtfrm))
+t_out <- t.test(Sodium ~ Instructor, 
+                data = Dtfrm)
+print(t_out)
+```
+
+### Teste $t$ independente para fator com três grupos
+
+Suponha que uma terceira classe junte-se ao experimento (Melissa Robins). Podemos, então, verificar as diferenças destas três condições experimentais com testes $t$, comparando-se Brendon Small com Coach McGuirk, Brendon Small com Melissa Robins e Coach McGuirk com Melissa Robins?
+
+<div align=center><font style="font-size:150%">
+
+Quantos testes $t$ precisaremos de acordo com o número de grupos?
+
+```{r out.width = '60%', echo=FALSE}
+knitr::include_graphics("./image/martelo_parafuso.png")
+```
+
+</font></div>
+
+É a combinatória do número de grupos ($m$) dois a dois:
+$${m \choose 2} = { {m!} \over {2! (m-2)!} }$$
+
+- para 2 -grupos: ${2 \choose 2} = { {2!} \over {2! (2-2)!} } = 1~\text{teste}$
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/t2.png", dpi=1000)
+```
+
+- para 3 grupos: ${3 \choose 2} = { {3!} \over {2! (3-2)!} } = 3~\text{testes}$
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/t3.png", dpi=1000)
+```
+
+- para 4 grupos: ${4 \choose 2} = { {4!} \over {2! (4-2)!} } = 6~\text{testes}$
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/t4.png", dpi=1000)
+```
+
+- para 6 grupos: ${6 \choose 2} = { {6!} \over {2! (6-2)!} } = 15~\text{testes}$
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/t6.png", dpi=1000)
+```
+
+Graficamente ([demo_Testes_t_2a2.R](demo_Testes_t_2a2.R){target="_blank"}) podemos ver quantos testes $t$ seriam necessários para o número de condições independentes a serem testadas:
+
+```{r echo=FALSE}
+source("demo_Testes_t_2a2.R")
+```
+
+Embora o número cresça rapidamente, podemos não nos impressionar, pois temos computadores para o trabalho repetitivo. 
+
+Há, porém, um problema mais grave: as probabilidades do erro do tipo I ($\alpha$) e do tipo II ($\beta$) se acumulam. Quando escolhemos $\alpha$, **a probabilidade de rejeitar incorretamente a hipótese nula**, o máximo valor que _p_ pode assumir, a probabilidade erro do tipo I para $m$ grupos é:
+
+$$P(\alpha | m) = 1-(1-\alpha)^{m \choose 2}$$
+
+Também gostaríamos de manter a **probabilidade de rejeitar corretamente a hipótese nula**, o poder do teste, $1-\beta$; para $m$ grupos é:
+
+$$P(\beta | m) = (1-\beta) ^ {m \choose 2}$$
+
+Graficamente ([demo_Testes_t_AlfaPoder.R](demo_Testes_t_AlfaPoder.R){target="_blank"}) podemos observar o que acontece com o número crescente de pares de teste $t$ necessários, considerando os tradicionais $\alpha=0.05$ e $\beta=0.1$:
+
+```{r echo=FALSE}
+source("demo_Testes_t_AlfaPoder.R")
+```
+
+Portanto, a probabilidade de erro do tipo I cresce rapidamente para quase $100\%$ e o poder de seus testes combinados vai para próximo de zero. Na prática, dificilmente teremos mais do que 6 grupos mas, ainda assim, teríamos $\alpha \approx 53.7\%$ e poder $1-\beta \approx 3.5\%$, valores totalmente inaceitáveis para uma boa análise.
+
+<div align=center><font style="font-size:150%">
+
+Podemos resolver com vários testes $t$? A resposta é:
+
+```{r fig.align="center", echo=FALSE}
+knitr::include_graphics("./image/meme_NO.png", dpi=150)
+```
+
+<font style="font-size:350%">NÃO!</font>
+
+É melhor, portanto, testar tudo simultaneamente para<br>
+manter $\alpha$ no valor pretendido e<br>
+preservar $1-\beta$.
+</font></div>
+
+## Análise da variância
+
+Esta análise, que tem o acrônimo ANOVA (do inglês, **An**alysis **o**f **Va**riance) utiliza apenas variâncias, mas...
+
+<div align=center><font style="font-size:150%">
+... as conclusões são sobre as médias populacionais dos $m$ grupos.
+
+Como?
+
+```{r fig.align="center", echo=FALSE}
+knitr::include_graphics("./image/bebesurpreso.png", dpi=250)
+```
+
+</font></div>
+
+## Princípio do teste F da ANOVA unifatorial independente de Fisher
+
+Consideremos que existam três grupos nos quais a VD tem distribuição normal. De cada um deles, retiramos uma amostra:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/pop3.png", dpi=110)
+```
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/amo3.png", dpi=110)
+```
+
+Não havendo problemas, as três amostras reproduzem a distribuição, média e variância das populações das quais se originaram.  
+
+A estatística de teste _F_ da ANOVA unifatorial independente é dada por
+
+$$F = \dfrac{S_E^2}{S_D^2}$$
+
+em que $S_E^2$ é a variância **entre** os grupos e $S_D^2$ é a variância **dentro** dos grupos.
+
+### Variância entre (_between_) os grupos
+
+A variância entre os grupos presume que as médias amostrais ($\bar{X}_m$) refletem as respectivas médias populacionais ($\mu_m$):
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/variancia_entre.png", dpi=110)
+```
+
+Como sempre, não temos esta certeza e lidamos somente com a informação das amostras, $\bar{X}_m$:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/variancia_entre_amo.png", dpi=110)
+```
+
+Cada média é um número e, portanto, podemos calcular a variância destes números:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/variancia_entre_SE.png", dpi=110)
+```
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/bebesurpreso_SE.png", dpi=110)
+```
+
+Sendo assim, para $F = \frac{S_E^2}{S_D^2}$, a estatística _F_ aumenta quando a variância entre os grupos aumentar.
+
+### Variância dentro (_within_) dos grupos
+
+A variância dentro dos grupos é uma medida da variância total, desconsiderando a média de cada uma das condições. Cada amostra tem sua própria distribuição (presumivelmente, reflexo da distribuição da população de onde veio): 
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/variancia_dentro.png", dpi=110)
+```
+
+Como sempre, não temos esta certeza e lidaremos somente com a informação das amostras, $\S_m$:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/variancia_dentro_amo.png", dpi=110)
+```
+
+Mesclando as três distribuições, estimamos a variância dentro dos grupos, $S_D^2$, uma medida de quanto, como um todo, a variável é dispersa:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/variancia_dentro_SD.png", dpi=110)
+```
+
+Caso a variância em cada condição seja maior,
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/variancia_dentro_SD3.png", dpi=110)
+```
+
+esta variância será refletida em $S_D^2$:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/variancia_dentro_SDmais.png", dpi=110)
+```
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/bebesurpreso_SD.png", dpi=110)
+```
+
+Sendo assim, para $F = \frac{S_E^2}{S_D^2}$, a estatística _F_ diminui quando a variância dentro os grupos (ou condições) aumentar.
+
+## Comportamento de $F = \frac{S_E^2}{S_D^2}$
+
+É fácil imaginar o comportamento da estatística _F_ combinando-se o que pode acontecer com $S_E^2$ e $S_D^2$:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/F_X_s.png", dpi=110)
+```
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/F_SE_SD.png", dpi=110)
+```
+
+Desta forma, Ronald Fisher inventou uma forma de comparar médias entre várias condições, simultaneamente, utilizando somente a comparação entre duas variâncias, com o numerador refletindo a dispersão das médias e o denominador refletindo a dispersão do fenômeno em estudo. 
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/bebesurpreso_F.png", dpi=110)
+```
+
+# ANOVA unifatorial independente
+
+A ANOVA unifatorial independente é utilizada quando os participantes são avaliados em somente uma das condições experimentais, i.e., um delineamento entre participantes. 
+
+## Suposições
+
+- independência entre as unidades experimentais,
+- normalidade da VD em todas as condições,
+- homocedasticidade da VD entre todas as condições.
+
+Os métodos aqui apresentados são robustos à heterocedasticidade. 
+
+O teste analítico pode prescindir da suposição de normalidade para amostras maiores invocando o teorema central do limite (tamanho mínimo de amostra será visto adiante), mas ainda precisaremos testar a suposição de normalidade em amostras pequenas caso queiramos testar as médias populacionais. 
+
+O teste por _bootstrapping_ pode ser usado para qualquer tamanho de amostra, e não exige a suposição de normalidade. Portanto, exige apenas a suposição de independência entre as observações.
+
+### Normalidade
+
+ “Vale a pena observar que a MANOVA é ainda um teste válido, mesmo com modestas violações na suposição de normalidade, particularmente quando os tamanhos dos grupos são iguais e existe um número razoável de participantes em cada grupo; por “razoável” entendemos que, em um delineamento completamente entre participantes, deve haver pelo menos 12 participantes por grupo[...]”
+
+> Dancey & Reidy, 2019, p. 472
+
+Como ANOVA é um caso particular de MANOVA, podemos transpor desta referência e assumir o número de unidades experimentais igual a pelo menos 12 em cada grupo para considerar a suposição de normalidade não necessária.
+
+### Balanceamento e Homocedasticidade
+
+O balanceamento não precisa ser estrito:
+
+“Consideram-se grupos de dimensão semelhante quando o quociente entre a maior dimensão e a menor for inferior a 1,5.”
+
+> Pestana, M. & Gageiro, J. (2008) _Análise de dados para
+Ciências Sociais: a complementaridade do SPSS_. Lisboa: Sílabo, p. 278
+
+A heterocedasticidade ocorre heuristicamente se (maior desvio-padrão)/(menor desvio-padrão) é maior que 2.
+
+> Johnson, R. & Wichern, D. (2007) _Applied Multivariate Statistical Analysis_. 6 th ed. NJ: Prentice-Hall, p. 291
+
+> Moore, D. (1995) _The basic practice of statistics_. New York: W. H. Freeman and Company, citado por Norusis, M. (2009) PASW Statistics 18: Statistics Procedures Companion. NJ: Prentice-Hall, p. 148
+
+Quando a maior quantidade de unidades observacionais numa condição NÃO superar 1.5 vezes a condição de menor quantidade de unidades observacionais, então a suposição de homocedasticidade não precisa ser considerada para o teste ANOVA unifatorial independente.
+
+"Em geral, quando você tiver tamanhos de amostras iguais, esse pressuposto [homocedasticidade] não será um grande problema."
+
+> Dancey & Reidy, 2019, p. 472-3
+
+ANOVA unifatorial independente de Fisher para condições **balanceadas** é adequada na situação de heterocedasticidade populacional.
+
+ANOVA unifatorial independente de Fisher com correção de White e a ANOVA unifatorial independente de Welch funcionam para condições **desbalanceadas**, pois lidam com a situação de heterocedasticidade populacional.
+
+## Exemplo: SNAP-Ed entreparticipantes com 3 grupos
+
+Este exemplo foi obtido de  Salvatore S. Mangiafico: _Summary and Analysis of Extension Program Evaluation in R_, disponível em https://rcompanion.org/handbook/I_05.html.
+
+```{r fig.align="left", echo=FALSE}
+knitr::include_graphics("./image/snaped.png", dpi=250)
+```
+
+* [SNAP-Ed](https://otda.ny.gov/programs/nutrition/){target="_blank"}
+
+O SNAP-Ed (_Supplemental Nutrition Assistance Program Education_) é um programa baseado em evidências que ajuda as pessoas a terem uma vida mais saudável.
+
+O SNAP-Ed ensina às pessoas que usam ou qualificam para o SNAP uma boa nutrição e como fazer com que o seu dinheiro de alimentação se estenda ainda mais.
+
+Os participantes do SNAP-Ed também aprendem a ser fisicamente ativos.
+
+Brendon Small, Coach McGuirk e Melissa Robins fazem com que seus alunos do SNAP-Ed mantenham diários do que comem por uma semana e depois calculem a ingestão diária de sódio em miligramas.
+
+Desde que as classes receberam diferentes programas de educação nutricional, eles querem ver se a ingestão média de sódio é a mesma para as três turmas.
+
+## Arquivo de dados
+
+```{r}
+alfa <- 0.05
+
+Dados <- data.frame(readxl::read_excel("Nutricao3.xlsx"))
+Dados$Instructor <- factor(Dados$Instructor)
+Dados$Instructor <- factor(Dados$Instructor,
+                           labels=c("Brendon", "McGuirk", "Melissa"))
+saveRDS(Dados, "Nutricao3.rds")
+```
+
+## Hipóteses nula e alternativa
+
+As três classes receberam diferentes programas de educação nutricional. A ingestão diária média de sódio é a mesma (populacionalmente) para os três programas?
+
+$$H_0: \mu_{\text{Brendon}} = \mu_{\text{McGuirk}} = \mu_{\text{Robins}}$$
+$$H_1: \exists |\mu_i \ne \mu_j; i \ne j; i,j=1,2,3$$
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Esta é uma forma matemática para escrever a hipótese alternativa, lida como "Existe pelo menos alguma média $\mu_i$, diferente de outra média $\mu_j$, com $i$ e $j$ assumindo os valores $1$, $2$ e $3$". É dizer que $\mu_1 \ne \mu_2$ **OU** $\mu_1 \ne \mu_3$ **OU** $\mu_2 \ne \mu_3$.
+
+No entanto, aparece, frequentemente, como:
+
+$$H_1: \mu_1 \ne \mu_2 \ne \mu_3$$
+
+tentando indicar as diferenças, mas esta forma não funciona porque sugere que a rejeição de $H_0$ implica que todos os grupos são diferentes entre si, como $\mu_1 \ne \mu_2$ **E** $\mu_1 \ne \mu_3$ **E** $\mu_2 \ne \mu_3$. 
+
+Basta que uma condição tenha média estatisticamente diferente das demais para que se rejeite $H_0$ com ANOVA. Em português:
+
+$$H_1: \text{Existe pelo menos uma média populacional diferente}$$
+
+</td></tr></table>
+
+## ANOVA unifatorial independente de Fisher 
+
+### Análise descritiva e teste de suposições
+
+* [`demo_ANOVA1f_indep_Fisher_sodio_Parte1.R`](demo_ANOVA1f_indep_Fisher_sodio_Parte1.R){target="_blank"}
+
+```{r echo=TRUE}
+source("demo_ANOVA1f_indep_Fisher_sodio_Parte1.R")
+```
+
+### Testes _omnibus_ e _post-hoc_
+
+O scrit R que testa a hipótese nula _omnibus_ e realiza os testes _post-hoc_ da ANOVA de Fisher é ([`demo_ANOVA1f_indep_Fisher_sodio_Parte2.R`](demo_ANOVA1f_indep_Fisher_sodio_Parte2.R){target="_blank"}):
+
+```{r echo=TRUE}
+source("demo_ANOVA1f_indep_Fisher_sodio_Parte2.R")
+```
+
+`Pr(>F)` é o valor _p_ nas saídas.
+
+Como `p value = 0.006235` da regressão (igual ao valor _p_ da ANOVA na linha `Instructor`) é menor que 0.05, rejeita-se a hipótese nula _omnibus_. 
+
+<code>Multiple R-squared</code> $R^2=0.1632$ é a estimativa pontual do tamanho de efeito $\eta^2$ de Cohen global. Note que o intervalo de confiança do tamanho de efeito de `Instructor` sobre `Sodium`, $\eta^2$, está entre 1.66% e 32.65%. 
+
+Se $H_0$ é rejeitada, podemos localizar as diferenças com testes _post-hoc_ (par-a-par simultâneas) com os contrastes de Holm. A conclusão é que `Melissa` tem média populacional diferente e menor.
+
+## Exemplo de relatório para a ANOVA unifatorial independente de Fisher
+
+Há 60 participantes no estudo com delineamento entreparticipantes com três condições, sendo que nenhuma delas é de controle. Os participantes foram distribuídos aleatoriamente e balanceadamente nos três grupos. As suposições de normalidade e homocedasticidade da VD `Sodium` nos grupos foram consideradas válidas. A análise por meio da ANOVA unifatorial independente de Fisher mostra que a menor ingestão de sódio diária média foi observada entre estudantes submetidos ao programa aplicado por Melissa Robins. As médias populacionais de ingestão de sódio dos estudantes de Brendon Small e do Coach McGuirk são semelhantes.
+
+A análise de variância de um fator fixo entre participantes mostrou que o efeito fixo `Instructor` é estatisticamente significante, pois o teste _omnibus_ produziu F(2,57) = 5.56  e p = 0.006235 O tamanho do efeito de `Instructor` é expresso por eta ao quadrado de Cohen, sendo que seu valor é igual a 0.16 e seu IC95% = [0.03, 1.00]. Portanto, 16% da variância da ingesta de sódio é explicada pelo programa adotado pelos instrutores. Os testes _post hoc_ de Holm encontraram diferenças estatisticamente significantes entre os programas adotados por Melissa e McGuirk e Melissa e Brendon. Não se observou diferença estatisticamente significante entre McGuirk e Brendon.
+
+## ANOVA unifatorial independente de Welch
+
+ANOVA unifatorial independente de Welch [`demo_ANOVA1f_indep_Welch_sodio.R`](demo_ANOVA1f_indep_Welch_sodio.R){target="_blank"} pode ser executado pelas funções `jmv::anovaOneW` ou `oneway.test` e `rstatix::games_howell_test`.  
+
+```{r echo=FALSE}
+source("demo_ANOVA1f_indep_Welch_sodio.R")
+```
+
+A conclusão, neste exemplo, é similar à obtida com o teste de ANOVA de Fisher-White: o programa adotado por Melissa obteve ingestões diárias médias de sódio significantemente menores que a dos outros dois instrutores.
+
+## ANOVA independente unifatorial por bootstrapping
+
+[`demo_ANOVA1f_indep_Bootstrap_sodio.R`](demo_ANOVA1f_indep_Bootstrap_sodio.R){target="_blank"} é a versão com _bootstrapping_ por meio da função `lmboot::ANOVA.boot`.
+
+```{r echo=FALSE}
+source("demo_ANOVA1f_indep_Bootstrap_sodio.R")
+```
+
+Uma outra possível solução é as funções `WRS2::t1waybt` e `WRS2::mcppb20`. Implementamos em [`demo_WRS2_ANOVA_independente.R`](demo_WRS2_ANOVA_independente.R){target="_blank"}.
+
+```{r echo=FALSE}
+source("demo_WRS2_ANOVA_independente.R")
+```
+
+Usamos duas funções neste último _Rscript_. A primeira é um ANOVA independente unifatorial que utiliza _bootstrapping_ e computa $\eta^2$ (chamado de variância explicada). A segunda faz um teste _post hoc_, também por _bootstrapping_, mas que tem um problema: obriga uma média aparada de 20% que não conseguimos desligar; é provavelmente um erro de implementação, e esperamos que o autor o resolva em versões futuras. 
+
+As conclusões são quase as mesmas: os valores _p_ não são ajustados na saída da função, então as multiplicamos por 3 (correção de Bonferroni) para o gráfico. Com isto, a diferença entre McGuirk e Melissa deixou de ser significante (decisão de acordo com o intervalo de confiança 95% que inclui a diferença igual a zero).
+
+## ANOVA independente SEM dados brutos
+
+É muito comum, em publicações, que somente tenhamos acesso às medidas-resumo (número de participantes, média, desvio-padrão e correlação). Nestes casos, os _RScripts_ acima não são utilizáveis. 
+Para fazer os testes quando os dados brutos não estão disponíveis, criamos os seguintes scripts:
+
+* [`demo_ANOVA_Independente_Unifatorial_Fisher_SemDadosBrutos.R`](demo_ANOVA_Independente_Unifatorial_Fisher_SemDadosBrutos.R){target="_blank"}
+* [`demo_ANOVA_Independente_Unifatorial_Welch_SemDadosBrutos.R`](demo_ANOVA_Independente_Unifatorial_Welch_SemDadosBrutos.R){target="_blank"}
+
+O teste de ANOVA independente unifatorial sem os dados brutos e também as comparações aos pares pode ser feito com a implementação da seguinte função:
+
+* [`eiras.OneWayANOVA.Welch.WORD.R`](eiras.OneWayANOVA.Welch.WORD.R){target="_blank"}
+
+Exemplo:
+
+```{r}
+Dados <- data.frame(readxl::read_excel("ExemploWelchSDB.xlsx"))
+print.data.frame(Dados)
+factor <- "Grupo"
+mean <- "media"
+sd <- "dp"
+n <- "n"
+alpha <- 0.05
+
+res <- OnewayWelch.WithoutRawData(Dados, 
+                                  factor=factor,
+                                  mean=mean, 
+                                  sd=sd, 
+                                  n=n, 
+                                  alpha=alpha)
+rm(list = ls())
+```
+
+Esta função recebe uma planilha e os nomes das colunas que contém os níveis do fator, a média, o desvio-padrão e o tamanho de cada grupo. Devolve dois _dataframes_ com o teste global e com os testes _post hoc_ feitos dois a dois.
+
+## Planejamento de ANOVA unifatorial independente de Fisher
+
+O tamanho do efeito pode ser expresso por eta ao quadrado de Cohen ($\eta^2$).
+
+```{r echo=FALSE, out.width = '90%'}
+knitr::include_graphics("./image/ANOVA_efeitos.png", dpi=150)
+```
+
+Boa parte dos valores relatados por Ellis (2010) são originais de Cohen (1992).
+
+```{r echo=FALSE, out.width = '90%'}
+knitr::include_graphics("./image/Cohen1992_tab1.png", dpi=150)
+```
+
+> Cohen, J (1992) A power primer. _Quantitative methods in Psychology_ 112(1): 155-159. 
+
+Do mesmo trabalho, a tabela 2 indica o planejamento dos estudos:
+
+```{r echo=FALSE, out.width = '90%'}
+knitr::include_graphics("./image/Cohen1992_tab2.png", dpi=150)
+```
+
+Esta tabela pode ser reproduzida com as funções do pacote <code>pwr</code>. Por exemplo, para 3 grupos, nivel de significância de 5%, poder de 80%, com tamanho de efeito intermediário, obtemos:
+
+```{r}
+print(pwr::pwr.anova.test(k=3,f=0.25,sig.level=0.05,power=0.8))
+```
+
+Para poder de 90%:
+
+```{r}
+print(pwr::pwr.anova.test(k=3,f=0.25,sig.level=0.05,power=0.9))
+```
+
+O valor <code>f</code> de Cohen, necessário para esta função, precisa ser calculado em função do tamanho de efeito desejado. Supondo que você esteja mais familiarizado com $\eta^2$ (igual ao $R^2$), a conversão é dada por:
+
+$$f = \sqrt{\dfrac{\eta^2}{1-\eta^2}}$$
+
+Basta escolher a partir de uma das tabelas o tamanho de efeito que se deseja detectar.
+
+Esta função pode receber os seguintes parâmetros:
+
+`pwr.anova.test(k = NULL, n = NULL, f = NULL, sig.level = 0.05, power = NULL)`
+
+Nos exemplos acima, o valor dado em <code>n</code>, que não foi fornecido na chamada da função, foi calculado.
+
+Além deste planejamento mais habitual (achar o tamanho da amostra), podemos fornecer quaisquer quatro dos cinco valores, para obter o quinto, considerado como incógnita e calculado. Por exemplo: suponha que dispomos de 50 pacientes e pretendemos medir tamanho de efeito intermediário, com nível de significância de 5% e poder de 80%:
+
+```{r}
+print(pwr::pwr.anova.test(n=50,f=0.25,sig.level=0.05,power=0.8))
+```
+
+Necessitaremos de 3 a 4 grupos. Na verdade, se arredondarmos para 3, o poder será um pouco menor que 80%. Quanto?
+
+```{r}
+print(pwr::pwr.anova.test(n=50,k=3,f=0.25,sig.level=0.05))
+```
+
+Obteremos poder próximo a 78%.
+
+Tradicionalmente exigia-se, para a ANOVA unifatorial independente sem reamostragem, que a distribuição populacional da variável fosse normal para cada condição e que existisse homocedasticidade entre os grupos. As suposições são:
+
+- Independência das observações dentro e entre condições: delineamento entreparticipantes.
+- Normalidade da VD se a amostra é pequena (menos de 12 observações em cada grupo).
+- Homocedasticidade da VD se os grupos são desbalanceados.
+
+Normalidade e homocedasticidade podem ser testadas. Quando não eram atendidas, alguns autores recomendam o teste não-paramétrico H de  Kruskal-Wallis.
+
+No entanto, este teste não-paramétrico não deve ser usado. O teste de Kruskal-Wallis com VD intervalar não precisa de normalidade, mas precisa de homocedasticidade para testar diferenças de pseudo-medianas; para testar diferença de médias, também precisa de simetria da VD em cada condição independente. Testes não paramétricos não são livres de suposições. 
+
+Quando o tamanho da amostra é pequeno e há heterocedasticidade ou desbalanceamento da VD, há alternativas de ANOVA unifatorial independente que podem funcionar: Fisher-White, Welch ou por reamostragem (_bootstrapping_). 
+
+Quando o tamanho da amostra é grande (tamanho de amostra total maior que 30 e menor grupo igual a 12 observações), o teorema central do limite permitirá que ANOVA unifatorial independente sem reamostragem funcionem independentemente da distribuição da VD em cada condição independente.
+
+# ANOVA unifatorial relacionada
+
+ANOVA unifatorial relacionada é utilizada quando pelo menos um participante é submetido a pelo menos duas condições experimentais, i.e., um delineamento intraparticipantes.
+
+O delineamento com medidas repetidas conduz a uma ANOVA com maior poder.
+
+Neste delineamento intraparticipantes, cada participante pode ser controle de si mesmo. Nos participantes com pelo menos duas condições experimentais, sugere-se que esta ordem de submissão, se possível, seja aleatorizada ou contrabalanceada. Para o cálculo da estatística _F_, a variância total da VD é particionada entre as variâncias das condições dependentes e dos participantes. 
+
+## Suposições
+
+– as diferenças dos valores das VD são independentes entre as unidades observacionais.
+– as diferenças dos valores das VD têm distribuição normal multivariada.
+– esfericidade: homocedasticidade das variâncias das diferenças das VDs (uma explicação sem muita matemática está em [Mauchly's sphericity test: Wikipedia](https://en.wikipedia.org/wiki/Mauchly%27s_sphericity_test){target="_blank"}.
+
+“Vale a pena observar que a MANOVA é ainda um teste válido, mesmo com modestas violações na suposição de normalidade, particularmente quando os tamanhos dos grupos são iguais e existe um número razoável de participantes em cada grupo; por “razoável” entendemos que [para um delineamento] completamente intraparticipantes, [deve haver] pelo menos 22 participantes ao todo.” 
+
+> Dancey & Reidy, 2019, p. 472
+
+## Exemplo: SNAP-Ed intraparticipantes com 3 condições
+
+Usaremos os mesmos dados do exemplo anterior, mas imaginando que as 20 medidas de ingestão de sódio sejam do mesmo participante, submetido aos três diferentes programas educacionais. Com 20 unidades observacionais no estudo, a normalidade multivariada das três diferenças não pode ser automaticamente assumida.
+
+Brendon, McGuirk e Melissa fazem com que seus alunos do SNAP-Ed mantenham diários do que comem por uma semana e depois calculem a ingestão diária de sódio em miligramas.
+
+Estudantes atenderam os diferentes programas de educação nutricional sucessivamente, cada um deles em uma ordem aleatorizada previamente. Os instrutores querem ver se a ingestão média de sódio é a mesma quando cada um dos três programas foi seguido.
+
+## Hipóteses nula e alternativa
+
+O delineamento do estudo é diferente, mas as hipóteses são as mesmas: 
+
+$$H_0: \mu_{\text{Brendon}} = \mu_{\text{McGuirk}} = \mu_{\text{Robins}}$$
+$$H_1: \exists!\mu_i \ne \mu_j; i \ne j; i,j=1,2,3$$
+
+## ANOVA unifatorial relacionada
+
+A planilha a ser utilizada é [`Nutricao3rm.xlsx`](Nutricao3rm.xlsx){target="_blank"}. Verifique a coluna `Student`, que foi alterada para indicar o participante nos três programas (compare com [`Nutricao3.xlsx`](Nutricao3.xlsx){target="_blank"}, usada para ANOVA unifatorial independente).
+
+```{r}
+alfa <- 0.05
+Dados <- data.frame(readxl::read_excel("Nutricao3rm.xlsx"))
+Dados$Instructor <- factor(Dados$Instructor)
+Dados$Instructor <- factor(Dados$Instructor,
+                           labels=c("Brendon", "McGuirk", "Melissa"))
+saveRDS(Dados, "Nutricao3rm.rds")
+```
+
+A função adotada para esta ANOVA é `lmerTest::lmer`.
+
+Executando [`demo_ANOVA1f_dep_balanc_sodio.R`](demo_ANOVA1f_dep_balanc_sodio.R){target="_blank"}, obtemos:
+
+```{r echo=FALSE}
+source("demo_ANOVA1f_dep_balanc_sodio.R")
+```
+
+<!-- Analise a saída deste _RScript_ e encontre: -->
+
+<!-- - um novo teste, "GLMM: omnibus test" e encontre -->
+<!--     - GLMM é modelo linear misto geral; como foi configurado aqui, é uma ANOVA unifatorial (Instrutor) relacionada (controlada pelo Estudante). -->
+<!--     - o valor de $F\text{ calculado}$. -->
+<!--     - os graus de liberdade. -->
+<!--     - valor-_p_ correspondente. -->
+<!--     - localize o trecho "ANOVA-like..." que relata o efeito da variabilidade dos estudantes; há efeito, portanto, e por isso as correções necessárias foram computadas no GLMM.     -->
+<!--     - o tamanho de efeito, dado por $\eta^2$ foi calculado pela função <code>MuMIn::r.squaredGLMM()</code>, -->
+<!--     - o teste _post hoc_ localiza as diferenças entre as condições experimentais par-a-par; compare os limites e valores _p_ com os mesmos dados usados no exemplo de ANOVA independente. -->
+
+<!-- - um segundo trecho, "Univariated repeated measure GLM: omnibus test" -->
+<!--     - esta é uma forma alternativa que só serve para dados balanceados (veremos, adiante, que o GLMM é mais flexível e o usaremos com dados desbalanceados). -->
+<!--     - esfericidade é a homocedasticidade das variâncias das diferenças das VDs, e é suposição para este teste (foi rejeitada). -->
+<!--     - <code>ges</code> é uma medida de tamanho de efeito generalizado do delineamento entre participantes (apesar desta ANOVA ser relacionada). -->
+<!--     - quando a esfericidade é violada, Field et al. (2012) propõem uma correção para o ANOVA: os graus de liberdade são corrigidos pela não esfericidade, tornando-os fracionários e, consequentemente, o valor _p_ é recalculado. -->
+
+## ANOVA unifatorial relacionada perfeitamente balanceada por reamostragem
+
+As funções `WRS2::rmanovab`  e `WRS2::pairdepb` realizam  a ANOVA unifatorial relacionada perfeitamente balanceada por reamostragem ([`demo_WRS2_ANOVA_dependente.R`](demo_WRS2_ANOVA_dependente.R){target="_blank"}).
+
+```{r echo=FALSE}
+source("demo_WRS2_ANOVA_dependente.R")
+```
+
+As conclusões permanecem as mesmas.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Na linguagem do modelo linear geral (GLM) na ANOVA unifatorial relacionada precisamos distinguir medida de variável dependente ou de desfecho: há apenas uma medida (_measure_) que, em nosso exemplo, é a quantidade de sódio ingerida. As variáveis dependentes (VD) são estas observações da medida em cada condição experimental (os programas de cada instrutor). 
+
+Adicionalmente, na execução do teste, buscamos mitigar a dependência das três observações em cada indivíduo, o que é feito pelas diferenças, par-a-par, das observações entre todas as condições às quais cada indivíduo foi submetido. A rigor, as suposições de multinormalidade e de esfericidade poderiam ser feitas sobre estas diferenças.
+
+Note que, no caso da ANOVA independente unifatorial, medida e VD são idênticas: há apenas uma medida, que é a própria VD.
+
+</td></tr></table>
+
+## ANOVA unifatorial relacionada desbalanceada
+
+Vamos usar os mesmos dados, mas eliminar uma única observação (removemos o estudante `a` de Melissa , planilha [`Nutricao3rmdesb.xlsx`](Nutricao3rmdesb.xlsx){target="_blank"}).
+
+```{r}
+alfa <- 0.05
+Dados <- data.frame(readxl::read_excel("Nutricao3rmdesb.xlsx"))
+Dados$Instructor <- factor(Dados$Instructor)
+Dados$Instructor <- factor(Dados$Instructor,
+                           labels=c("Brendon", "McGuirk", "Melissa"))
+saveRDS(Dados, "Nutricao3rmdesb.rds")
+```
+
+Para lidar com esta situação, utilizamos o mesmo _Rscript_ utilizado para a versão com dados perfeitamente balanceados, implementado em [`demo_ANOVA1f_dep_desbalanc_sodio.R`](demo_ANOVA1f_dep_desbalanc_sodio.R){target="_blank"}. A função `lmerTest::lmer` é capaz de lidar com dados desbalanceados.
+
+```{r echo=FALSE}
+source("demo_ANOVA1f_dep_desbalanc_sodio.R")
+```
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+A ANOVA unifatorial relacionada desbalanceada feita com o pacote <code>WRS2</code> funcionou apenas parcialmente. O teste _omnibus_ com <code>WRS2::rmanovab()</code> funciona, mas o teste _post hoc_ feito com <code>WRS2::pairdepb()</code> não completa a análise.
+
+</td></tr></table>
+
+## Exemplo de relatório para a ANOVA unifatorial relacionada
+
+Vinte participantes foram selecionados para um estudo com delineamento intrapartipantes com três condições experimentais. A ordem de aplicação das três condições experimentais em cada participante foi aleatorizada. As médias amostrais brutas mostram que menor ingestão diária média de sódio foi observada entre estudantes submetidos ao programa aplicado por Melissa Robins. A ingestão diária média de sódio dos estudantes de Brendon e  McGuirk são semelhantes. A ANOVA unifatorial relacionada por meio do modelo linear misto geral (`lmerTest::lmer`) rejeitou a hipótese nula _omnibus_, pois a estatística de teste
+observada é F(2,37.1) = 27.369 e o valor p associado é igual a $1.22 \times 10^{-8}$. O tamanho do efeito do fator intraparticipantes `Instructor` é estimado pelo eta ao quadrado de Cohen cujo valor indica que 62% da variância da ingesta de sódio é explicada pelo efeito do fator fixo `Instructor`. A análise post-hoc confirmou que as diferenças das médias populacionais entre entre os programas adotados por Melissa e Brendon, e entre os adotados por Melissa e McGuirk são estatisticamente significantes. Não se observou diferença estatisticamente significante entre os programas adotados por Brendon e McGuirk.
+
+```{r fig.align="left", out.width = '8%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Para aprofundar em métodos para resolver ANOVA relacionada, há oito possibilidades discutidas em:
+
+* Keselman HJ, Algina J, Kowalchuk R (2001) The analysis of repeated measures designs: A review. _British Journal of Mathematical and Statistical Psychology_ 54(1).
+
+</td></tr></table>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/AT_balanca.png")
+```
