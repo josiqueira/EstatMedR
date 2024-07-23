@@ -1,0 +1,68 @@
+
+# Pacotes, funções e arquivos necessários
+
+* packages
+```{r, echo=FALSE, class.source="bgcodigo", class.output="bgsaida"}
+options(warn=-1)
+suppressMessages(library(bootES, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts=FALSE))
+suppressMessages(library(estimatr, warn.conflicts=FALSE))
+suppressMessages(library(GGally, warn.conflicts=FALSE))
+suppressMessages(library(grDevices, warn.conflicts=FALSE))
+suppressMessages(library(ppcor, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+
+* scripts
+
+    * [Correlacao_Original_e_Padronizada.R](Correlacao_Original_e_Padronizada.R)
+    * [Correlacao_r_de_Pearson.R](Correlacao_r_de_Pearson.R)
+    * [CorrelacaoPearsonDuasCorrelacoesDepTest.R](CorrelacaoPearsonDuasCorrelacoesDepTest.R)
+    * [CorrelacaoPearsonDuasCorrelacoesIndep.R](CorrelacaoPearsonDuasCorrelacoesIndep.R)
+    * [CorrelacaoPearsonDuasCorrelacoesIndepSemDadosBrutos.R](CorrelacaoPearsonDuasCorrelacoesIndepSemDadosBrutos.R)
+    * [CorrelacaoPearsonDuasCorrelacoesIndepTest.R](CorrelacaoPearsonDuasCorrelacoesIndepTest.R)
+    * [CorrelacaoPearsonDuasCorrelacoesIndepZ.R](CorrelacaoPearsonDuasCorrelacoesIndepZ.R)
+    * [CorrelacaoPearsonParcialGenero.R](CorrelacaoPearsonParcialGenero.R)
+    * [CorrelacaoPearsonParcialGeneroIdade.R](CorrelacaoPearsonParcialGeneroIdade.R)
+    * [CorrelacaoPearsonParcialSemDadosBrutos.R](CorrelacaoPearsonParcialSemDadosBrutos.R)
+    * [CorrelacaoPearsonUmaCorrelacao.R](CorrelacaoPearsonUmaCorrelacao.R)
+    * [CorrelacaoPearsonUmaCorrelacaoRho0.R](CorrelacaoPearsonUmaCorrelacaoRho0.R)
+    * [CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R](CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R)
+    * [demo_Bagplot.R](demo_Bagplot.R)
+    * [demo_covEstMCT.R](demo_covEstMCT.R)
+    * [demo_EstMCT.R](demo_EstMCT.R)
+    * [demo_padronizaMCT.R](demo_padronizaMCT.R)
+    * [demo_r_de_Spearman.R](demo_r_de_Spearman.R)
+    * [demo_r_de_Spearman_boot.R](demo_r_de_Spearman_boot.R)
+    * [demo_r_de_Spearman_boot_monotonico.R](demo_r_de_Spearman_boot_monotonico.R)
+    * [demo_r_de_Spearman_boot_monotonicoD.R](demo_r_de_Spearman_boot_monotonicoD.R)
+    * [demo_r_de_Spearman_boot_quasemonotonico.R](demo_r_de_Spearman_boot_quasemonotonico.R)
+    * [eiras.bartitle.R](eiras.bartitle.R)
+    * [eiras.col2rgbstring.R](eiras.col2rgbstring.R)
+    * [eiras.ConfidenceBand.R](eiras.ConfidenceBand.R)
+    * [eiras.cor.test.boot.R](eiras.cor.test.boot.R)
+    * [eiras.correg.R](eiras.correg.R)
+    * [eiras.createobj.htest.R](eiras.createobj.htest.R)
+    * [eiras.ellipseaxis.R](eiras.ellipseaxis.R)
+    * [eiras.findcommonchars.R](eiras.findcommonchars.R)
+    * [eiras.friendlycolor.R](eiras.friendlycolor.R)
+    * [eiras.jitter.R](eiras.jitter.R)
+    * [eiras.LambdaEstimate.R](eiras.LambdaEstimate.R)
+    * [eiras.text.leading.R](eiras.text.leading.R)
+    * [Gestantes_corrBoot.R](Gestantes_corrBoot.R)
+    * [Gestantes_descritiva.R](Gestantes_descritiva.R)
+    * [Gestantes_matrizcorrelacoes.R](Gestantes_matrizcorrelacoes.R)
+    * [Gestantes_rPearson.R](Gestantes_rPearson.R)
+    * [Gestantes_rPearson_boot_z.R](Gestantes_rPearson_boot_z.R)
+
+
+* files
+
+    * [Adm2008.xlsx](Adm2008.xlsx)
+    * [Gestantes.xlsx](Gestantes.xlsx)
+    * [PEFRDATA.xls](PEFRDATA.xls)

@@ -1,0 +1,11 @@
+Dados <- readRDS("Gestante.rds")
+B <- 1e4 
+cat("Hematocrito e Hemoglobina:")
+ic <- bootES::bootES(Dados[c("HT","HB")], R=B)
+print(ic)
+cat("Hematocrito e Hemacias:")
+ic <- bootES::bootES(Dados[c("HT","HEM")], R=B)
+print(ic)
+cat("Hematocrito e Leucocitos:")
+ic <- bootES::bootES(Dados[c("HT","LEUC")], R=B)
+print(ic)

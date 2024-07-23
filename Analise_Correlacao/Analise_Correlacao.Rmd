@@ -1,0 +1,1069 @@
+---
+title: "Análise de Correlação"
+author: | 
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+subtitle: ""
+date: "`r format(Sys.time(), '%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    css: style.css
+    font_adjustment: 1 
+    df_print: tibble
+    footer: "Analise_Correlacao.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  slidy_presentation:
+    css: style.css
+    font_adjustment: -1
+    footer: "Analise_Correlacao.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+.pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+# Linux
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(effectsize, warn.conflicts=FALSE))
+suppressMessages(library(bootES, warn.conflicts=FALSE))
+suppressMessages(library(ppcor, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts=FALSE))
+suppressMessages(library(GGally, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(ppcor, warn.conflicts=FALSE))
+source("eiras.friendlycolor.R")
+source("eiras.cor.test.boot.R")
+source("eiras.jitter.R")
+source("eiras.correg.R")
+source("eiras.bartitle.R")
+source("eiras.ellipseaxis.R")
+source("eiras.col2rgbstring.R")
+source("eiras.createobj.htest.R")
+source("eiras.findcommonchars.R")
+source("eiras.text.leading.R")
+alfa <- 0.05
+```
+
+* scripts
+
+    * [Correlacao_Original_e_Padronizada.R](Correlacao_Original_e_Padronizada.R)
+    * [Correlacao_r_de_Pearson.R](Correlacao_r_de_Pearson.R)
+    * [CorrelacaoPearsonDuasCorrelacoesDepTest.R](CorrelacaoPearsonDuasCorrelacoesDepTest.R)
+    * [CorrelacaoPearsonDuasCorrelacoesIndep.R](CorrelacaoPearsonDuasCorrelacoesIndep.R)
+    * [CorrelacaoPearsonDuasCorrelacoesIndepSemDadosBrutos.R](CorrelacaoPearsonDuasCorrelacoesIndepSemDadosBrutos.R)
+    * [CorrelacaoPearsonDuasCorrelacoesIndepTest.R](CorrelacaoPearsonDuasCorrelacoesIndepTest.R)
+    * [CorrelacaoPearsonDuasCorrelacoesIndepZ.R](CorrelacaoPearsonDuasCorrelacoesIndepZ.R)
+    * [CorrelacaoPearsonParcialGenero.R](CorrelacaoPearsonParcialGenero.R)
+    * [CorrelacaoPearsonParcialGeneroIdade.R](CorrelacaoPearsonParcialGeneroIdade.R)
+    * [CorrelacaoPearsonParcialSemDadosBrutos.R](CorrelacaoPearsonParcialSemDadosBrutos.R)
+    * [CorrelacaoPearsonUmaCorrelacao.R](CorrelacaoPearsonUmaCorrelacao.R)
+    * [CorrelacaoPearsonUmaCorrelacaoRho0.R](CorrelacaoPearsonUmaCorrelacaoRho0.R)
+    * [CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R](CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R)
+    * [demo_Bagplot.R](demo_Bagplot.R)
+    * [demo_covEstMCT.R](demo_covEstMCT.R)
+    * [demo_EstMCT.R](demo_EstMCT.R)
+    * [demo_padronizaMCT.R](demo_padronizaMCT.R)
+    * [demo_r_de_Spearman.R](demo_r_de_Spearman.R)
+    * [demo_r_de_Spearman_boot.R](demo_r_de_Spearman_boot.R)
+    * [demo_r_de_Spearman_boot_monotonico.R](demo_r_de_Spearman_boot_monotonico.R)
+    * [demo_r_de_Spearman_boot_monotonicoD.R](demo_r_de_Spearman_boot_monotonicoD.R)
+    * [demo_r_de_Spearman_boot_quasemonotonico.R](demo_r_de_Spearman_boot_quasemonotonico.R)
+    * [Gestantes_corrBoot.R](Gestantes_corrBoot.R)
+    * [Gestantes_descritiva.R](Gestantes_descritiva.R)
+    * [Gestantes_matrizcorrelacoes.R](Gestantes_matrizcorrelacoes.R)
+    * [Gestantes_rPearson.R](Gestantes_rPearson.R)
+    * [Gestantes_rPearson_boot_z.R](Gestantes_rPearson_boot_z.R)
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+# Objetivos
+
+* Avaliar a associação entre duas variáveis intervalares.
+* Definir e construir diagrama de dispersão.
+* Distinguir os conceitos de correlação de Pearson e de regressão linear simples.
+* Calcular e interpretar o coeficiente de correlação de Pearson.
+* Distinguir calcular e testar os coeficientes de correlação de Pearson e Spearman.
+* Testar uma correlação, uma correlação parcial, duas independentes e duas dependentes.
+
+# Correlação e Regressão: semelhanças e diferenças
+
+A análise de correlação estima e testa a associação entre duas variáveis intervalares. 
+
+A análise de regressão linear simples estima e testa a relação entre as variáveis intervalares de desfecho e independente.
+
+> Bhagat, 2018
+
+A diferença entre as análises de correlação e de regressão é uma das perguntas mais frequentes em entrevistas. 
+
+Muitas pessoas confundem os dois conceitos.
+
+  <table id="t01" class="center">
+  <tr>
+  <th>Comparação por:</th><th>Correlação</th><th>Regressão</th>
+  </tr>
+  <tr>
+  <td>- Significado</td><td>Medida estatística que determina a associação entre duas variáveis</td><td>Descreve como uma variável independente é numericamente relacionada com a variável dependente</td>
+  </tr>
+  <tr>
+  <td>- Uso</td><td>Representação linear da relação entre duas variáveis</td><td>Ajuste da melhor função para estimar uma variável dependente com base na independente</td>
+  </tr>
+  <tr>
+  <td>- Variável independente (explicativa, previsora) e dependente (desfecho)</td><td>Adirecional. Não importa definir qual variável é independente ou dependente</td><td>Direcional, da variável independente sem erro de mensuração para a dependente com erro de mensuração</td>
+  </tr>
+  <tr>
+  <td>- Indicação</td><td>Adimensional. Indica em qual medida as duas variáveis variam conjuntamente</td><td>Dimensional. Indica o impacto da mudança de uma unidade de medida da variável conhecida (independente) na variável estimada (dependente)</td>
+  </tr>
+  <tr>
+  <td>- Objetivo</td><td>Encontrar um valor numérico para expressar a relação entre duas variáveis</td><td>Estimar o valor de uma variável aleatória com base nos valores de uma variável fixada</td>
+  </tr>
+  </table>
+
+> Mohammed, 2018
+
+Uma correlação é uma medida da relação entre duas variáveis intervalares. Cada variável representa um fenômeno específico; quando um dos fenômenos muda em uma direção específica, a segunda variável muda na direção do primeiro ou na direção oposta do primeiro.
+
+A mudança dos dois fenômenos na mesma direção no sentido do aumento no primeiro deslocamento por um aumento no segundo ou vice-versa na redução do primeiro acompanhado por uma diminuição no segundo relacionamento é positiva ou crescente (associação positiva). Ao contrário, quando o aumento no primeiro deslocamento é associado com uma redução no segundo ou vice-versa, uma redução no primeiro fenômeno seja acompanhada por um aumento no segundo, dizemos que a ligação é inversa ou decrescente (associação negativa).
+
+A regressão é um método pelo qual o valor de uma variável pode ser estimado pelo valor da outra variável pela equação de regressão. Tem os seguintes tipos:
+  
+- Regressão linear simples: a palavra "simples" significa que a variável dependente Y depende de uma variável independente X e a palavra "linear" significa que a relação entre as variáveis Y e X é linear.
+- Regressão linear múltipla: se a variável Y depende de duas ou mais  variáveis independentes.
+- Regressão não linear: se a relação entre a variável Y e a(s) variável(is) independente(s) é não linear como acontece em relações exponenciais.
+
+# Exemplo
+
+Apresentamos dados de um estudo realizado no Centro de Saúde Geraldo de Paula Souza, da Faculdade de Saúde Pública da USP, no qual gestantes foram avaliadas quanto à deficiência de ácido fólico e vitamina B12 no início do pré-natal e no 7º mês de gestação. Um grupo controle de mulheres saudáveis foi constituído para servir de referência para as medidas das vitaminas acima mencionadas. Durante o parto, foram obtidas amostras de sangue do recém-nascido para verificar a concentração de anticorpos contra a rubéola.
+
+A planilha [`Gestantes.xlsx`](Gestantes.xlsx){target="_blank"} contém os seguintes campos (colunas):
+  
+| Variável    | Descrição                                                                                                        |
+|-------------|------------------------------------------------------------------------------------------------------------------|
+| Grupo       | Gestantes ou Controle                                                                                            |
+| NOME        | Iniciais do nome das pacientes                                                                                   |
+| IDADE       | Idade das pacientes em anos                                                                                      |
+| COR         | Etnia das pacientes: br = branca; pd = mulata; am = amarela                                                      |
+| HB          | Hemoglobina (g/dL) no início do pré-natal                                                                       |
+| HT          | Hematócrito (%) no início do pré-natal                                                                          |
+| HEM         | Contagem de Hemácias (milhões/mm³) no início do pré-natal                                                        |
+| LEUC        | Contagem de Leucócitos (milhares/mm³) no início do pré-natal                                                     |
+| RET         | Reticulócitos (%) no início do pré-natal                                                                        |
+| PLAQUET     | Plaquetas (milhares/mm³) no início do pré-natal                                                                  |
+| FOLICO      | Concentração de Ácido Fólico (ng/mL) no início do pré-natal (valores abaixo de 3 ng/mL indicam deficiência de Ácido Fólico) |
+| B12         | Concentração de Vitamina B12 (pg/mL) no início do pré-natal (valores abaixo de 400 pg/mL indicam deficiência de Vitamina B12) |
+| FOL_7m      | Concentração de Ácido Fólico (ng/mL) no sétimo mês de gestação                                                   |
+| B12_7m      | Concentração de Vitamina B12 (pg/mL) no sétimo mês de gestação                                                   |
+| Hb_7m       | Hemoglobina no sétimo mês de gestação                                                                           |
+| Ht_7m       | Hematócrito no sétimo mês de gestação                                                                           |
+| Hm_7m       | Contagem de Hemácias no sétimo mês de gestação                                                                  |
+| Leu_7m      | Contagem de Leucócitos no sétimo mês de gestação                                                                |
+| Ret_7m      | Reticulócitos no sétimo mês de gestação                                                                         |
+| Plq_7m      | Contagem de Plaquetas no sétimo mês de gestação                                                                 |
+| AC_Rub_MAE  | Anticorpos IgG contra o vírus da Rubéola da gestante (UI/mL)                                                     |
+| AC_Rub_RN   | Anticorpos IgG contra o vírus da Rubéola do recém-nascido (UI/mL)                                                |
+| Primigesta  | Primeira gestação? sim ou não                                                                                   |
+| TABAGISMO   | Gestante fuma? sim ou não                                                                                       |
+> Shinohara, 1989
+  
+Há diversas variáveis quantitativas nestes dados, obtidos de 40 gestantes e 25 controles. Usaremos apenas algumas das variáveis:
+
+- HT ... Hematócrito (%) no início do pré-natal
+- HB ... Hemoglobina (g/dl) no início do pré-natal
+- HEM ... Contagem de Hemácias (milhões/mm³) no início do pré-natal
+- LEUC ... Contagem de Leucócitos (milhares/mm³) no início do pré-natal
+
+para responder à pergunta:
+  
+Podemos estimar a concentração de hemoglobina e as contagens de eritrócitos e de leucócitos no sangue pela medida do hematócrito?
+  
+## hematócrito
+  
+A coleta é mais simples; o processamento requer uma centrífuga e uma régua:
+  
+> https://www.youtube.com/watch?v=gyJLaXO4RcU
+
+## hemograma
+
+A coleta do sangue é mais trabalhosa:
+  
+> https://www.youtube.com/watch?v=T5oqEUOVYhk
+
+Mais trabalhosa, esta medida requer equipamento e um computador:
+  
+> https://www.youtube.com/watch?v=7XRIXm4Nl4s
+
+Existem equipamentos mais sofisticados para automatizar o processo:
+  
+> https://www.youtube.com/watch?v=2ORzUhhBe9Q
+
+# Panorama
+
+Este diagrama pode ser útil para definir os testes adequados para cada situação. Para correlação e regressão linear simples, seguimos o caminho no qual temos duas variáveis para as quais precisamos verificar associação.
+
+```{r echo=FALSE, out.width='95%'}
+knitr::include_graphics("./image/Dancey_YouAreHere.png")
+```
+
+> Modificado de Dancey & Reidy (2019) 
+
+# Arquivo de dados
+
+```{r}
+Dados <- readxl::read_excel("Gestantes.xlsx")
+Dados <- subset(Dados,
+                Grupo=="Gestante")
+saveRDS(Dados, "Gestante.rds")
+```
+
+# Avaliação gráfica
+
+Usaremos o arquivo de dados [`Gestante.rds`](Gestante.rds){target="_blank"}, para realizar análise descritiva, textual e gráfica, executando [`Gestantes_descritiva.R`](Gestantes_descritiva.R){target="_blank"}. 
+
+```{r echo=FALSE}
+cat(readLines("Gestantes_descritiva.R"), sep = "\n")
+```
+  
+```{r echo=FALSE}
+source("Gestantes_descritiva.R")
+```
+
+Observando os gráficos, cada ponto é um par de medidas de um indivíduo. Para referência, adicionamos uma linha pontilhada obtida com a função `lowess`, capaz de encontrar uma curva que passa ponderadamente entre os pontos de um gráfico para nos ajudar a julgar o tipo de relação entre as variáveis. 
+
+O hematócrito parece ter relação positiva e linear com hemoglobina e com contagem de hemácias, sendo mais bem associado com hemoglobina do que com o número de hemácias, pois os pontos estão mais agrupados ao redor da linha pontilhada. Para os leucócitos a dispersão é grande.
+
+Parece possível assumir que existe uma relação aproximadamente linear entre hematócrito (HT) e hemoglobina (HB) e entre hematócrito e hemácia (HEM) e, portanto, a relação pode ser adequadamente analisada por correlação. Entre hematócrito e leucócito a relação linear é duvidosa.
+
+# Onde estamos?
+
+Ainda que o interesse seja prever o valor médio da variável dependente a partir de uma variável independente conhecida através de uma regressão linear simples (a veremos, adiante), não há sentido neste procedimento para variáveis que não estejam sequer relacionadas. O primeiro passo, portanto, é verificar se, e com qual intensidade, as variáveis são associadas linearmente. O caminho percorrido no diagrama, portanto, é: 
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("./image/Dancey_YouAreHere_Correlacao.png")
+```
+
+# Três coeficientes de correlação 
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+É comum encontrarmos nos softwares estatísticos 3 coeficientes de correlação:
+  
+<font style="color:#1965B0; font-size:110%;">Coeficiente de correlação de Pearson</font>
+  
+```{r fig.align="left", echo=FALSE, out.width='16%'}
+knitr::include_graphics("./image/Karl_Pearson.jpg")
+```
+
+Karl Pearson (27 de março de 1857 a 27 de abril de 1936) era um matemático e bioestatístico inglês. A ele se atribui o estabelecimento da disciplina de estatística matemática e a fundação do primeiro departamento de estatística do mundo, no University College, London em 1911.
+
+<div align=right><small>https://en.wikipedia.org/wiki/Karl_Pearson</small></div>
+  
+<font style="color:#1965B0; font-size:110%;">Coeficiente de correlação de Spearman</font>
+  
+```{r fig.align="left", echo=FALSE, out.width='16%'}
+knitr::include_graphics("./image/Charles_Spearman.jpg")
+```
+
+Charles Edward Spearman, (10 de setembro de 1863 - 17 de setembro de 1945) foi um psicólogo inglês conhecido pelo trabalho em estatística, como pioneiro na análise fatorial e pelo coeficiente de correlação de Spearman. Ele também fez um trabalho seminal em modelos de inteligência humana, incluindo sua teoria de que resultados díspares de testes cognitivos refletem um único fator de inteligência geral, cunhando o termo _fator g_.
+
+<div align=right><small>https://en.wikipedia.org/wiki/Charles_Spearman</small></div>
+  
+<font style="color:#1965B0; font-size:110%;">$\tau$ de Kendall</font>
+  
+```{r fig.align="left", echo=FALSE, out.width='16%'}
+knitr::include_graphics("./image/Maurice_Kendall.jpg")
+```
+
+Sir Maurice George Kendall (6 de setembro de 1907 - 29 de março de 1983) foi um estatístico britânico, amplamente conhecido por sua contribuição para a estatística. Desenvolveu o coeficiente de correlação $\tau$ (letra grega, tau) de Kendall em 1938 para mensurar a proporção de diferença entre pares concordantes e discordantes com empates. É uma medida de desordem (_desarray_) e não será discutida neste contexto. 
+
+<div align=right><small>https://en.wikipedia.org/wiki/Maurice_Kendall</small></div>
+  
+</td></tr></table>
+
+# _r_ de Pearson
+  
+* Também chamado de:
+  * Coeficiente de correlação produto-momento de Pearson (CCPMP)
+  * Coeficiente de correlação de Pearson (CCP)
+  * _r_ de Pearson
+  * _r_
+  
+* Avalia o **grau de linearidade** de duas variáveis intervalares sob as suposições de:
+  * Independência entre os pares de observações (condição necessária)
+
+* O teste da hipótese nula e o intervalo de confiança computados sob as  suposições de:
+  * Independência entre os pares de observações (condição necessária)
+  * Binormalidade (condição suficiente)
+
+O teste da hipótese nula e o intervalo de confiança obtidos por reamostragem (_bootstrapping_) não necessitam da suposição de binormalidade.
+
+Observe: coeficiente de correlação (_r_) de Pearson é adequado apenas para relações com formato de reta.
+
+# Princípio do _r_ de Pearson
+
+Admita duas variáveis intervalares como, por exemplo, estatura e massa corpórea, observadas em 9 pessoas (implementado em [`demo_EstMCT.R`](demo_EstMCT.R){target="_blank"}):
+  
+```{r echo=FALSE}
+cat(readLines("demo_EstMCT.R"), sep = "\n")
+```
+
+obtendo-se:
+
+```{r echo=FALSE}
+source("demo_EstMCT.R")
+```
+
+Aparentemente há uma relação crescente, aproximadamente linear da massa corporal em função da estatura (i.e., pessoas mais altas são, também, mais pesadas e, vice-versa, esperamos que as mais leves sejam as mais baixas). 
+
+Para verificar se existe correlação testamos a hipótese da nulidade de $\rho$ (do qual _r_ é o estimador) para concluirmos se, populacionalmente, a correlação existe:
+  
+  $$H_0: \rho = 0$$
+  $$H_1: \rho \ne 0$$
+  $$\alpha=0.05$$
+  
+Calculamos _r_ e testamos $H_0$ com a função <code>cor.test</code> (esta função assume $\alpha=0.05$ por default), como no exemplo fornecido em [`Correlacao_r_de_Pearson.R`](Correlacao_r_de_Pearson.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("Correlacao_r_de_Pearson.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("Correlacao_r_de_Pearson.R")
+```
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+O valor de _r_ é dado pela covariância entre as variáveis em relação ao produto de seus desvios-padrão:
+
+$$ r = \dfrac{\text{cov}(x,y)}{\text{sd}(x) \;\text{sd}(y)} $$
+
+```{r echo=TRUE}
+estatura <- c(165, 169, 171, 172, 173, 174, 176, 178, 180)
+massa <- c(61, 73, 68, 74, 65, 82, 69, 81, 83)
+covariancia <- cov(estatura,massa)
+sd_estatura <- sd(estatura)
+sd_massa <- sd(massa)
+r <- covariancia / (sd_estatura * sd_massa)
+cat("r de Pearson = ", round(covariancia,3), "/(",
+    round(sd_estatura,3), "*", round(sd_massa,3), ") = ", r, "\n", sep="")
+print(cor.test(estatura, massa)$estimate)
+```
+
+Neste exemplo obtivemos a mesma estimativa pontual que `cor.test` fornece. A função `cor.test`, porém, além desta estimativa pontual de _r_=`r round(correlacao$estimate,4)`, calcula o intervalo de confiança 95%, $\text{IC}95\%$=[`r round(correlacao$conf.int[1],4)`, `r round(correlacao$conf.int[2],4)`], largo por conta do número reduzido de pares, mas mesmo assim com o valor 0 fora do intervalo, a estatística de teste $t$ e seu valor-$p$ correspondente. Como $p$=`r round(correlacao$p.value,4)` é menor que $\alpha$, rejeitamos $H_0$ e assumimos que as variáveis $x$ e $y$ estão correlacionadas.
+</td></tr></table>
+
+# Significado de _r_ de Pearson
+
+A correlação é adimensional e adirecional, servindo para medir a intensidade da associação entre duas variáveis.
+
+Apesar de utilizarmos `cor.test` com os valores brutos, o _r_ de Pearson é um coeficiente padronizado: é a intensidade da associação das duas variáveis padronizadas que é computada para _r_. Padronizar é computar o escore z, subtraindo-se a média e dividindo-se todos os valores pelo desvio-padrão. Considerando a estatura no eixo $x$ e a massa corporal no eixo $y$, temos:
+
+$$z_{x,i} = \dfrac{x_i - \bar{x}}{s_x}$$
+
+e
+
+$$z_{y,i} = \dfrac{y_i - \bar{y}}{s_y}$$
+
+Os respectivos escores $z$ são adimensionais e a forma das respectivas distribuições não é afetada.
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Padronização é um procedimento de transformação linear que substitui valores com unidades de medida pelos seus respectivos escores $z$. Como a distribuição normal padronizada usa escores $z$, é um erro comum as pessoas pensarem que a padronização 'normaliza' uma distribuição. Não é assim: o que é expresso em valores $z$ tem média igual a 0 e desvio-padrão igual a 1, qualquer que seja a distribuição. A distribuição normal padronizada vem de uma distribuição normal não padronizada, apenas retendo sua forma original. 
+
+Usando o R como laboratório, podemos verificar que a padronização não altera o formato da distribuição ([`demo_padronizaMCT.R`](demo_padronizaMCT.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("demo_padronizaMCT.R"), sep = "\n")
+```
+
+obtendo-se:
+
+```{r echo=FALSE, fig.width=3.5, fig.height=3.5}
+source("demo_padronizaMCT.R")
+```
+
+Observe a mudança da escala no eixo das abscissas.
+</td></tr></table>
+
+<br>
+
+Podemos verificar que padronização não muda a correlação. Com o código em [`Correlacao_Original_e_Padronizada.R`](Correlacao_Original_e_Padronizada.R){target="_blank"} executamos a correlação com os valores originais e com os valores padronizados.
+
+Compare:
+
+```{r echo=FALSE}
+cat(readLines("Correlacao_Original_e_Padronizada.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("Correlacao_Original_e_Padronizada.R")
+```
+
+Os valores de _r_ e de seu intervalo de confiança 95% são os mesmos quando computamos com os valores originais ou com seus respectivos escores $z$.
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+O valor de _r_ é dado por:
+
+$$ r = \dfrac{\text{cov}(x,y)}{\text{sd}(x) \;\text{sd}(y)} $$
+
+No entanto, quando as variáveis são padronizadas, os desvios-padrão são iguais a 1. Consequentemente, percebemos que _r_ também é a covariância entre as variáveis padronizadas:
+
+$$ r = \text{cov}(z_x,z_y)$$
+
+* [`demo_covEstMCT.R`](demo_covEstMCT.R){target="_blank"}
+
+```{r echo=FALSE}
+cat(readLines("demo_covEstMCT.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("demo_covEstMCT.R")
+```
+
+Note que, neste código, fizemos a padronização explicitamente, subtraindo a média e dividindo pelo desvio-padrão. No código anterior usamos a função `scale`, que faz o mesmo de forma mais simples.
+</td></tr></table>
+
+# Valores de _r_ de Pearson {#valores_r}
+  
+O coeficiente _r_ varia de -1 (correlação negativa perfeita) a +1 (correlação positiva perfeita), passando pelo 0 (ausência de correlação). 
+
+Graficamente, quanto mais bem alinhados estiverem os pontos, mais $|r|$ se aproxima de 1. Valores negativos indicam que o valor de uma das variáveis decresce quando a outra cresce; positivos quando ambos os valores decrescem ou crescem concordantemente:
+  
+  <table id="t01" class="center">
+  <tr>
+  <th>$r = -1$</th>
+  <th>$r = -0.8$</th>
+  <th>$r = -0.4$</th>
+  <th>$r = -0.2$</th>
+  </tr>
+  <tr>
+  <td><img src=image/output_-1.png width=150px></td>
+  <td><img src=image/output_-0.8.png width=150px></td>
+  <td><img src=image/output_-0.4.png width=150px></td>
+  <td><img src=image/output_-0.2.png width=150px></td>
+  </tr>
+  <tr>
+  <th colspan=4 text-align=center>$r = 0$</th>
+  </tr>
+  <tr>
+  <td colspan=4><p align=center><img src=image/output_0.png width=150px></p></td>
+  </tr>
+  <tr>
+  <th>$r = 0.2$</th>
+  <th>$r = 0.4$</th>
+  <th>$r = 0.8$</th>
+  <th>$r = 1$</th>
+  </tr>
+  <tr>
+  <td><img src=image/output_0.2.png width=150px></td>
+  <td><img src=image/output_0.4.png width=150px></td>
+  <td><img src=image/output_0.8.png width=150px></td>
+  <td><img src=image/output_1.png width=150px></td>
+  </tr>
+  </table>
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+É possível treinar-se para acertar o valor de _r_ observando um gráfico **desde que as variáveis sejam padronizadas antes**; caso contrário, a distorção causada pela unidades de medida das variáveis $x$ e $y$ atrapalharão.
+
+Uma implementação do jogo está no [APEx](http://apex.fm.usp.br){target="_blank"}. A partir do menu principal acesse:
+  
+`Estatística: jogos`
+
+e escolha o jogo **r in R**.
+
+</td></tr></table>
+
+# _r_ de Pearson no exemplo de Gestante
+  
+Executando [Gestantes_rPearson.R](Gestantes_rPearson.R){target="_blank"}, revisitamos os gráficos de hemoglobina, hemácias e leucócitos em função do hematócrito (agora padronizados), verificando suas respectivas correlações:
+
+```{r echo=FALSE}
+cat(readLines("Gestantes_rPearson.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("Gestantes_rPearson.R")
+```
+
+Com este código, os valores são padronizados e é adicionada uma elipse de predição de 95% com seu eixo principal (não é uma reta de regressão!). Compare esta elipse com as nuvens de pontos que foram vistas na sessão [valores do _r_ de Pearson](#valores_r){target="_blank"}.
+
+Observa-se, portanto, que a concentração de hemoglobina e a contagem de hemácias têm correlação significante com o hematócrito para $\alpha=0.05$, mas a contagem de leucócitos não tem. 
+
+Há mais de uma forma para se chegar a esta decisão estatística. Recorde que testa-se $H_0: \rho=0$. Podemos rejeitar a hipótese nula quando o valor $p < \alpha = 5\%$ ou pelo intervalo de confiança para _r_, quando este não inclui o zero.
+
+## _r_ de Pearson com _bootstrapping_
+
+Elaboramos [Gestantes_rPearson_boot_z.R](Gestantes_rPearson_boot_z.R){target="_blank"}. Utilizamos a mesma função (`correg`) adicionando o parâmetro <code>B</code>. As diferenças são a exibição de várias elipses, cada uma vinda de uma reamostragem, e a substituição das saídas textuais de `cor.test` pelos valores obtidos por _bootstrapping_. Para $B=1e4$ reamostragens, obtém-se: 
+
+```{r echo=FALSE}
+cat(readLines("Gestantes_rPearson_boot_z.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("Gestantes_rPearson_boot_z.R")
+```
+
+Na versão com _bootstrapping_, a função `correg` mostra uma sombra das elipses variantes, sugerindo sua dispersão. A decisão sobre a correlação é feita pelo intervalo de confiança, pois não existe valor $p$ calculado com este método. O teorema central do limite é aplicável neste caso, como se verifica pela distribuição dos valores de _r_ apresentados.
+
+Ainda assim, compare com os resultados convencionais e observe que a conclusão é a mesma: somente a concentração de hemoglobina e a contagem de hemácias têm correlação com o hematócrito.
+
+# Tamanho de efeito
+
+- $|r|$, o valor absoluto de _r_, é a intensidade da linearidade.
+- $r^2$, o quadrado de _r_, é a proporção da variância compartilhada.
+
+Ambos são medidas de tamanho de efeito:
+  
+- São adimensionais
+- Variam entre 0 e 1
+- Não dependem do tamanho da amostra
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/CohenEffectSizes_r.png", dpi=80)
+```
+
+> Ellis, 2010
+
+# $s$ de Spearman
+
+Para distingui-lo do _r_ de Pearson, denotaremos o coeficiente de correlação de Spearman como $s$. A função em R é a mesma, `cor.test`, computando $s$ quando o parâmetro é `method="spearman"`.
+
+O $s$ de Spearman também serve para variáveis ordinais. Neste caso, a representação gráfica por meio do gráfico de dispersão não terá sentido.
+
+Da mesma forma que o _r_ de Pearson, $s$ varia de $-1$ a $+1$.
+
+A informação provida por este coeficiente é sobre quanto o (de)crescimento dos valores é monotônico (i.e., o valor de uma variável cresce sempre ou decresce sempre quando o valor da outra aumenta). Assim:
+  
+$$\begin{align}
+H_0:&~\text{as duas variáveis têm relação monotônica}\\
+H_1:&~\text{as duas variáveis não têm relação monotônica}\end{align}$$
+  
+O exemplo hipotético com estatura e massa corpórea implementado em [`demo_r_de_Spearman.R`](demo_r_de_Spearman.R){target="_blank"}, com o método de Spearman, mostra:
+
+```{r echo=FALSE}
+cat(readLines("demo_r_de_Spearman.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("demo_r_de_Spearman.R")
+```
+
+As setas foram adicionadas para evidenciar o que torna $|s| < 1$: com o crescimento da estatura ($x$), os valores de massa corporal ($y$) ora crescem, ora descrescem. 
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Implementamos, também, uma versão em bootstrapping em [`demo_r_de_Spearman_boot.R`](demo_r_de_Spearman_boot.R){target="_blank"}, que tem a vantagem de permitir a decisão através do intervalo de confiança (ao preço de não ter valor $p$) executado com.
+
+```{r echo=FALSE}
+cat(readLines("demo_r_de_Spearman_boot.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("demo_r_de_Spearman_boot.R")
+```
+
+O teorema central do limite parece razoavelmente atendido (poderia estar melhor). 
+
+</td></tr></table>
+
+O coeficiente de Spearman é máximo quando o crescimento é monotônico ($s=1$) ou quando o decrescimento é monotônico ($s=-1$). Por exemplo, executando: [`demo_r_de_Spearman_boot_monotonico.R`](demo_r_de_Spearman_boot_monotonico.R){target="_blank"} obtemos:
+
+```{r echo=FALSE}
+cat(readLines("demo_r_de_Spearman_boot_monotonico.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("demo_r_de_Spearman_boot_monotonico.R")
+```
+
+Basta que algum valor não seja maior que o anterior para $r < 1$. Para isto, modifico um valor do exemplo anterior com:
+
+```{r echo=TRUE, eval=FALSE}
+y[14] <- y[13]-100 # criando valor menor que o anterior
+```
+
+Obtendo:
+
+* [`demo_r_de_Spearman_boot_quasemonotonico.R`](demo_r_de_Spearman_boot_quasemonotonico.R){target="_blank"}
+
+```{r echo=FALSE}
+cat(readLines("demo_r_de_Spearman_boot_quasemonotonico.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("demo_r_de_Spearman_boot_quasemonotonico.R")
+```
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Neste código e nos dois seguintes deixamos `B=0`, significando que foram executados **sem** _bootstrapping_. Caso deseje, altere este parâmetro (geralmente recomenda-se $1e4$ ou mais reamostragens para um resultado confiável) para comparar com esta versão tradicional.
+
+</td></tr></table>
+
+O valor será de $r=-1$ para o decrescimento monotônico:
+
+* [`demo_r_de_Spearman_boot_monotonicoD.R`](demo_r_de_Spearman_boot_monotonicoD.R){target="_blank"}
+
+```{r echo=FALSE}
+cat(readLines("demo_r_de_Spearman_boot_monotonicoD.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("demo_r_de_Spearman_boot_monotonicoD.R")
+```
+
+# Exemplo: Gestante
+
+Exemplificamos em [`Gestantes_matrizcorrelacoes.R`](Gestantes_matrizcorrelacoes.R){target="_blank"} a montagem de uma matriz de correlações e sugerimos a função `GGally::ggcorr` que auxilia com informação visual. Além de hematócrito, hemoglobina, hemácias e leucócitos, adicionamos mais variáveis (idade, ácido fólico e vitamina B12). Resulta em:
+
+```{r echo=FALSE}
+cat(readLines("Gestantes_matrizcorrelacoes.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("Gestantes_matrizcorrelacoes.R")
+```
+
+# Variância compartilhada 
+
+A correlação computa o _r_ de Pearson quantifica o grau de associação linear entre duas variáveis intervalares. No entanto, não traçamos retas de regressão linear entre as variáveis; o máximo que fizemos foi utilizar a função que construímos, `ellipseaxis`, que exibe uma elipse e uma linha em seu eixo maior servindo-nos para auxiliar o julgamento sobre associação linear. 
+
+Também comentamos que a correlação é adirecional (não falamos em variável explicativa, VE, nem dependente ou de desfecho, VD), pois os resultados seriam os mesmos se invertêssemos os eixos $x$ e $y$. Também é adimensional, pois o procedimento não necessita das unidades de medida, e seu resultado é o mesmo quando as duas variáveis são padronizadas. 
+
+O que, então, a correlação mede? 
+
+Dissemos, acima: "o valor absoluto do _r_ é a intensidade da linearidade; seu quadrado é a proporção da variância compartilhada." 
+
+Qual o significado disto?
+
+É fácil ver através de um diagrama de Venn. Como as variáveis são compartilhadas (i.e., todas têm média igual a zero e variância igual a um), todas são representadas por círculos de dimensões iguais. O $r^2$ é a proporção da intersecção entre as duas variáveis (dois círculos completamente sobrepostos equivale a $r^2 = 1$; dois círculos isolados representam $r^2 = 0$). No exemplo do hematócrito contra hemoglobina, hemácias e leucócitos, os valores de _r_ e $r^2$ correspondem aproximadamente a: 
+
+```{r echo=FALSE, out.width='50%'}
+knitr::include_graphics("./image/Venn_Diagram.png")
+```
+
+Como vimos acima, apenas a correlação entre hematócrito e a contagem de leucócitos não foi significante.
+
+# Níveis de mensuração e outros tipos de correlação
+
+Existem vários tipos de correlação além das duas que exploramos aqui. A correlação de Pearson é aplicável para variáveis intervalares. A correlação de Spearman usa a mesma fórmula, adaptada para variáveis ordinais. Das outras, algumas delas são também correlações de Pearson, como a ponto-bisserial e phi, quando há variáveis dicotômicas autênticas envolvidas. As demais são para situações mais complexas, fora do escopo deste capítulo.
+
+```{r echo=FALSE, out.width='75%'}
+knitr::include_graphics("./image/Revelle2014.png")
+```
+
+> Revelle, 2014
+
+# Testes para uma correlação
+
+Por _default_, `cor.test` usa a hipótese nula de que não há associação populacional entre duas variáveis ($\rho = 0$).
+
+Como fizemos em outros assuntos, em publicações muitas vezes só temos as medidas-resumo. O _RScript_ implementado em [`CorrelacaoPearsonUmaCorrelacao.R`](CorrelacaoPearsonUmaCorrelacao.R){target="_blank"} permite que se verifique, com dado tamanho da amostra, se um determinado valor de _r_ é significantemente diferente de zero. Por exemplo, para $n=200$ e $r=0.5$, as hipóteses são:
+
+$$\begin{align}
+H_0:&\; \rho = 0\\
+H_1:&\; \rho \ne 0\end{align}$$
+
+$$\alpha = 0.05$$
+
+A saída é:
+
+* [`CorrelacaoPearsonUmaCorrelacao.R`](CorrelacaoPearsonUmaCorrelacao.R){target="_blank"}
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonUmaCorrelacao.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonUmaCorrelacao.R")
+```
+
+Observe que, mesmo sem os dados brutos, é possível computar o valor $p$ e os respectivos intervalos de confiança para os testes bilateral, unilateral à esquerda e unilateral à direita. Neste exemplo, $r=0.5$ é significantemente diferente de zero no teste bilateral (zero não está contido no intervalo de confiança 95%) e o intervalo não está centrado na estimativa pontual. 
+
+No teste unilateral à esquerda não rejeitamos a hipótese nula (a alternativa era dizer que o valor é negativo). No teste unilateral à direita rejeitamos a hipótese nula (então 0.5 é positivo). 
+
+Como a função <code>DescTools::CorCI</code> não fornece o valor $p$, por fórmula podemos obtê-lo ([`CorrelacaoPearsonUmaCorrelacaoRho0.R`](CorrelacaoPearsonUmaCorrelacaoRho0.R){target="_blank"}):
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonUmaCorrelacaoRho0.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonUmaCorrelacaoRho0.R")
+```
+
+No entanto, outras condições podem ser verificadas. Caso quiséssemos saber se o valor observado deste exemplo, $r=0.5$, difere de um outro valor qualquer (e.g., $\rho = 0.6$):
+
+$$\begin{align}
+H_0:&\; \rho = 0.6\\
+H_1:&\; \rho \ne 0.6
+\end{align}$$
+
+$$\alpha = 0.05$$
+
+Podemos usar o teste implementado em [`CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R`](CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R")
+```
+
+Quando temos os dados brutos, há diversas funções em R que podem lhe fornecer o intervalo de confiança 95%. Por exemplo, no caso da correlação do Hematócrito com Hemoglobina, Hemácias ou Leucócitos, testando-se:
+
+$$\begin{align}
+H_0:&\; \rho = 0\\
+H_1:&\; \rho \ne 0
+\end{align}$$
+
+$$\alpha = 0.05$$
+
+A função <code>bootES::bootES()</code> encontra o intervalo por _bootstrapping_, como implementamos em [`Gestantes_corrBoot.R`](Gestantes_corrBoot.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonUmaCorrelacaoRhoQualquer.R"), sep = "\n")
+```
+
+```{r echo=TRUE}
+source("Gestantes_corrBoot.R")
+```
+
+# Comparação entre duas correlações independentes
+
+Padronizar as variáveis e proceder à regressão linear não é apenas uma curiosidade. Pode ajudar em explorar melhor as relações. Observe o que acontece com os dados de  [`Adm2008.xlsx`](Adm2008.xlsx){target="_blank"} quando exibimos separadamente as medidas de estatura e massa corpórea total (MCT) de homens e mulheres obtidos entre estudantes da Faculdade de Economia, Administração e Contabilidade da Universidade de São Paulo.
+
+Implementamos em [`CorrelacaoPearsonDuasCorrelacoesIndep.R`](CorrelacaoPearsonDuasCorrelacoesIndep.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonDuasCorrelacoesIndep.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonDuasCorrelacoesIndep.R")
+```
+
+Pela localização e inclinação das elipses, parece que os homens são mais altos e mais pesados que as mulheres, e também são maiores suas variabilidades em estatura e em peso. Para avaliar visualmente as correlações, no entanto, devemos verificar com as variáveis padronizadas.
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Para detectar _outlier_ bivariado, John Tukey criou o _bagplot_. Implementamos em [`demo_Bagplot.R`](demo_Bagplot.R){target="_blank"} um _bagplot_ que relata quem são os _outliers_; neste exemplo aparece um _outlier_ bidimensional entre as mulheres:
+
+```{r echo=FALSE}
+cat(readLines("demo_Bagplot.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("demo_Bagplot.R")
+```
+
+</td></tr></table>
+
+Será que a correlação entre estatura e massa corpórea é diferente para os dois sexos? 
+
+Considerando que são membros da mesma espécie, não deveríamos observar a mesma correlação?
+
+Implementamos em [`CorrelacaoPearsonDuasCorrelacoesIndepZ.R`](CorrelacaoPearsonDuasCorrelacoesIndepZ.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonDuasCorrelacoesIndepZ.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonDuasCorrelacoesIndepZ.R")
+```
+
+Visualmente, a correlação parece igual para indivíduos dos dois sexos (feminino e masculino). Esta observação é acompanhada pelas elipses de predição 95% bastante coincidentes com as variáveis padronizadas sobrepostas. Podemos testar estatisticamente com a mesma função `bootES::bootES` utilizada para uma correlação, testando-se:
+
+$$\begin{align}
+H_0:&\; \rho_F - \rho_M = 0\\
+H_1:&\; \rho_F - \rho_M \ne 0
+\end{align}$$
+
+$$\alpha = 0.05$$
+
+Este procedimento está implementado em [`CorrelacaoPearsonDuasCorrelacoesIndepTest.R`](CorrelacaoPearsonDuasCorrelacoesIndepTest.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonDuasCorrelacoesIndepTest.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonDuasCorrelacoesIndepTest.R")
+```
+
+Como o zero está contido no intervalo dado pelo teste, não rejeitamos $H_0$. Concluímos que estatura e massa corpórea para mulheres e homens são, portanto, igualmente correlacionadas.
+
+Existe alternativa para os casos em que os dados brutos não estão disponíveis, utilizando <code>psych::r.test</code>, como implementado em [`CorrelacaoPearsonDuasCorrelacoesIndepSemDadosBrutos.R`](CorrelacaoPearsonDuasCorrelacoesIndepSemDadosBrutos.R){target="_blank"}. Supondo o exemplo que acabamos de ver caso somente soubéssemos os tamanhos dos grupos e suas correlações, obteríamos:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonDuasCorrelacoesIndepSemDadosBrutos.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonDuasCorrelacoesIndepSemDadosBrutos.R")
+```
+
+A conclusão sobre $H_0$ é a mesma.
+
+# Comparação entre duas correlações dependentes
+
+Suponha que 85 crianças do terceiro ano foram testadas com testes de inteligência (1), habilidades aritméticas (2) e compreensão de leitura (3). A correlação entre inteligência e habilidades aritméticas equivale a $r_{1,2}$ = 0.53, inteligência e leitura se correlacionam com $r_{1,3}$ = 0.41 e aritmética e leitura com $r_{2,3}$ = 0.59. A correlação entre inteligência e habilidade aritmética é diferente  da correlação entre inteligência e compreensão de leitura?
+
+$$\begin{align}
+H_0:&\; \rho_{1,2} - \rho_{1,3} = 0\\
+H_1:&\; \rho_{1,2} - \rho_{1,3} \ne 0
+\end{align}$$
+$$\alpha = 0.05$$
+
+Esta situação pode ser verificada com a função <code>psych::r.test</code>, como implementada em [`CorrelacaoPearsonDuasCorrelacoesDepTest.R`](CorrelacaoPearsonDuasCorrelacoesDepTest.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonDuasCorrelacoesDepTest.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonDuasCorrelacoesDepTest.R")
+```
+
+Pelo valor $p$ verificamos que as correlações não são diferentes.
+
+# Correlação parcial
+
+Retomando os dados de  [`Adm2008.xlsx`](Adm2008.xlsx){target="_blank"} podemos verificar a correlação entre estatura e massa corpórea total removendo o efeito do sexo. 
+
+$$\begin{align}
+H_0:&\; {\rho_{(\text{estatura},\text{MCT}) \cdot \text{sexo}}} = 0\\
+H_1:&\; {\rho_{(\text{estatura},\text{MCT}) \cdot \text{sexo}}} \ne 0
+\end{align}$$
+
+$$\alpha = 0.05$$
+
+Está implementado em [`CorrelacaoPearsonParcialGenero.R`](CorrelacaoPearsonParcialGenero.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonParcialGenero.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonParcialGenero.R")
+```
+
+Já tinha sido verificado que as correlações entre Estatura e MCT eram altas para homens e mulheres. No entanto, a correlação de estatura com o sexo e de MCT com o sexo também são altas. Ao remover o efeito do sexo, sobre pouco entre estatura e MCT. Isto pode ser visto com um diagrama de Venn:
+
+```{r echo=FALSE, out.width='55%'}
+knitr::include_graphics("image/Venn_Diagram_EstMCT.png")
+```
+
+Quando os dados brutos não estiverem disponíveis, há uma solução em [`CorrelacaoPearsonParcialSemDadosBrutos.R`](CorrelacaoPearsonParcialSemDadosBrutos.R){target="_blank"}. Simulamos a situação utilizando os valores aproximados das correlações computadas no exemplo com os dados brutos (respectivamente $rXY=0.79$, $rXZ=0.63$ e $rYZ=0.70$):
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonParcialSemDadosBrutos.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonParcialSemDadosBrutos.R")
+```
+
+Quando temos os dados brutos podemos fazer mais, por exemplo controlando para mais de uma variável. Por exemplo, podemos controlar simultaneamente para sexo e Idade. 
+
+$$\begin{align}
+H_0:&\; {\rho_{(\text{estatura},\text{MCT}) \cdot (\text{sexo},\text{idade})}} = 0\\
+H_1:&\; {\rho_{(\text{estatura},\text{MCT}) \cdot (\text{sexo},\text{idade})}} \ne 0
+\end{align}$$
+
+$$\alpha = 0.05$$
+
+Está implementado em [CorrelacaoPearsonParcialGeneroIdade.R](CorrelacaoPearsonParcialGeneroIdade.R){target="_blank"}:
+
+```{r echo=FALSE}
+cat(readLines("CorrelacaoPearsonParcialGeneroIdade.R"), sep = "\n")
+```
+
+```{r echo=FALSE}
+source("CorrelacaoPearsonParcialGeneroIdade.R")
+```
+
+É difícil entender o porquê da correlação parcial pode aumentar quando um novo controle é adicionado, pois uma área maior da intersecção entre Estatura e MCT tem que ser subtraída. A explicação está em que área fora da intersecção (originalmente pertencente a Estatura ou MCT) também foi retirada. Um diagrama de Venn aproximado é este:
+
+```{r echo=FALSE, out.width='55%'}
+knitr::include_graphics("image/Venn_Diagram_EstMCTGenId.png")
+```
+
+O resultado final é que a área sombreada em cinza é cerca de 62% da área total remanescente.
+
+Encontramos um vídeo sobre correlação parcial em https://www.youtube.com/watch?v=OpAf4N582bA
+
+# FIM
+
+```{r echo=FALSE, out.width='80%'}
+knitr::include_graphics("image/correlatos.png")
+```
+
+# Referências
+
+* Dancey CP, Reidy J (2019) _Estatística sem Matemática para Psicologia_ 7ª ed. Porto Alegre: Penso.
+* Ellis PD (2010) _The essential guide to effect sizes_. 1st ed.  Cambridge University Press.
+* Judkins Dr Porter KE (2015) Robustness of ordinary least squares in randomized clinical trials. _Statistics in Medicine_ 35(11): 1763-73. doi: 10.1002/sim.6839.
+* Nihad Mohammed, University of Anbar. Traduzido e modificado de https://www.researchgate.net/post/What_is_the_key_differences_between_correlation_and_regression, 08Aug2018
+* Revelle W (2014) _Personality Project_. http://personality-project.org/revelle.html.
+* Shinohara, Elvira Maria Guerra. Prevalência de anemia em gestantes de primeira consulta em centros de saúde do estado no Subdistrito de Paz do Butantã, Município de São Paulo [dissertação]. São Paulo: Universidade de São Paulo, Faculdade de Ciências Farmacêuticas; 1989 [citado 2019-04-23]. [doi:10.11606/D.9.1989.tde-27032008-142216](https://www.teses.usp.br/teses/disponiveis/9/9136/tde-27032008-142216/pt-br.php). <small>Os dados utilizados nos exemplos deste capítulo são dados parciais relativos a este trabalho, gentilmente fornecidos pelo Prof. Raymundo Soares de Azevedo Neto, Departamento de Patologia, Faculdade de Medicina da USP.</small>
+* Viraj Bhagat, Aspiring Algo Trader Tech Enthusiast at Self-Employment. Traduzido e modificado de https://www.quora.com/What-is-the-difference-between-correlation-analysis-and-regression-analysis, 13Apr2018
