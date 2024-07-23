@@ -1,0 +1,103 @@
+Amostra original
+
+	Welch Two Sample t-test
+
+data:  estatura by grupo
+t = -3.6927, df = 17.993, p-value = 0.001666
+alternative hypothesis: true difference in means between group Feminino and group Masculino is not equal to 0
+95 percent confidence interval:
+ -19.611865  -5.388135
+sample estimates:
+ mean in group Feminino mean in group Masculino 
+                  160.0                   172.5 
+
+
+	One-way analysis of means (not assuming equal variances)
+
+data:  estatura and grupo
+F = 13.636, num df = 1.000, denom df = 17.993, p-value = 0.001666
+
+Tamanho de efeito
+	R^2 = F/(F+df) = eta^2 de Cohen = 0.4311358
+	R^2 = eta^2 de Cohen (effectsize::eta_squared) = 0.4311358
+
+Original
+ [1] 160.0 162.5 165.0 167.5 170.0 172.5 175.0 177.5 180.0 182.5 185.0
+[1] 150.0 152.5 155.0 157.5 160.0 162.5 165.0 167.5 170.0
+	d de Cohen (es.dif::es.d) = 1.55807 
+[1] "large"
+(Rules: cohen1988)
+[1] "very large"
+(Rules: sawilowsky2009)
+[1] "large"
+(Rules: gignac2016)
+[1] "large"
+(Rules: lovakov2021)
+	d de Cohen (psych::cohen.d) = 1.714986 
+[1] "large"
+(Rules: cohen1988)
+[1] "very large"
+(Rules: sawilowsky2009)
+[1] "large"
+(Rules: gignac2016)
+[1] "large"
+(Rules: lovakov2021)
+
+Selecao de modelo
+	R^2 ajustado = 0.3995192 
+	omega^2 = (F-1)/((F-1)+df+2) =  0.3872749 
+[1] 0.3872749
+	omega^2 (effectsize::omega_squared) =  0.3872749 
+
+Amostra duplicada
+
+	Welch Two Sample t-test
+
+data:  estatura by grupo
+t = -5.3657, df = 37.997, p-value = 4.217e-06
+alternative hypothesis: true difference in means between group Feminino and group Masculino is not equal to 0
+95 percent confidence interval:
+ -17.216098  -7.783902
+sample estimates:
+ mean in group Feminino mean in group Masculino 
+                  160.0                   172.5 
+
+
+	One-way analysis of means (not assuming equal variances)
+
+data:  estatura and grupo
+F = 28.79, num df = 1.000, denom df = 37.997, p-value = 4.217e-06
+
+Tamanho de efeito
+	R^2 = F/(F+df) = eta^2 de Cohen = 0.4310732
+	R^2 = eta^2 de Cohen (effectsize::eta_squared) = 0.4310732
+
+Duplicada
+ [1] 160.0 162.5 165.0 167.5 170.0 172.5 175.0 177.5 180.0 182.5 185.0 160.0 162.5 165.0 167.5 170.0 172.5 175.0 177.5
+[20] 180.0 182.5 185.0
+ [1] 150.0 152.5 155.0 157.5 160.0 162.5 165.0 167.5 170.0 150.0 152.5 155.0 157.5 160.0 162.5 165.0 167.5 170.0
+	d de Cohen (es.dif::es.d) = 1.638315 
+[1] "large"
+(Rules: cohen1988)
+[1] "very large"
+(Rules: sawilowsky2009)
+[1] "large"
+(Rules: gignac2016)
+[1] "large"
+(Rules: lovakov2021)
+	d de Cohen (psych::cohen.d) = 1.714986 
+[1] "large"
+(Rules: cohen1988)
+[1] "very large"
+(Rules: sawilowsky2009)
+[1] "large"
+(Rules: gignac2016)
+[1] "large"
+(Rules: lovakov2021)
+
+Selecao de modelo
+	R^2 ajustado = 0.4161003 
+	omega^2 =  0.409962 
+[1] 0.409962
+	omega^2 (effectsize::omega_squared) =  0.409962 
+

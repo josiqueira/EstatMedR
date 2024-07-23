@@ -1,0 +1,1112 @@
+---
+title: "Questões de Significância"
+author: | 
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+subtitle: ""
+date: "`r format(Sys.time(), '%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    css: style.css
+    font_adjustment: 1 
+    df_print: tibble
+    footer: "QuestoesSignificancia.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  slidy_presentation:
+    css: style.css
+    font_adjustment: -1
+    footer: "QuestoesSignificancia.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+.pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+# Linux
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(pwr, warn.conflicts=FALSE))
+suppressMessages(library(pwr2ppl, warn.conflicts=FALSE))
+suppressMessages(library(samplingbook, warn.conflicts=FALSE))
+suppressMessages(library(es.dif, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(MBESS, warn.conflicts=FALSE))
+source("eiras.bartitle.R")
+source("eiras.numeric.summary.R")
+```
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+# Objetivos
+
+* Definir os tipos de planejamento de estudo 
+  * Análise de poder
+  * Análise de precisão
+  * Valor _p_ vs. Intervalo de Confiança
+  * Questões éticas
+* Conceituar e estimar tamanhos de efeito
+* Conceituar e estimar combinações de tamanhos de efeito: metanálise
+* Discutir os problemas relacionados com o poder retrospectivo (_a posteriori_)
+
+# Sobre estatística inferencial
+
+Todos os testes estatísticos abordados até o capítulo anterior usam o paradigma da testagem da hipótese nula de Neyman-Pearson. É a abordagem frequentista (também chamada de clássica ou assintótica), que aprofundaremos neste capítulo. 
+
+O contraponto a esta abordagem foi iniciado por Cohen (1990) ao afirmar que existe algo além da significância estatística. Sua proposta é utilizar a significância prática para quantificar a intensidade do efeito em vez de somente sua existência.
+
+Em oposição à abordagem assintótica está a abordagem bayesiana. Nesta, o tamanho da amostra não precisa tender para o infinito para que os testes sejam válidos. A inferência bayesiana, portanto, é adaptada ao tamanho da amostra, sem necessidade de se imaginar infinitas repetições do experimento como fazemos, por exemplo, com o _bootstrapping_. Existem pacotes no R que fazem o planejamento bayesiano, o que parece fazer pouco sentido.
+
+# Planejamento de estudo 
+
+## Análise de poder
+
+Estamos planejando atribuir pacientes a uma das duas opções de tratamento (novo versus atual) e testar a hipótese nula de que os tratamentos são igualmente eficazes (ou seja, que a proporção de pacientes curados será idêntica nas duas populações).
+
+A proporção de cura para o tratamento atual é de aproximadamente 60%.
+
+Prevemos que o novo tratamento será mais eficaz na cura da doença. 
+
+No entanto, o novo tratamento também deve ter efeitos colaterais mais graves. Por esse motivo, o tratamento seria recomendado apenas se aumentasse a proporção de cura em 20 pontos percentuais. Consequentemente, o tamanho do efeito selecionado para a análise de poder é de 60% contra 80%.
+
+Embora seja improvável que o tratamento agressivo resulte em uma proporção de cura inferior ao autal, essa possibilidade não pode ser totalmente descartada e teria implicações práticas para pesquisas futuras. Por esse motivo, a análise será bicaudal.
+
+> Borenstein et al., 2008, Proportions in Two Independent Groups, p. 91
+
+Nestas condições, podemos encontrar o tamanho da amostra (para amostras balanceadas) utilizando o _Rscript_ [`demo_exemplo1.R`](demo_exemplo1.R){target="_blank"} que utiliza a função <code>pwr::pwr.2p2n.test()</code>:
+
+```{r echo=FALSE}
+cat(readLines("demo_exemplo1.R"), sep = "\n")
+```
+
+```{r fig.height=6}
+pH0 <- 0.6
+pH1 <- 0.8
+alfa <- 0.05
+source("demo_exemplo1.R")
+```
+
+```{r echo=FALSE}
+cat(readLines("demo_exemplo1.R"), sep = "\n")
+```
+
+Observe que o poder _a priori_ (prospectivo) é a probabilidade (80% ou 90%) de rejeitar $H_0$ corretamente nas condições planejadas. Em outras palavras, encontramos $n$ suficiente para garantir estas condições. Consequentemente, caso $H_0$ não seja rejeitada, supomos que não houve insuficiência da amostra e $H_0$ deve ser plausível, com probabilidade $\beta$, entre 20% e 10%, de estarmos enganados.
+
+Como o novo tratamento é potencialmente mais agressivo, podemos ser conservadores e planejarmos o estudo com uma alocação dos pacientes no tratamento convencional para o novo tratamento de 2 para 1:
+
+```{r fig.height=6}
+pH0 <- 0.6
+pH1 <- 0.8
+alfa <- 0.05
+razao_alocacao <- 2
+source("demo_exemplo1.R")
+```
+
+Ainda é possível optar por um teste unilateral, usando o parâmetro <code>alternative</code> (opções são <code>"two.sided"</code>, <code>"less"</code> ou <code>"greater"</code>). Voltando para as amostras balanceadas. Como esperamos que o tratamento novo aumente a proporção de cura, o teste deve ser unilateral à direita (i.e., <code>"greater"</code>):
+
+```{r fig.height=6}
+pH0 <- 0.6
+pH1 <- 0.8
+alfa <- 0.05
+razao_alocacao <- 1
+alternative <- "greater"
+source("demo_exemplo1.R")
+```
+
+Segundo Borenstein et al. (2008), no capítulo 2:
+
+"Esses três fatores [$n$, $\eta^2$, $\alpha$], junto com o poder [$1-\beta$], formam um sistema fechado - uma vez que quaisquer três sejam estabelecidos, o quarto é completamente determinado."
+
+"O objetivo de uma análise de poder é encontrar um equilíbrio apropriado entre esses fatores, levando em consideração os objetivos substantivos do estudo e os recursos disponíveis para o pesquisador."
+
+Há quatro elementos envolvidos no planejamento de um estudo:
+
+```{r echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/4elementos.png")
+```
+
+```{r echo=FALSE, out.width='40%'}
+knitr::include_graphics("image/4elementos2.png")
+```
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+Apesar de ser restrito ao teste $z$ para uma condição (a situação mais simples de todas), é possível exercitar a interação destes quatro elementos no site<br> 
+_Understanding Statistical Power and Significance Testing:<br>
+an interactive visualization_ em http://rpsychologist.com/d3/NHST/
+</td></tr></table>
+
+### _Softwares_ para análise de poder
+
+https://www.psychologie.hhu.de/arbeitsgruppen/allgemeine-psychologie-und-arbeitspsychologie/gpower.html
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/GPower_logo.png")
+```
+
+http://www.ibm.com
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/SPSS_logo.png")
+```
+
+https://www.ncss.com/download/pass/
+
+```{r echo=FALSE, out.width='70%'}
+knitr::include_graphics("image/PASS.png")
+```
+
+<big>**R packages**</big>
+
+* `pwr`<br>
+<small>Desenvolvido por Stéphane Champely, implementa métodos de Cohen para os testes de proporção, ANOVA unifatorial balanceada, _t_, qui-quadrado, correlação e modelo linear geral.
+</small>
+* `pwr2`<br>
+<small>Desenvolvido por Lu P, Liu J e Koestler D, para ANOVA unifatorial e bifatorial.
+</small>
+* `pwr2ppl`
+* `samplingbook`
+* `TrialSize`
+* `MBESS`
+* `webpower`
+* `asypow`
+* `PwrGSD`
+* `pamm`
+* `Longpower`
+* `powerSurvEpi`
+* `powerpkg`
+* `powerGWASinteraction`
+* `pedantics`
+* `gap`
+* `ssize.fdr`
+
+Para aprender a utilizar alguns dos pacotes citados consulte: 
+
+* R in action, capítulo 10, disponível em https://livebook.manning.com/book/r-in-action/chapter-10/140
+
+## Análise de precisão
+
+Retomando o exemplo sobre a proporção de cura de dois tratamentos, tendo encontrado o tamanho das amostras que permite 90% de poder, precisamos determinar o intervalo de confiança 95% da diferença populacional das proporções.
+
+Para o teste bilateral, conseguimos 90% de poder _a priori_ com dois grupos de 108 indivíduos (total de 216 indivíduos). 
+
+A análise de precisão está implementada em [`demo_exemplo2.R`](demo_exemplo2.R){target="_blank"}, utilizando a função <code>pwr2ppl::md_prec()</code>:
+
+```{r}
+pH0 <- 0.6
+pH1 <- 0.8
+alfa <- 0.05
+n_total <- 216
+source("demo_exemplo2.R")
+```
+
+Adicionamos o <code>IC.center</code>, que é o centro do intervalo de confiança (corresponde ao tamanho de efeito esperado de 0.2).
+
+Os limites do intervalo de confiança de 95% esperado para a diferença populacional das proporções são dados por <code>precisao\$LL</code>=`r precisao$LL` e <code>precisao\$UL</code>=`r precisao$UL`, enquanto <code>precisao\$Precision</code>=`r precisao$Precision` corresponde à amplitude esperada deste intervalo de confiança de 95%. 
+
+A precisão foi dada, aproximadamente, por
+
+```{r}
+n <- n_total/2 # n de cada grupo
+print(L <- 2*1.96*sqrt((pH0*(1-pH0)+pH1*(1-pH1))/n)+2/n)
+```
+
+Observe que para 80% de poder a precisão diminui, mas a amplitude do intervalo de confiança 95% aumenta. Isto decorre (baseado nos números anteriores) da mudança do tamanho da amostra, que foi calculada como dois grupos de 81 indivíduos ([`demo_exemplo2.R`](demo_exemplo2.R){target="_blank"}):
+
+```{r}
+pH0 <- 0.6
+pH1 <- 0.8
+alfa <- 0.05
+n_total <- 162
+source("demo_exemplo2.R")
+```
+
+Segundo Borenstein et al. (2008), no capítulo 2:
+
+"A discussão até este ponto se concentrou na análise de poder, que é um precursor apropriado para um teste de significância.
+
+Se o pesquisador está planejando um estudo para testar a hipótese nula, então o delineamento do estudo deve garantir, com um alto grau de certeza, que o estudo será capaz de fornecer um teste adequado (isto é, poderoso) da hipótese nula.
+
+O estudo também pode ser planejado com outro objetivo.
+
+Além de (ou em vez de) testar a hipótese nula, o pesquisador pode usar o estudo para estimar a magnitude do efeito - para relatar, por exemplo, que o tratamento aumenta a proporção de cura em 10 pontos, 20 pontos ou 30 pontos percentuais.
+
+Neste caso, o planejamento do estudo se concentraria não na capacidade do estudo de rejeitar a hipótese nula, mas sim na precisão com a qual nos permitirá estimar a magnitude do efeito.
+
+Suponha, por exemplo, que estamos planejando comparar as proporções de respostas para os tratamentos e antecipar que essas proporções serão diferentes umas das outras em cerca de 20 pontos percentuais. Gostaríamos de ser capazes de relatar a diferença de proporções com uma precisão de mais ou menos 7 pontos percentuais.
+
+A precisão com que seremos capazes de relatar a diferença de proporção é uma função do nível de confiança necessário, do tamanho da amostra e da própria diferença de proporção entre as condições experimentais.
+
+O intervalo de confiança representa a precisão com a qual podemos relatar o tamanho do efeito, e quanto maior a amostra, mais precisa é a estimativa.
+
+Na prática, o tamanho da amostra é o fator dominante na determinação da precisão.
+
+Nota: para estudos que envolvem dois grupos, a precisão é maximizada quando os sujeitos são divididos igualmente entre os dois grupos. Quando o número de casos nos dois grupos é desigual, o 'n efetivo' para a precisão do cálculo fica mais próximo do tamanho de amostra menor do que do maior."
+
+Por exemplo,
+
+```{r echo=FALSE, out.width='70%'}
+knitr::include_graphics("image/Datafolha20201022.png")
+```
+
+```{r echo=FALSE, out.width='60%'}
+knitr::include_graphics("image/Datafolha20201022_2.png")
+```
+
+Para uma margem de erro de 3% com nível de confiança de 95%, o instituto de pesquisa calculou uma amostra de 1204 entrevistados. Podemos reproduzir este cálculo?
+
+A margem de erro deve ser pensada par-a-par com o objetivo de distinguir desempates entre pares de candidatos. Começando com um cálculo simples, vamos iniciar com a incerteza máxima ao supor que a proporção de intenção de votos de cada candidato é de 50% (metade para cada um), implementado em [`demo_eleicao_1.R`](demo_eleicao_1.R){target="_blank"}:
+
+```{r}
+source("demo_eleicao_1.R")
+```
+
+```{r echo=FALSE}
+cat(readLines("demo_eleicao_1.R"), sep = "\n")
+```
+
+Observe, no gráfico, que o aumento do $n$ reduz progressivamente a margem de erro, até chegar aos 3% planejados com 1067 entrevistados. É um número próximo ao praticado nesta pesquisa.
+
+Suponha, com base nas pesquisas anteriores, que saibamos que os candidatos mais bem colocados estão com cerca de 20% de intenções de voto (em vez dos 50% que podemos adotar para o máximo de incerteza). Podemos fazer o reverso, portanto, varrendo as possibilidades: variando $n$ e supondo as duas proporções: 50% e 20%. Implementamos em 
+[`demo_eleicao_2.R`](demo_eleicao_2.R){target="_blank"}:
+
+```{r}
+source("demo_eleicao_2.R")
+```
+
+```{r echo=FALSE}
+cat(readLines("demo_eleicao_1.R"), sep = "\n")
+```
+
+Observe as colunas. Para a proporção de 50%, a margem de erro de 3% é alcançada entre 1000 e 1100 entrevistados. Porém, supondo proporção de 20%, esta margem é atingida com 600 a 700 entrevistados.
+
+De forma ainda mais simples, o _Rscript_ [demo_eleicao_3.R](demo_eleicao_3.R){target="_blank"} utiliza a função <code>samplingbook::sample.size.prop()</code>:
+
+```{r}
+source("demo_eleicao_3.R")
+```
+
+A tabela resultante desta função mostra que 1204 está um pouco acima do número necessário (1068) para obter margem de erro de 3% quando um dos candidatos tem 50% das intenções de voto. 
+
+<!--
+
+van Belle (2008) afirma que, para o teste _t_ para uma condição, a amplitude do intervalo de confiança de 95% reduz-se pouco a partir $n=12$, sendo este portanto o menor tamanho de amostra que recomenda utilizar. Observe o gráfico obtido com [demo_vanBelle.R](demo_vanBelle.R){target="_blank"}:
+```{r echo=FALSE}
+source("demo_vanBelle.R")
+```
+A regra vale mesmo quando a distribuição dos dados amostrais for fortemente assimétrica. Por exemplo, [demo_vanBelle_exp.R](demo_vanBelle_exp.R){target="_blank"} utiliza amostras com distribuição exponencial, obtendo-se praticamente o mesmo gráfico:
+```{r echo=FALSE}
+source("demo_vanBelle_exp.R")
+```
+
+No mesmo livro, van Belle orienta que o intervalo de confiança de 95% é a melhor escolha quando 
+-->
+
+## Valor _p_
+
+Agresti & Finlay (2012, p.171) dizem:
+
+"O valor _p_ é a probabilidade de que a estatística de teste seja igual ou mais extrema que o valor observado na direção prevista pela hipótese alternativa ($H_1$), presumindo que a hipótese nula ($H_0$) é verdadeira."
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Spanos2014.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Spanos2014_2.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Lin2013.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Lin2013_2.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Mark2016.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Goodman2008.png")
+```
+
+## Valor _p_ vs. Intervalo de confiança
+
+Segundo Borenstein et al. (2008), no capítulo 2:
+
+"As duas abordagens descritas aqui - testar a hipótese nula de nenhum efeito e estimar o tamanho do efeito - estão intimamente relacionadas. Um estudo que produz um valor _p_ de precisamente 0.05 renderá um intervalo de confiança de 95% que começa (ou termina) precisamente em 0.
+
+Um estudo que produz um valor _p_ de precisamente 0.01 produzirá um intervalo de confiança de 99% que começa (ou termina) precisamente em 0.
+
+Nesse sentido, relatando um tamanho de efeito com o intervalo de confiança pode servir como substituto para teste de significância (se o intervalo de confiança não incluir o efeito nulo, o estudo é estatisticamente significante) com a abordagem do tamanho do efeito focando a atenção na questão relevante.
+
+No entanto, mudando o foco de um relatório do teste de significância para a estimativa do tamanho do efeito [sic: intervalo de
+confiança], garantimos uma série de vantagens importantes.
+
+Em primeiro lugar, o tamanho do efeito concentra a atenção na questão principal.
+
+Normalmente, pesquisadores e médicos se preocupam com o tamanho do efeito; a questão de se o efeito é nulo ou não é de interesse relativamente menor.
+
+Por exemplo, o clínico pode recomendar um medicamento, apesar de seu potencial para efeitos colaterais, se ele se sentir confortável com o fato de que aumenta a proporção de remissão em alguma quantidade específica, como 20%, 30% ou 40%.
+
+O simples fato de saber que aumentou a alíquota em algum valor não especificado superior a 0 é de pouca importância.
+
+O tamanho do efeito com intervalos de confiança concentra a atenção no índice principal (quão grande é o efeito), enquanto fornece limites prováveis para os limites inferior e superior do verdadeiro tamanho do efeito na população.
+
+Em segundo lugar, o foco no tamanho do efeito, ao invés da significância estatística, ajuda o pesquisador e o leitor a evitar alguns erros
+que são comuns na interpretação dos testes de significância.
+
+Como os pesquisadores se preocupam principalmente com o tamanho do efeito (e não se o efeito é nulo), eles tendem a interpretar os resultados de um teste de significância como se esses resultados fossem uma indicação do tamanho do efeito.
+
+Por exemplo, presume-se que um valor _p_ de 0.001 reflita um grande efeito, enquanto um valor _p_ de 0.05 reflete um efeito moderado.
+
+Isso é inadequado porque o valor _p_ é uma função do tamanho da amostra, bem como do tamanho do efeito.
+
+Frequentemente, presume-se que o valor de p não significativo indica que o tratamento se mostrou ineficaz.
+
+Na verdade, um valor _p_ não significante pode refletir o fato de que o tratamento não é eficaz, mas pode facilmente refletir o fato de que o estudo foi insuficiente.
+
+Se a análise de poder é o precursor apropriado para um estudo que testará a hipótese nula, então a análise de precisão é o precursor apropriado para um estudo que será usado para estimar o tamanho de um efeito de tratamento."
+
+## Poder
+
+Poder _a priori_ do teste de hipótese nula é a probabilidade de rejeitar $H_0$ acertadamente para uma determinada magnitude do tamanho de efeito populacional.
+
+De acordo com Dancey e Reidy (2019), o poder a priori do teste de hipótese nula é:
+
+"Habilidade de detectar um efeito
+estatisticamente significante quando existente,
+i.e., é a probabilidade de rejeitar a hipótese 
+nula quando falsa dado um tamanho de efeito
+populacional.
+
+Por exemplo: um poder de 80% significa que você tem
+uma probabilidade de 80% de encontrar um efeito se
+ele existe na população. Portanto, você tem uma
+boa chance de encontrá-lo e pode valer a pena investir
+nesse estudo.
+
+Por outro lado, se conduzir um estudo sem calcular o poder e
+encontrar um efeito significativo, era óbvio que você
+tinha poder suficiente.
+
+Afinal, se não tivesse poder suficiente, não teria
+encontrado um efeito!
+
+Portanto, depois do experimento, o conhecimento do
+poder é mais importante quando você não encontra
+um efeito [não rejeita $H_0$], pois não pode ter certeza se
+
+* (a) realmente não existia um efeito, ou
+* (b) existia um efeito, mais não tinha poder o suficiente para encontrá-lo.”
+
+Se a hipótese nula não é rejeitada, então é necessário que o poder a priori seja 80% para que a decisão de não rejeitar a
+hipótese nula esteja correta, i.e., para concluir que não há o efeito na população.
+
+### - importância do poder se nenhum efeito é encontrado
+
+Dancey e Reidy (2019) ainda afirmam:
+
+"O poder é especialmente importante se o tamanho do efeito encontrado é pequeno ou inexistente, pois não se consegue ter certeza de que realmente existe um efeito e falhamos em encontrá-lo, ou se realmente o efeito não existe; portanto, quando são obtidos tamanhos de efeito pequenos, é preciso relatar o nível de poder que havia.
+
+Ao relatar os resultados que não têm significância estatística, alguns psicólogos revelam quantos participantes seriam necessários para se encontrar um efeito.
+
+Em casos nos quais o número de participantes necessários para se
+encontrar um efeito é realmente enorme (na maioria dos casos não seria razoável esperar que os psicólogos estudassem milhares de participantes), fica implícito: o tamanho do efeito é tão pequeno que realmente não existe um efeito."
+
+### - fatores que influenciam o poder
+
+Dancey e Reidy (2019):
+
+"O tamanho do efeito esperado: na Psicologia, efeitos pequenos e médios são mais prováveis do que os grandes efeitos; um efeito grande será mais fácil de detectar do que um efeito pequeno; é preciso mais poder para encontrar efeitos pequenos.
+
+O nível de significância (α adotado pelo pesquisador); e.g.: o valor do nível de significância do teste de 5%, sendo esse o valor que você está preparado a aceitar que os resultados provavelmente não sejam resultantes apenas de erro amostral; o alfa varia entre 1% e 10%.
+
+O tamanho do estudo ou número de participantes do estudo: quanto maior o tamanho da amostra, maior é o poder; quando o tamanho da amostra é pequeno, temos um poder baixo e, portanto, se um efeito existe, não temos muita chance de encontrá-lo, pois qualquer efeito pode ter acontecido apenas por erro amostral; com uma amostra grande de participantes, temos uma chance maior de detectar um efeito significativo se ele existir, pois estamos mais certos de que o efeito se deve a algo além do erro amostral; mostrar que a significância estatística depende do tamanho da amostra é importante, pois mostra que a significância estatística não é igual à importância prática ou psicológica e, portanto, eis o motivo de precisar de outras maneiras de avaliar a importância do estudo como o tamanho do efeito e o intervalo de confiança [_sic_]."
+
+Outros fatores que influenciam o poder são:
+
+* Teste estatístico<br>
+<small>
+Quanto mais os dados respeitam as suposições do teste, maior o
+poder.
+</small>
+* Delineamento do estudo entre ou intraparticipantes<br>
+<small>
+Os delineamentos de medidas repetidas aumentam o poder porque controlam a variabilidade intraparticipantes, pois cada participante atua como seu próprio controle.
+</small>
+* Hipótese alternativa unilateral ou bilaterial<br>
+<small>
+Teste unilateral tem mais poder que o bilateral.
+</small>
+* Balanceamento<br>
+<small>
+Quanto maior o balanceamento das condições, maior o poder.
+</small>
+
+### - estratégias para a análise de poder
+
+O `G*Power` implementa cinco estratégias:
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/GPower.png")
+```
+
+> Coelho et al. (2008)<br> Perugini et al. (2018)
+
+Em especial, o artigo de Perugini et al. (2018) descreve com detalhes como utilizar `G*Power`. Por outro lado, recomendamos que não utilize as funções do R que aparecem neste artigo; atenha-se ao que estes autores mostram no `G*Power`.
+
+Outro bom apoio para o uso do `G*Power` pela UCLA, disponível em https://stats.idre.ucla.edu/other/gpower/
+
+## Tamanho de efeito
+
+Segundo Borenstein et al. (2008), no capítulo 2:
+
+"O termo tamanho do efeito se refere à magnitude do efeito sob a hipótese alternativa.
+
+A natureza do tamanho do efeito irá variar de um procedimento estatístico para o próximo (pode ser a diferença nas proporções de cura, ou uma diferença média padronizada, ou um coeficiente de correlação), mas sua função na análise de poder é a mesma em todos os procedimentos. 
+
+O tamanho do efeito deve representar o menor efeito que teria importância clínica ou substantiva e, por esse motivo, variará de um estudo para o outro. 
+
+Em ensaios clínicos, por exemplo, a seleção de um tamanho de efeito pode levar em consideração a gravidade da doença a ser tratada (um efeito de tratamento que reduza a mortalidade em 1% pode ser clinicamente importante, enquanto um efeito de tratamento que reduz a asma transitória em 20% pode ter pouco interesse). 
+
+Pode levar em consideração a existência de tratamentos alternativos. 
+
+Se existirem tratamentos alternativos, um novo tratamento precisará superar esses outros tratamentos para ser importante. 
+
+Também pode levar em consideração o custo do tratamento e os efeitos colaterais. 
+
+Um tratamento que carregasse esses encargos seria adotado apenas se o efeito do tratamento fosse muito substancial.
+
+A análise de poder fornece poder para um tamanho de efeito específico. 
+
+Por exemplo, o pesquisador pode relatar que se o tratamento aumentar a proporção de recuperação em 15 pontos percentuais, o estudo terá poder de 80% para produzir um efeito significante. 
+
+Para o mesmo tamanho de amostra e alfa, se o efeito do tratamento for inferior a 15 pontos percentuais, o poder será inferior a 80%. 
+
+Se o tamanho real do efeito exceder 15 pontos percentuais, o poder excederá 80%. 
+
+Embora alguém possa ficar tentado a definir o “efeito clinicamente significativo” com um valor pequeno para garantir alto poder mesmo para um pequeno efeito, essa determinação não pode ser feita isoladamente. 
+
+A seleção de um tamanho de efeito reflete a necessidade de equilíbrio entre o tamanho do efeito que podemos detectar e os recursos disponíveis para o estudo.
+
+A análise de poder fornece o poder de um tamanho de efeito nominal
+
+* Por exemplo, o pesquisador pode relatar que: 
+  * 'se o tratamento aumentar a proporção de recuperação em 15 pontos percentuais, o estudo terá um poder de 80% para produzir um efeito estatisticamente significante'.
+* Para o mesmo tamanho de amostra e alfa
+  * Se o efeito do tratamento for menor que 15 pontos percentuais, o poder será menor que 80%.
+  * Se o tamanho real do efeito exceder 15 pontos percentuais, o poder excederá 80%.
+
+O verdadeiro tamanho do efeito (população) não é conhecido. Embora o tamanho do efeito usado para a análise de poder seja assumido para refletir o tamanho do efeito da população, a análise de poder é mais apropriadamente expressa como, 'Se o verdadeiro efeito for de uma determinada magnitude, o poder seria ...', em vez de 'O verdadeiro efeito é de uma determinada magnitude e, portanto, o poder é ... '"
+
+### - tamanho de efeito esperado
+
+* Magnitude do efeito sob a hipótese alternativa.
+* O tamanho de efeito esperado: 
+  * o menor efeito de importância prática para a área de estudo.
+  * o menor efeito de interesse plausível (diferença relevante clinicamente/psicologicamente  mínima),
+  * a diferença mínima entre os grupos estudados que o pesquisador deseja detectar na população
+    * Diferença entre proporções de recuperação:<br> 
+    <small>
+O efeito do tratamento que reduz a mortalidade em 1% pode ser importante clinicamente, enquanto que o tratamento que diminui ataque asmático em 20% pode ser de pouca importância clínica
+    </small>
+    * Diferença entre médias padronizadas ou não-padronizadas:<br>
+    <small>
+Se a massa corporal total é a variável de desfecho de um estudo, um investigador pode escolher uma diferença de 5 kg como a diferença relevante clinicamente mínima
+    </small>
+    * Correlação:<br>
+    <small>
+Definir a correlação como baixa ou alta depende da área e dos objetivos do pesquisador. Relações entre medidas antropométricas costumam ser muito altas ($r \ge 0.95$)
+    </small>
+
+> Noordzij et al., 2010
+
+Retomando Borenstein et al. (2008), no capítulo 2:
+
+"Os pesquisadores às vezes assumem que uma análise de poder não pode ser realizada na ausência de dados de um estudo piloto.
+
+De fato, geralmente é possível realizar uma análise de poder baseada inteiramente em uma avaliação lógica do que constitui um efeito clinicamente (ou teoricamente) importante.
+
+De fato, embora o efeito observado em estudos anteriores possa ajudar a fornecer uma estimativa do verdadeiro efeito, não é provável que seja o verdadeiro efeito na população - se soubéssemos que o tamanho do efeito nesses estudos era preciso, não haveria necessidade de executar o novo estudo.
+
+## Tamanho da amostra
+
+Para quaisquer tamanho de efeito e alfa dados, aumentar o tamanho da amostra aumentará o poder (ignorando por enquanto o caso especial em que o poder para um teste de proporções é calculado usando métodos exatos).
+
+Como acontece com o tamanho do efeito e alfa, o tamanho da amostra não pode ser visto isoladamente, mas sim como um elemento em um ato de equilíbrio complexo.
+
+Em alguns estudos, pode ser importante detectar até mesmo um pequeno efeito, mantendo o poder elevado.
+
+Nesse caso, pode ser apropriado recrutar alguns milhares de pacientes (como foi feito no estudo dos médicos que encontrou uma relação entre o uso de aspirina e eventos cardiovasculares).
+
+[Mujaj, B et al. (2022) Aspirin use is associated with increased risk for incident heart failure: A patient-level pooled analysis. _ESC Heart Failure_ 10(2): e13688. https://doi.org/10.1002/ehf2.13688: <br>
+Tradução para o português:
+
+"Objetivos: Estudos recentes que avaliaram o efeito da aspirina na prevenção primária de doenças cardiovasculares mostraram pouco ou nenhum benefício. No entanto, o papel da aspirina no risco de insuficiência cardíaca (IC) incidente permanece incerto. Este estudo teve como objetivo avaliar o papel do uso de aspirina na incidência de IC na prevenção primária e secundária e se o uso de aspirina aumenta o risco de IC incidente em pacientes em risco.
+
+Métodos e resultados: Foram analisados dados de 30.827 pacientes em risco de IC inscritos em seis estudos observacionais [mulheres 33,9%, idade média (±desvio padrão) 66,8 ± 9,2 anos]. Fatores de risco cardiovasculares e o uso de aspirina foram registrados no início do estudo, e os pacientes foram acompanhados para o primeiro incidente de IC fatal ou não fatal. A associação de IC incidente com o uso de aspirina foi avaliada usando regressão proporcional de risco ajustada para múltiplas variáveis, levando em conta o estudo e fatores de risco cardiovasculares. Ao longo de 5,3 anos (mediana; intervalo do 5º ao 95º percentil, 2,1–11,7 anos), 1.330 pacientes apresentaram IC. A razão de risco (HR) totalmente ajustada associada ao uso de aspirina foi de 1,26 [intervalo de confiança (IC) de 95% 1,12–1,41; P ≤ 0,001]. Além disso, em uma análise pareada por escore de propensão, o HR foi de 1,26 (IC 95% 1,10–1,44; P ≤ 0,001). Em 22.690 pacientes (73,6%) sem histórico de doença cardiovascular, o HR foi de 1,27 (IC 95% 1,10–1,46; P = 0,001).
+
+Conclusões: Em pacientes em risco, o uso de aspirina foi associado a IC incidente, independente de outros fatores de risco. Na ausência de evidências conclusivas de ensaios clínicos, nossas observações sugerem que as aspirinas devem ser prescritas com cautela em pacientes em risco de IC ou que tenham IC."]
+
+Normalmente, porém, o número de casos disponíveis é limitado.
+
+O pesquisador pode precisar encontrar o maior n que pode ser recrutado e trabalhar a partir daí para encontrar um equilíbrio apropriado entre alfa e beta.
+
+Pode-se precisar renunciar à possibilidade de encontrar um pequeno efeito e reconhecer que o poder será adequado apenas para um grande efeito.
+
+## Questões éticas
+
+Retomando Borenstein et al. (2008), no capítulo 2:
+
+"Alguns estudos envolvem colocar os pacientes em risco.
+
+Em um extremo, o risco pode ser limitado à perda de tempo gasto no preenchimento de um questionário.
+
+No outro extremo, o risco pode envolver o uso de um tratamento ineficaz para uma doença potencialmente fatal.
+
+Essas questões estão claramente além do escopo desta discussão, mas uma observação deve ser feita aqui.
+
+As questões éticas desempenham um papel na análise do poder.
+
+Se um estudo para testar um novo fármaco tiver poder adequado com uma amostra de 100 pacientes, então seria inapropriado usar uma amostra de 200 pacientes, uma vez que os outros 100 estão sendo colocados em risco
+desnecessariamente.
+
+Ao mesmo tempo, se o estudo requer 200 pacientes para produzir potência adequada, seria inapropriado usar apenas 100.
+
+Esses 100 pacientes podem consentir em participar do estudo na suposição de que o estudo produzirá resultados úteis.
+
+Se o estudo não tiver poder, os 100 pacientes foram colocados em risco sem motivo.
+
+Claro, o processo real de tomada de decisão é complexo.
+
+Pode-se argumentar se a potência adequada para o estudo é 80%, 90% ou 99%.
+
+Pode-se argumentar se a potência deve ser definida com base em uma melhoria de 10 pontos, 20 pontos ou 30 pontos percentuais.
+
+Pode-se argumentar sobre o equilíbrio apropriado entre alfa e beta.
+
+Além disso, o tamanho da amostra deve levar em conta a precisão, bem como o poder.
+
+A questão aqui é que esses tipos de questões precisam ser tratados explicitamente como parte do processo de tomada de decisão."
+
+Segundo Moraes (2006, p. 60-1):
+
+"Qual é o tamanho da amostra que eu preciso?"
+
+"Essa é a pergunta feita frequentemente por todos os pesquisadores em todos os tipos de pesquisas científicas em particular por aqueles que pretendem realizar uma pesquisa na área da saúde.
+
+Uma amostra com menos sujeitos que o necessário para se obter uma conclusão confiável ou uma amostra excessivamente grande geram problemas éticos e logísticos.
+
+Se o tamanho da amostra é muito pequeno, pode não ser suficiente para responder à pergunta formulada ou aos objetivos; nesse caso seria perda de tempo e de dinheiro.
+
+Ao contrário, um tamanho de amostra muito grande também não é recomendável, pois seria um gasto desnecessário, uma vez que para mostrar o efeito desejado um número menor de sujeitos seria suficiente.
+
+Uma das preocupações do pesquisa deve ser a definição de um plano de amostragem com o objetivo de obter uma amostra representativa da população em estudo.
+
+Não é correto definir o tamanho da amostra como um valor em torno de 10% da população, ou mesmo que seja igual a 30 unidades para estudo clínicos ou 10 unidades para estudos experimentais.
+
+O tamanho da amostra depende de vários fatores, assim não há um valor _p_redefinido para estimar $n$.
+
+O tamanho da amostra para ser determinado depende de muitos itens: natureza das variáveis, técnica estatística a ser utilizada, mecanismos dos erros de decisão, variabilidade dos dados e diferença mínima a ser detectada no estudo (tamanho do efeito)."
+
+Segundo Vicente et al. (2001, p. 88-9):
+
+"A maior preocupação ao realizar uma sondagem prende-se com o assegurar da
+qualidade da informação obtida. A validade de uma sondagem é função do seu
+erro total (Assael e Keon, 1982), pois esse determina até que ponto pode ser bem sucedida a generalização dos resultados da amostra à população. Como foi
+mencionado, o erro total é decomposto em erros derivados da amostragem e
+erros não derivados da amostragem. A opção por um processo de recolha
+aleatória ou o aumento do tamanho da amostra são factores que podem ajudar a
+controlar os primeiros. Nesse ponto a teoria da amostragem afirma mesmo que,
+para o caso da variabilidade amostral, se a amostra for sucessivamente alargada a ponto de cobrir todo o universo, a sua eliminação é total.
+
+Os erros não de amostragem não são tão controláveis, e como Assael e Keon
+(1982) referem, esse tipo de erro é a principal componente do erro total (“The consistent finding is that nonsampling error is the major contributor to total survey error, while random sampling error is minimal.”). O erro não amostral deriva de fenómenos como respostas incorretamente dadas, deficiente desempenho dos entrevistadores ou até mesmo das condições envolventes em que é feita a entrevista. Esse tipo de erros não é resolvido com uma amostra de maior dimensão e por isso Lipstein (1975: In defense of small samples) saliente e bem que aumentar o tamanho da amostra não é garantia de um aumento da validade dos resultados.
+
+Ainda de acordo com Assael e Keon (1982), o grande dilema que o investigador enfrenta na realização de um estudo por sondagem é se deve selecionar uma amostra maior para reduzir o erro amostral, ou se deve concentrar recursos e esforços numa amostra de dimensão mais reduzida, para garantir um melhor controlo do trabalho dos entrevistadores, uma taxa de respostas mais alta, respostas mais exatas, melhor trabalho de processamento da informação etc., ou seja, uma redução dos outros erros. Idealmente os esforços são concentrados na redução simultânea dos erros relacionados com amostragem e não relacionados com amostragem, apesar de restrições financeiras e de tempo tornarem este ideal difícil de concretizas.
+
+Segundo Lipstein (1975), a questão central é saber se, com um aumento na
+dimensão da amostra, o erro amostral decresce mais rapidamente do que
+aumentam os outros erros. Quanto mais cuidadosas forem a concepção do
+questionário, o treino dos entrevistadores, a supervisão de todas as operações, menor será o erro. Para tirar benefícios de uma amostra maior (em termos amostrais e não amostrais) é necessário aumentar substancialmente os recursos afectos à melhoria de todo o processo que o estudo percorre.
+
+Um dos conselhos que Lipstein (1975) dá para um melhor domínio dos erros
+motivados pela amostragem é “use o menor tamanho de amostra que seja
+consistente com os objetivos do estudo, em vez do maior que você puder pagar."
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Bacchetti2004.png")
+```
+
+Em conclusão, a análise apresentada aqui sugere que a continuação da condução de estudos “underpowered” não é o terrível lapso moral lamentado por alguns escritores.
+
+Em geral, os comitês de ética e outros interessados na proteção dos sujeitos da pesquisa não precisam considerar se um estudo é muito pequeno.
+
+Em particular, não vemos nenhum argumento ético válido contra estudos pequenos, de alto risco / alto retorno, como recentemente defendido para doenças rapidamente fatais.
+
+Na verdade, uma questão ética mais legítima em relação ao tamanho da amostra é se ela é muito grande.
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Bacchetti2010.png")
+```
+
+```{r echo=FALSE, out.width='70%'}
+knitr::include_graphics("image/Bacchetti2010mito.png")
+```
+
+# Estimação do tamanho de efeito
+
+Características desejáveis:
+
+* Independe do tamanho da amostra (obrigatória)
+* Adimensional
+* Tem limites inferior (0) e superior (1)
+
+Para saber mais: http://en.wikipedia.org/wiki/Effect_size
+
+O tamanho do efeito é a magnitude da diferença entre condições ou o grau de relacionamento entre variáveis que não depende do tamanho da amostra.
+
+## Tamanho do efeito não-padronizado
+
+E.g., no teste _t_ o tamanho de efeito não-padronizado é o valor da diferença entre as médias, i.e.,
+
+$$d = |\bar{x}_A - \bar{x}_B|$$
+
+## Tamanho do efeito padronizado
+
+E.g., no teste _t_ independente homocedástico o tamanho de efeito padronizado é o valor da diferença
+entre as médias dividido pela média dos desvios-padrão, i.e., como originalmente proposta por Cohen:
+
+$$d={ {|\bar{x}_A - \bar{x}_B|}\over{\text{média dos desvios-padrão}} }$$
+
+> Cohen, 1988, p. 20
+
+ou, como é calculada mais precisamente:
+
+$$s_{combinado} = \sqrt{\dfrac{(n_A-1)s^2_A+(n_B-1)s^2_B}{n_A+n_B-2}}$$
+$$d = {\dfrac{\bar{x}_A-\bar{x}_B}{s_{combinado}}}$$
+
+```{r fig.align="left", echo=FALSE, out.width='6%'}
+knitr::include_graphics("image/coruja.png")
+```
+
+<table style="border:1; background-color:#CAE0AB"><tr><td>
+
+Esta medida é afetada pelas médias e variâncias. Caso eu duplique, o que acontece com a média e o desvio-padrão?
+
+R como laboratório:
+
+```{r}
+source("demo_ms_com_n.R")
+```
+
+</td></tr></table>
+
+A tabela para o $d$ de Cohen serve também para o $g$ de Hedges:
+
+```{r echo=FALSE}
+knitr::include_graphics("./image/tabela_sawilowsky.png")
+```
+
+> Sawilowsky, 2009 <br>
+Documentação da função <code>effectsize::interpret_d</code>
+
+## Tamanho do efeito generalizado
+
+O tamanho do efeito pode ser expresso entre 0 e 1 por meio do eta ao quadrado.
+
+E.g., para o teste _t_ independente ou relacionado, o tamanho do efeito é:
+
+$$\eta^2={{t^2}\over{t^2+gl}}={{F}\over{F+gl}}$$
+
+em que $gl$ é o número de graus de liberdade.
+
+As seguintes estatísticas não são de tamanho de efeito, ao contrário do que afirmam em alguns textos:
+
+* Intervalo de confiança 
+* Estatística de teste (e.g., $z$, $t$, $F$, $\chi^2$)
+* valor _p_
+* Ômega
+* $R^2$ ajustado
+
+## $d$ de Cohen para o teste _t_ de Welch
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Satoshi_table.png")
+```
+
+> Aoki, 2020
+
+Os autores criaram o pacote R <code>es.dif</code>. Implementamos [`demo_verifica_tamanho_efeito.R`](demo_verifica_tamanho_efeito.R){target="_blank"}. Este código duplica a amostra e recalcula a medida candidata a tamanho de efeito, que não pode se alterar. Calcula-se o $d$ de Cohen de acordo com este pacote, pois faz as devidas correções para a estimativa do $d$. Por exemplo (dados hipotéticos) comparando a estatura de homens e mulheres:
+
+```{r echo=FALSE}
+source("demo_verifica_tamanho_efeito.R")
+```
+
+Com este teste simples, as supostas estimativas de tamanho de efeito têm problemas. 
+
+Os valores de $R^2$ e inclinação da reta de regressão vindos de <code>lm</code> foram invariantes. Isto ocorre porque
+
+$$R^2 = \dfrac{F}{F+df}$$
+
+quando o número de $df$ é obtido a partir do teste _t_ de Student ($F=t^2$) supondo homocedasticidade. Ocorre que, nesta condição, os valores de $F$ acompanham os graus de liberdade mantendo o valor de $R^2$. Observe:
+
+* Amostra original:
+  * $F=$ `r as.numeric(o.fit0$statistic)^2`
+  * $df=$ `r as.numeric(o.fit0$parameter)`
+  * $R^2=$ `r (as.numeric(o.fit0$statistic)^2)/((as.numeric(o.fit0$statistic)^2)+as.numeric(o.fit0$parameter))`
+
+* Amostra duplicada:
+  * $F=$ `r as.numeric(fit0$statistic)^2`
+  * $df=$ `r as.numeric(fit0$parameter)`
+  * $R^2=$ `r (as.numeric(fit0$statistic)^2)/((as.numeric(fit0$statistic)^2)+as.numeric(fit0$parameter))`
+
+A inclinação da reta ($\beta_1$) é dada por 
+
+$$\beta_1={r {\dfrac{sd(y)}{sd(x)}}}$$
+
+onde $r=\sqrt{R^2}$ (portanto, constante). As variâncias mudam mas, com a duplicação das duas amostras o quociente $sd(estatura)/sd(sexo)$ se mantém. Confira:
+
+* Amostra original:
+  * $var(\text{VI})=var(\text{sexo})=$ `r o.var.sex`
+  * $sd(\text{sexo})=$ `r o.var.sex^0.5`
+  * $var(\text{VD})=var(\text{estatura})=$ `r o.var.estatura`
+  * $sd(\text{estatura})=$ `r o.var.estatura^0.5`
+  * $sd(\text{sexo})/sd(\text{estatura})=$ `r (o.var.sex^0.5)` $/$ `r (o.var.estatura^0.5)` $=$ `r (o.var.sex^0.5)/(o.var.estatura^0.5)`
+
+* Amostra duplicada:
+  * $var(\text{VI})=var(\text{sexo})=$ `r var.sex`
+  * $sd(\text{sexo})=$ `r var.sex^0.5`
+  * $var(\text{VD})=var(\text{estatura})=$ `r var.estatura`
+  * $sd(\text{estatura})=$ `r var.estatura^0.5`
+  * $sd(\text{sexo})/sd(\text{estatura})=$ `r (var.sex^0.5)` $/$ `r (var.estatura^0.5)` $=$ `r (var.sex^0.5)/(var.estatura^0.5)`
+
+Porém, estas duas estimativas não são boas candidatas:
+
+* $R^2$ vindo de <code>lm</code> padece de não considerar a heterocedasticidade,
+* $\beta_1$, embora invariante, sofre de não considerar a heterocedasticidade porque é diretamente proporcional a $r$ (que não a considera), mas também porque não tem outras propriedades: não é restrita ao intervalo [0,1] e não é adimensional (neste exemplo $cm/sexo(\text{unidade arbitrária})$).
+
+Os valores de $d$ de Cohen e $g$ de Hedges obtidos por <code>psych::cohen.d</code> foram afetadas, mas são fórmulas que dependem da variância das estaturas que são alteradas quando a amostra é duplicada. Ainda outra complicação, o valor de $g$ de Hedges coincide com a fórmula de $d$ de Cohen que calculamos manualmente de acordo com a fórmula acima. O valor do $d$ de Cohen implementada em <code>es.dif::es.d</code> também se modifica, sugerindo que a correção proposta por Aoki (2020) não é suficiente.
+
+Há confusão entre a nomenclatura de $d$ de Cohen e $g$ de Hedges na literatura (Lakens, 2013).
+
+Quando consideramos heterocedasticidade (_t_ ou ANOVA de Welch), os graus de liberdade das estatísticas _t_ e do denominador da $F$ tornam-se fracionários. Com isto, outras estimativas também não são candidatas: $\eta^2$ e $\omega^2$ usam $df$ do denominador da estatística $F$. Além disso, $\omega^2$ é uma variante de $R^2$ ajustado: as duas dependem de $n$ e são estatísticas para seleção de modelo com valores aproximadamente iguais.
+
+As demais estimativas são estatísticas de teste (_t_, $F$, _p_, IC) que também não são candidatas a tamanho de efeito.
+
+A conclusão, portanto, é que as estatísticas robustas à heterocedasticidade, pelo menos com estas estimativas de tamanho de efeito, não podem ser usadas diretamente em metanálise, a não ser que correções sejam encontradas.
+
+Segundo Ellis (2010):
+
+"Uma vez que tenhamos calculado o tamanho de efeito, precisamos estar em condições de dizer o que ele significa.
+
+Uma medida de tamanho de efeito de diferença entre grupos pode ser convertida em correlação.
+
+Diferentes áreas do conhecimento têm diferentes tamanhos de efeito.
+
+Se a área é nova, isso é problemático...então examinar a literatura de área conexa.
+
+Um tamanho de efeito pequeno não implica necessariamente que o efeito do tratamento seja similarmente pequeno."
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Ellis_tamefeito.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Ellis_tamefeito2.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Complemento_OR.png")
+```
+
+Apresentamos uma sequência de três trabalhos que percorreram exaustivamente medidas de tamanho de efeito:
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Seq_paper_1.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Seq_paper_1b.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Seq_paper_2.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Seq_paper_2b.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Seq_paper_3.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Seq_paper_3b.png")
+```
+
+Estas medidas têm sido usadas em periódicos de psicologia?
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito_2.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito_3.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito_4.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito_5.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito_6.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito_7.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito_8.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Freq_tamefeito_9.png")
+```
+
+Há quem insista em utilizar $\omega$ como medida de tamanho de efeito:
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Lakens.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Lakens_2.png")
+```
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Lakens_3.png")
+```
+
+## Combinação de tamanhos de efeito: metanálise
+
+### Replicação
+
+Segundo Dancey & Reidy (2019):
+
+"A replicação é uma das pedras angulares da ciência. 
+
+Se você observa um fenômeno uma vez, então pode ter sido por acaso; se o observa duas, três ou mais vezes, pode estar começando a aprender algo sobre o fenômeno estudado.
+
+Se o seu estudo foi o primeiro neste assunto, é sensato que você trate os resultados com certo grau de cautela."
+
+Segundo Ellis (2010):
+
+O tamanho do efeito estimado é uma superestimativa do tamanho do efeito populacional.
+
+"Estudos com resultados positivos são mais propensos a serem submetidos para publicação: estudos com resultados estatisticamente significantes são 8 vezes mais propensos a serem submetidos.
+
+Uma vez submetidos, tais estudos são mais propensos a serem publicados; isso ocorre porque os editores frequentemente usam a significância estatística com uma medida de controle de qualidade para selecionar estudos para publicação e, como indicado anteriormente, uma falta de resultado significativo não implica a ausência de um efeito de tratamento.
+
+Esse viés de publicação significa que aqueles estudos que têm os efeitos mais fortes são mais propensos a serem publicados, e, consequentemente, qualquer metanálise desses estudos tende a superestimar o efeito de tratamento da população.
+
+Esse não é um problema pequeno, pois a metodologia rigorosa de metanálise pode dar credenciais científicas a conclusões errôneas, e esse é um sério abuso da metanálise.
+
+Estudos com números maiores de participantes são mais propensos a ter tamanhos de efeito que são mais próximos do tamanho de efeito populacional.
+
+O valor da metanálise que usa pequenas quantidades de estudos está mais em focalizar a pesquisa futura do quem obter conclusões firmes"
+
+Textos sobre metanálise em R:
+
+* Balduzzi S, Rücker G, Schwarzer G (2019) How to perform a meta-analysis with R: a practical tutorial. _Evid Based Ment Health_ 22:153-160.
+* Cheung MWL (2015) _Meta-Analysis: a structural equation modeling approach_. NJ: Wiley. 
+* Cheung MWL (2015) metaSEM: an R pack age for meta-analysis using structural equation modeling. _Frontiers in Psychology_ 5:1-7. doi: 10.3389/fpsyg.2014.01521
+* Hanji MB (2016) _Meta-Analysis in Psychiatry Research: Fundamental and Advanced Methods_. 1st ed. Apple Academic Press. 
+* Harrer M, Cuijpers P, Furukawa TA, Ebert DD (2019) _Doing Meta-Analysis in R: A Hands-on Guide_. DOI: 10.5281/zenodo.2551803, https://bookdown.org/MathiasHarrer/Doing_Meta_Analysis_in_R/
+
+## O problema da estimação do poder retrospectivo
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/Gerard.png")
+```
+
+> Gerard PD et al., 1998
+
+Implementamos [`demo_poder_retrospectivo.R`](demo_poder_retrospectivo.R){target="_blank"} que traz a estimativa por intervalo de confiança do poder retrospectivo (_a posteriori_):
+
+```{r}
+source("demo_poder_retrospectivo.R")
+```
+
+```{r echo=FALSE}
+cat(readLines("demo_poder_retrospectivo.R"), sep = "\n")
+```
+
+Observe que o intervalo de confiança encontrado praticamente varia de 0 a 1 e, portanto, é inútil para a tomada de decisão.
+
+```{r echo=FALSE, out.width='90%'}
+knitr::include_graphics("image/copovaziocheio.png")
+```
+
+<!--
+# Métodos alternativos à testagem de hipótese nula
+-->
+
+# Vídeo
+
+[It most published research wrong?](https://www.youtube.com/watch?v=42QuXLucH3Q&feature=youtu.be)
+
+# Referências
+
+* Agresti A, Finlay B (2012) _Métodos estatísticos para as Ciências Sociais_. Porto Alegre: PENSO.
+* Aoki S (2020) Effect sizes of the differences between means without assuming the variance equality and between a mean and a constant. _Heliyon_ 6(1): e03306.
+* Borenstein M, Rothstein H, Cohen J (2008) IBM SPSS Sample Power 3. IL: SPSS/IBM.
+* Coelho JP et al. (2008) _Inferência Estatística: com utilização do SPSS e G*Power_. Lisboa: Sílabo.
+* Cohen J (1988) _Statistical Power Analysis for the Behavioral Sciences_. 2nd ed. LEA.
+* Cohen J (1990) Things I have learned (so far). _American Psychologist_ 45(12):1304-12.
+* Dancey C, Reidy J (2019) _Estatística sem Matemática para Psicologia_. 7a. ed. Porto Alegre: PENSO
+* Ellis PD (2010) _The Essential Guide to Effect Sizes: statistical power, meta-analysis, and the interpretation of research results_, 1st ed. Cambridge University Press.
+* Lakens D (2013) Calculating and reporting effect sizes to facilitate cumulative science: a practical primer for t-tests and ANOVAs. _Frontiers in Psychology_ 4:863. doi: 10.3389/fpsyg.2013.00863.
+* Moraes JFD (2006) _A necessidade de adequação metodológica_. In Kipper DJ. Ética: teoria e prática. Porto Alegre: EDIPUCRS.
+* Noordzij M et al. (2010) Sample size calculations: basic principles and common pitfalls. _Nephrology Dialysis Transplantation_ 25: 1388–1393.
+* Perugini M et al. (2018) A Practical Primer To Power Analysis for Simple Experimental Designs. _International Review of Social Psychology_ 31(1): 20, 1–23, DOI: https://doi.org/10.5334/irsp.181
+* Sawilowsky S (2009) New effect size rules of thumb. _Journal of Modern Applied Statistical Methods_ 8(2): 467-74.
+* van Belle G (2008) _Statistical rules of thumb_. 2nd ed. NJ: Wiley.
+* Vicente P, Reis E, Ferrão F (2001) _Sondagens: a amostragem como fator decisivo de qualidade_. 2a ed. Lisboa: Sílabo.

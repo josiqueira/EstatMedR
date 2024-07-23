@@ -1,0 +1,123 @@
+---
+title: "Questões de Significância"
+author: |
+  | Paulo S. P Silveira (silveira@usp.br)
+  | José O. Siqueira (siqueira@usp.br)
+output:
+  html_document:
+    df_print: tibble
+    theme: cerulean
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+---
+<!-- versao -->
+<div align=right>
+<font style="color:#26a169; font-size:80%">v20201029.1207</font>
+</div>
+<!-- https://bookdown.org/yihui/rmarkdown/html-document.html#data_frame_printing -->
+<!-- theme: https://bootswatch.com/3/ -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      fig.width=6, fig.height=5,
+                      fig.align = "center",
+                      comment = NA)
+```
+
+
+```{css, echo=FALSE}
+.bgcodigo {
+background-color: #EEEEEE;
+}
+.bgsaida {
+background-color: #ecf7db;
+}
+```
+
+# Objetivos
+
+# Sobre estatística inferencial
+
+# Planejamento de estudo 
+
+## Análise de poder
+
+### _Softwares_ para análise de poder
+
+## Análise de precisão
+
+## Valor _p_
+
+## Valor _p_ vs Intervalo de confiança
+
+## Poder
+
+### - importância do poder se nenhum efeito é encontrado
+
+### - fatores que influenciam o poder
+
+### - estratégias para a análise de poder
+
+## Tamanho de efeito
+
+### - tamanho de efeito esperado
+
+## Tamanho da amostra
+
+## Questões éticas
+
+# Estimação do tamanho de efeito
+
+## Tamanho do efeito não-padronizado
+
+## Tamanho do efeito padronizado
+
+## Tamanho do efeito generalizado
+
+# _d_ de Cohen para o teste _t_ de Welch
+
+# Combinação de tamanhos de efeito metanálise
+
+## Replicação
+
+# O problema da estimação do poder retrospectivo
+
+# Vídeos
+
+# Referências
+
+Cohen J (1990) Things I have learned (so far). _American Psychologist_ 45(12):1304-12.
+
+Borenstein M, Rothstein H, Cohen J (2008) IBM SPSS Sample Power 3. IL: SPSS/IBM.
+
+Cohen J (1988) _Statistical Power Analysis for the Behavioral Sciences_. 2nd ed. LEA.
+
+Agresti A, Finlay B (2012) Métodos estatísticos para as Ciências Sociais. Porto Alegre: PENSO, p. 171.
+
+Noordzij et al. (2010) Sample size calculations: basic principles and common pitfalls. _Nephrology Dialysis Transplantation_ 25: 1388–1393.
+
+Dancey C, Reidy J (2019) _Estatística sem Matemática para Psicologia_. 7a. ed. Porto Alegre: PENSO
+
+Ellis PD (2010) _The Essential Guide to Effect Sizes: statistical power, meta-analysis, and the interpretation of research results_, 1st. ed. Cambridge University Press.
+
+Coelho JP et al. (2008) _Inferência Estatística: com utilização do SPSS e G*Power_. Lisboa: Sílabo.
+
+Perugini M et al. (2018) A Practical Primer To Power Analysis for Simple Experimental Designs. _International Review of Social Psychology_ 31(1): 20, 1–23, DOI: https://doi.org/10.5334/irsp.181
+
+Moraes JFD (2006) _A necessidade de adequação metodológica_. In Kipper DJ. Ética: teoria e prática. Porto Alegre: EDIPUCRS.
+
+Vicente P, Reis E, Ferrão F (2001) _Sondagens: a amostragem como fator decisivo de
+qualidade_. 2a ed. Lisboa: Sílabo.
+
+van Belle G (2008) _Statistical rules of thumb_. 2a ed. NJ: Wiley, p. 20
+
+Sawilowsky, S (2009) New effect size rules of thumb. _Journal of Modern Applied Statistical Methods_ 8(2): 467-74.
+
+Aoki S. (2020) Effect sizes of the differences between means without assuming the variance equality
+and between a mean and a constant. _Heliyon_ 6(1): e03306.
