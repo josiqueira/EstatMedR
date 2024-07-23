@@ -1,0 +1,2073 @@
+---
+title: "Teste Não-Paramétrico"
+author: | 
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+subtitle: ""
+date: "`r format(Sys.time(), '%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    css: style.css
+    font_adjustment: 1 
+    df_print: tibble
+    footer: "TesteNaoParametrico.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  slidy_presentation:
+    css: style.css
+    font_adjustment: -1
+    footer: "TesteNaoParametrico.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+---
+
+```{r set-options, echo=FALSE, cache=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+}
+.pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+}
+.bgobs {
+  background-color: #a0d8d8;
+}
+.bgcodigo {
+  background-color: #eeeeee;
+}
+.bgsaida {
+  background-color: #ecf7db;
+}
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+# Linux
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:","Usuarios","Jose","scilab","bin","Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r echo=TRUE, eval=FALSE}
+options(warn=-1)
+suppressMessages(library(eiras, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(coin, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(emmeans, warn.conflicts=FALSE))
+suppressMessages(library(exactRankTests, warn.conflicts=FALSE))
+suppressMessages(library(FSA, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(gplots, warn.conflicts=FALSE))
+suppressMessages(library(jmv, warn.conflicts=FALSE))
+suppressMessages(library(lattice, warn.conflicts=FALSE))
+suppressMessages(library(lawstat, warn.conflicts=FALSE))
+suppressMessages(library(lmboot, warn.conflicts=FALSE))
+suppressMessages(library(lmerTest, warn.conflicts=FALSE))
+suppressMessages(library(multcomp, warn.conflicts=FALSE))
+suppressMessages(library(PMCMRplus, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(rcompanion, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(rstatix, warn.conflicts=FALSE))
+suppressMessages(library(stats, warn.conflicts=FALSE))
+suppressMessages(library(ggstatsplot, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+* scripts
+
+    * [demo_Confronto_MWW.R](demo_Confronto_MWW.R)
+    * [demo_Confronto_t.R](demo_Confronto_t.R)
+    * [demo_Confronto_t2.R](demo_Confronto_t2.R)
+    * [demo_ConfrontoAmostra_desempenho.R](demo_ConfrontoAmostra_desempenho.R)
+    * [demo_ConfrontoAmostra.R](demo_ConfrontoAmostra.R)
+    * [demo_ConfrontoAmostras.R](demo_ConfrontoAmostras.R)
+    * [demo_ConfrontoPop.R](demo_ConfrontoPop.R)
+    * [demo_ConfrontoTCL.R](demo_ConfrontoTCL.R)
+    * [demo_HistogramLies.R](demo_HistogramLies.R)
+    * [demo_KW_ANOVA.R](demo_KW_ANOVA.R)
+    * [demo_KW_posthoc.R](demo_KW_posthoc.R)
+    * [demo_KW.R](demo_KW.R)
+    * [demo_MWW_2.R](demo_MWW_2.R)
+    * [demo_MWW_AB.R](demo_MWW_AB.R)
+    * [demo_MWW_ABt.R](demo_MWW_ABt.R)
+    * [demo_MWW_pm.R](demo_MWW_pm.R)
+    * [demo_MWW_pm2.R](demo_MWW_pm2.R)
+    * [demo_MWW_pm3.R](demo_MWW_pm3.R)
+    * [demo_MWW_t.R](demo_MWW_t.R)
+    * [demo_MWW_tboot.R](demo_MWW_tboot.R)
+    * [demo_MWW_tStudent.R](demo_MWW_tStudent.R)
+    * [demo_MWW.R](demo_MWW.R)
+    * [demo_PseudoMediana.R](demo_PseudoMediana.R)
+    * [demo_Q_ANOVA.R](demo_Q_ANOVA.R)
+    * [demo_Q.R](demo_Q.R)
+    * [demo_Wilcoxon_t.R](demo_Wilcoxon_t.R)
+    * [demo_Wilcoxon_tboot.R](demo_Wilcoxon_tboot.R)
+    * [demo_Wilcoxon.R](demo_Wilcoxon.R)
+    * [eiras_plotIC.R](eiras_plotIC.R)
+    * [eiras.friendlycolor.R](eiras.friendlycolor.R)
+    * [eiras.pseudomediana.R](eiras.pseudomediana.R)
+    * [eiras.shade.polygon.R](eiras.shade.polygon.R)
+    * [eiras.shape.test.R](eiras.shape.test.R)
+
+* files
+
+    * [Enxaqueca.xlsx](Enxaqueca.xlsx)
+    * [Simpatia.xlsx](Simpatia.xlsx)
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+<big><big><b>IMPORTANTE</b></big></big>
+
+Os pacotes <code>eirasdata</code> e <code>eiras</code>, de nossa autoria, não foram colocados no _CRAN_. Estão disponíveis no repositório _Harvard Dataverse_ e devem ser instalados nesta ordem:
+
+* [`eirasdata`](https://doi.org/10.7910/DVN/DLQTPH){target="_blank"} (do qual <code>eiras</code> é dependente para ser instalado)
+* [`eiras`](https://doi.org/10.7910/DVN/TBBAVU){target="_blank"}
+
+Faça o _download_ e instale-os se quiser replicar os exemplos desta aula.
+
+</td></tr></table>
+</td></tr></table>
+
+```{r fig.align="center", out.width = '30%', echo=FALSE}
+knitr::include_graphics("./image/zcartoon.png")
+```
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+
+# O que é um teste não-paramétrico?
+
+É uma versão de um teste paramétrico com suposições mais flexíveis sobre a variável de desfecho (VD). 
+
+```{r out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/fog.jpeg")
+```
+
+<div align=right><small><small>
+modificado de https://rebelwalls.com/
+</small></small></div>
+
+<table><tr><td>
+<div class='left' style='float:left;width:50%'>
+
+## Objetivos:
+
+* Discorrer sobre os testes não-paramétricos, dando exemplos sobre vantagens e desvantagens em relação aos seus correspondentes paramétricos.
+* Reconhecer e indicar situações para a aplicação dos principais testes não-paramétricos.
+* Implementar os testes em R.
+
+</div>
+<div class='right' style='float:right;width:50%'>
+
+## Implementação dos testes:
+
+* correspondentes aos testes _t_:
+    * _U_ de Mann-Whitney: `wilcox.test`
+    * _B_ de Brunner-Munzel: `brunnermunzel::brunnermunzel.permutation.test`
+    * _W_ de Wilcoxon: `wilcox.test`, `exactRankTests::wilcox.exact`
+* correspondentes aos testes ANOVA unifatorial:
+    * _H_ de Kruskal-Wallis: `kruskal.test`, `coin::kruskal_test`, `PMCMRplus::kwAllPairsDunnTest`, `rcompanion::groupwiseMedian`, `ggstatsplot::ggbetweenstats`
+    * _Q_ de Friedman: `PMCMRplus::friedmanTest`, `PMCMRplus::frdManyOneExactTest`, `PMCMRplus::frdAllPairsExactTest`
+    
+</div>
+</td></tr></table>
+
+# Sobre população e amostras
+
+```{r out.width = '50%', echo=FALSE}
+knitr::include_graphics("./image/pop_amostra.png")
+```
+
+## População
+
+Vamos, aqui, supor duas subpopulações (normocolesterolêmicos e hipercolesterolêmicos) e que, populacionalmente, sejam as seguintes as distribuições de colesterol total. A análise integral (impossível na prática) das duas subpopulações hipotéticas mostra o seguinte:
+
+```{r echo=FALSE, out.width ='80%'}
+source("demo_ConfrontoPop.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_ConfrontoPop.R`](demo_ConfrontoPop.R){target="_blank"}
+</small></small></div>
+
+Os resultados indicam que a variável de interesse nas duas subpopulações:
+
+* Não têm distribuição simétrica. 
+* Não têm distribuição normal. 
+* Suas variâncias diferem entre si (heterocedásticas).
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+
+A função <code>shapiro.test</code> do r-base não foi feita para populações inteiras e admite, no máximo, 5000 indivíduos. Por isso, precisamos fazer uma amostra deste tamanho e aparece<br>
+<code>testing</code> <code>with</code> <code> n = 5000</code><br>
+na saída do teste; no entanto, aqui assumimos que é uma amostra suficientemente grande para refletir bastante bem a distribuição populacional.
+
+</td></tr></table>
+</td></tr></table>
+
+## Não usamos histogramas
+
+Histogramas são habitualmente empregados para avaliar o formato da distribuição de uma variável, mas o gráfico apresentado acima mostra _density plots_. Esta escolha tem motivo.
+
+Um exemplo (Behrens and Yu, 2003) fornece a seguinte série numérica:
+
+$$x = \{1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 9, 9, 10,10,11,11\}$$
+
+Qual dos seguintes histogramas corresponde à distribuição de $x$?
+
+```{r echo=FALSE, out.width ='80%'}
+source("demo_HistogramLies.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_HistogramLies.R`](demo_HistogramLies.R){target="_blank"}
+</small></small></div>
+
+Interessantemente, todos os histogramas foram obtidos com estes mesmos valores de $x$, pois:
+
+```{r fig.align="center", out.width = '80%', echo=FALSE}
+knitr::include_graphics("./image/paperHistogram.png")
+```
+
+<div align=right><small><small>
+https://doi.org/10.20982/tqmp.18.1.p091
+</small></small></div>
+
+## Amostras
+
+Não temos acesso à população, mas podemos simular, como se tivéssemos, para verificar quando os testes estatísticos são capazes de fornecer a resposta correta (**neste exemplo, detectar que há diferença entre o colesterol total dos normo e hipercolesterolêmicos**) a partir de amostras. Destas duas subpopulações tiramos amostras: menores (representadas à esquerda, $n_1=6$ e $n_2=8$) ou maiores (representadas à direita, $n_1=30$ e $n_2=40$) das duas subpopulações:
+
+```{r out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/demoTCL.png")
+```
+
+<div align=right><small><small>
+imagens geradas com [`demo_ConfrontoTCL.R`](demo_ConfrontoTCL.R){target="_blank"}
+</small></small></div>
+
+Observe que para as amostras menores a variedade de amostras possíveis é maior e, assim, muitas delas podem não ser adequadas. No entanto, se pudéssemos retirar muitas amostras (neste exemplo, 5000) a distribuição das médias amostrais aproxima-se de uma distribuição normal, com desvio padrão inversamente proporcional ao tamanho da amostra - é o efeito do teorema central do limite, aproveitado pelo _bootstrapping_.
+
+Na prática só teríamos uma amostra de cada subpopulação, com as quais esperamos ter informação suficiente para nos permitir inferência. Veremos a seguir que nem tudo será perfeito.
+
+Obtendo duas amostras, pretende-se testar se o nível de colesterol total dos dois grupos (subpopulações) difere. Hipoteticamente, poderíamos ter diversos pares de amostras (uma obtida de cada grupo) e fazer diversos estudos. Simulando esta situação, mesmo com amostras pequenas, ainda que as amostras tenham muita variabilidade, em média as amostras reproduzem o formato geral da distribuição populacional:
+
+```{r echo=FALSE, out.width ='70%'}
+source("demo_ConfrontoAmostras.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_ConfrontoAmostras.R`](demo_ConfrontoAmostras.R){target="_blank"}
+</small></small></div>
+
+Na prática, porém, apenas uma amostra é obtida para esta comparação entre participantes. Por exemplo, duas amostras pequenas podem ser as seguintes:
+
+```{r echo=FALSE, out.width ='70%'}
+source("demo_ConfrontoAmostra.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_ConfrontoAmostra.R`](demo_ConfrontoAmostra.R){target="_blank"}
+</small></small></div>
+
+Os resultados indicam que:
+
+* A hipótese nula de simetria não é rejeitada para ambas as amostras. 
+* No teste de normalidade a primeira amostra rejeita e a segunda não rejeita a hipótese nula de distribuição normal. 
+* A hipótese nula de homocedasticidade não é rejeitada.
+
+## Testes
+
+Assumimos, portanto, que temos duas condições independentes e, a partir das amostras, concluímos que a variável de interesse não tem distribuição normal em pelo menos uma destas condições. As hipóteses nulas de simetria e homocedasticidade não foram rejeitadas. Além disto, as amostras são de tamanho pequeno. 
+
+Neste tipo de situação espera-se o desempenho superior de um teste não paramétrico (no caso de duas amostras independentes, usa-se o teste _U_ de Mann-Whitney), tido como uma opção robusta e que prescinde das suposições exigidas pelo seu correspondente paramétrico (no caso, um teste _t_).
+
+### teste não paramétrico
+
+O teste _U_ de Mann-Whitney mostra:
+
+```{r echo=FALSE, out.width ='50%'}
+source("demo_Confronto_MWW.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_Confronto_MWW.R`](demo_Confronto_MWW.R){target="_blank"}
+</small></small></div>
+
+Rejeitando a hipótese nula e indicando diferença da média de colesterol populacional dos dois grupos. Aparentemente, então, tudo está bem e reforçamos a noção de que o teste não paramétrico correspondente ao teste $t$ foi capaz de indicar o que sabemos ser a resposta correta, pois simulamos as subpopulações.
+
+### _t_ de Student
+
+O teste _t_ de Student (que supõe normalidade da variável na população e, portanto, não é o mais indicado aqui) mostra:
+
+```{r echo=FALSE, out.width ='50%'}
+source("demo_Confronto_t.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_Confronto_t.R`](demo_Confronto_t.R){target="_blank"}
+</small></small></div>
+
+O teste _t_ de Student não foi capaz de rejeitar a hipótese nula de igualdade entre as médias (i.e., não temos elementos para dizer que `r round(mean(amostra1,na.rm=TRUE),2)` mg/dl é estatisticamente diferente de `r round(mean(amostra2,na.rm=TRUE),2)` mg/dl).
+
+### t de Welch/Satterthwaite
+
+O teste _t_ de Welch/Satterthwaite mostra:
+
+```{r echo=FALSE, out.width ='50%'}
+source("demo_Confronto_t2.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_Confronto_t2.R`](demo_Confronto_t2.R){target="_blank"}
+</small></small></div>
+
+Apesar da alteração nos graus de liberdade e no valor _p_, não se altera a decisão: não se rejeita a igualdade da média de colestetol total dos dois grupos.
+
+### o que não foi explicado
+
+Este foi um exemplo cuidadosamente escolhido, no qual a resposta foi incorreta para o teste _t_ a correta para o teste _U_. Podemos simular e verificar o que acontece com os testes em diversas tentativas. Neste procedimento 15000 pares de reamostragens são feitas e, para cada uma das tentativas aplicamos os testes _U_ e ambos os testes _t_, obtendo:
+
+```{r echo=FALSE, out.width ='70%'}
+source("demo_ConfrontoAmostra_desempenho.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_ConfrontoAmostra_desempenho.R`](demo_ConfrontoAmostra_desempenho.R){target="_blank"}
+</small></small></div>
+
+Os testes são concordantes entre si (usando a medida de concordância _G_ de Holley e Guilford, 1964), mas a comparação da proporção de rejeições da hipótese nula de igualdade das amostras (utilizamos <code>DescTools::BinomDiffCI</code> que foi discutida anteriormente em testes de proporções) mostra que ambos os testes _t_, de Student e de Welch/Satterthwaite têm desempenho significantemente superior à do teste _U_ de Mann-Whitney. 
+
+<table style="border:0; background-color:#a0d8d8; 
+width: 100%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:25%; vertical-align:top'>
+
+<b>Falsa aparência?</b>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/falsidade.jpg")
+```
+
+<div align=right><small><small><small><small>
+http://athaydejr.blogspot.com/2011/03/falsa-aparencia-da-felicidade.html
+</small></small></small></small></div>
+</td>
+<td style='width:5%'>
+</td>
+<td style='width:70%'>
+<table style="border:0; background-color:#a0d8d8"><tr><td>
+
+O primeiro exemplo, com amostra única, teve que ser escolhido entre as `r sprintf("%d",c[1])` ocorrências de `r sprintf("%d",numamostras)` tentativas na quais a hipótese nula não foi (incorretamente) rejeitada pelo teste _t_ de Student mas foi (corretamente) rejeitada por _U_ de Mann-Whitney. Em todas as outras situações os dois testes concordaram (`r sprintf("%d",a[1]+d[1])` ocorrências, em que ambos rejeitaram ou não rejeitaram $H_0$) ou apenas o teste _t_ forneceu a rejeição corretamente (`r sprintf("%d",b[1])` ocorrências). 
+
+Considerando que a resposta correta (a população é simulada) é a rejeição da hipótese nula, frente a amostras pequenas e com distribuição populacional não normal, o teste _t_ de Student não parece ser o mais indicado. 
+
+Porém, **embora os dois testes concordem em geral, o teste não paramétrico _U_ de Mann-Whitney teve desempenho pior do que o teste _t_ de Student (a proporção de respostas corretas fornecidas teste _U_ foi menor do que pelo teste _t_ )**.
+
+**Em relação ao teste _t_ de Welch, o desempenho do teste _U_ foi ainda pior.**
+
+</td></tr></table>
+</td></tr></table>
+
+# O cálculo não paramétrico: posto (_rank_)
+
+Os testes paramétricos usam variáveis intervalares ou de razão (números) para comparar distribuições da variável dependente (VD) em duas ou mais condições (e.g., grupos, exposições, condições experimentais) e, assim, testar a hipótese nula de igualdade das médias.
+
+Os testes não-paramétricos, em geral, usam os postos (_ranks_) para chegar a uma decisão estatística.
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+
+**Como são atribuídos os postos?**
+
+Duas amostras hipotéticas, _A_ e _B_, têm os seguintes valores:
+
+```{r echo=TRUE}
+A <- c(65,32,56,85,78,23)
+B <- c(56,90,23,56,34)
+
+dt_AB <- data.frame(c(A,B))
+names(dt_AB) <- "valor"
+dt_AB$grupo <- c(rep("A",length(A)),rep("B",length(B)))
+print(dt_AB)
+```
+
+Coloca-se os valores em ordem, preservando a condição de origem  (_A_ ou _B_):
+
+```{r echo=TRUE}
+dt_AB <- dt_AB[order(dt_AB$valor),]
+dt_AB$ordem <- 1:nrow(dt_AB)
+print(dt_AB)
+```
+
+Atribui-se os postos (existe a função <code>rank</code> para isto), considerando-se os empates:
+
+```{r echo=TRUE}
+dt_AB$posto <- rank(dt_AB$valor)
+print(dt_AB)
+```
+
+Como os postos são utilizados, depende do teste. Neste exemplo, para um teste baseado em soma dos postos, podemos obter:
+
+```{r echo=TRUE}
+dt_AB <- dt_AB[order(dt_AB$grupo),]
+print(dt_AB)
+print(sum(dt_AB$posto[dt_AB$grupo=="A"]))
+print(sum(dt_AB$posto[dt_AB$grupo=="B"]))
+```
+
+A inferência dependerá, neste caso, da soma dos postos ligados a cada uma das condições.
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/caboguerra.png")
+```
+
+<div align=right><small><small>
+https://www.gratispng.com/png-v6vo2q/
+</small></small></div>
+</td></tr></table>
+</td></tr></table>
+
+<table><tr><td>
+<div class='left' style='float:left;width:55%'>
+
+$$~$$
+<big><big><b>Não são os postos que estão em comparação</b></big></big>
+
+Por causa do procedimento não-paramétrico empregar postos, é muito comum se afirmar que estes testes avaliam e decidem em relação à uma hipótese nula formulada sobre os postos. 
+
+Não é assim. Os postos (_ranks_) das VDs são um **artifício** estatístico para comparar distribuições da VD nas condições e assim testar a hipótese nula de igualdade das médias ou medianas.
+
+<div align="center"><big><big>
+**O posto é um impostor.**
+</big></big></div>
+
+As conclusões de um teste não paramétrico NÃO são sobre os postos, mas sobre a VD em sua forma original.
+
+A VD continua tendo sua natureza intervalar ou ordinal.
+
+</div>
+<div class='right' style='float:right;width:45%'>
+
+```{r out.width = '80%', echo=FALSE}
+knitr::include_graphics("./image/con_artist.jpg")
+```
+
+<div align=right><small><small><small><small>
+https://fineartamerica.com/featured/1910s-1920s-character-con-man-magician-vintage-images.html
+</small></small></small></small></div>
+</div>
+</td></tr></table>
+
+# Vantagens e desvantagens
+
+## vantagens
+
+* Por lidar com a posição dos valores (postos) em vez dos valores assumidos pelas variáveis, uma das vantagens de um teste não-paramétrico é lidar com variáveis ordinais (mas nem sempre).
+
+* Nos métodos que empregam modelos lineares gerais (GLM), quando alguma variável ordinal é empregada, sua informação de ordem é perdida, posto que este tipo de modelo a trata como nominal.
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+Os testes não paramétricos, ao contrário do que se diz por aí, **não são totalmente livres de suposições**. 
+
+Adiante discutiremos que às vezes podem ter até mais suposições ou suposições mais difíceis de serem atendidas do que aquelas dos testes paramétricos.
+</td></tr></table>
+</td></tr></table>
+
+## desvantagens
+
+* Se as suposições básicas de um teste paramétrico são satisfeitas, então os testes não-paramétricos são menos poderosos do que a técnica paramétrica correspondente (i.e., exigem uma amostra maior);
+* As hipóteses testadas por testes não-paramétricos tendem a ser menos específicas;
+* Quando utilizados com variáveis intervalares, causam alguma perda de informação porque estas variáveis são reduzidas a variáveis ordinais.
+* Por usarem postos, em vez do valor da observação, esses testes não aproveitam toda a informação disponível sobre a distribuição dos dados;
+* Se existem muitos valores empatados, as estatísticas serão superestimadas, exigindo correções.
+
+# Teste para duas condições independentes
+
+* não-paramétrico
+    * _U_ de Mann-Whitney
+    * _B_ de Brunner-Munzel
+* paramétrico
+    * _t_ de Student
+    * _t_ de Welch (Satterthwaite)
+
+<div align=center>
+<table><tr>
+<td style='width:20%; vertical-align:top; text-align: right; font-size:60%;'>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/HenryMann.png")
+```
+
+<div align=right><small>
+Henry Bertold Mann (1905 - 2000)<br>
+https://math.osu.edu/about-us/history/henry-berthold-mann
+</small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td style='width:80%; vertical-align:top; text-align: left; font-size:80%;'>
+
+Matemático, desenvolveu o teste U que recebe seu nome em conjunto com seu aluno de doutorado, Donald Ransom Whitney.
+
+O teste de soma de postos, inicialmente proposto por Wilcoxon em 1945, previa apenas amostras de igual tamanho; foi generalizado por Mann e Whitney para tamanhos arbitrários de amostra em 1947.
+
+</td>
+</tr></table>
+</div>
+
+<div align=center>
+<table><tr>
+<td style='width:80%; vertical-align:top; text-align: right; font-size:80%;'>
+
+Entrou para a Ohio State University em 1946, como professor assistente do Departamento de Matemática. Colaborou com Henry Mann para desenvolver o teste que levou seus nomes. Envolveu-se na criação de métodos de computação numérica, um predecessor do Instructional Research Computer Center. Teve papel importante em estabelecer estatística como um departmento separado da Matemática in 1973.
+
+<div align=right><small>
+Donald Ransom Whitney<br>
+http://www.worldcat.org/identities/lccn-n82-54822/<br>
+http://www.worthingtonmemory.org/cemeteries/walnut-grove-cemetery/whitney-donald
+</small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td style='width:20%; vertical-align:top; text-align: left; font-size:60%;'>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/DonaldWhitney.png")
+```
+
+Donald Ransom Whitney (1915-2007)<br>
+http://www.portalaction.com.br/tecnicas-nao-parametricas
+
+</td>
+</tr></table>
+</div>
+
+<div align=center>
+<table><tr>
+<td style='width:20%; vertical-align:top; text-align: right; font-size:60%;'>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/Brunner.png")
+```
+
+<div align=right><small>
+Edgar Brunner (1943- )<br>
+https://www.researchgate.net/profile/Edgar_Brunner
+</small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td style='width:80%; vertical-align:top; text-align: left; font-size:80%;'>
+Universitätsmedizin Göttingen · Department of Medical Statistics
+
+Matemático alemão, formado em 1969 pela Rheinisch-Westfälische Technische Hochschule, com doutorado em matemática pela mesma universidade em 1971 e habilitação em estatística médica em 1973. Foi professor universitário de 1976 a 2009 e diretor do Departamento de Estatística Médica do Centro de Tecnologia da Informação, Estatística e Epidemiologia do Centro Médico Universitário de Göttingen.
+
+<div align=right><small>
+Traduzido de https://peoplepill.com/people/edgar-brunner/tc/science/
+</small></div>
+
+</td>
+</tr></table>
+</div>
+
+<div align=center>
+<table><tr>
+<td style='width:80%; vertical-align:top; text-align: right; font-size:80%;'>
+Georg-August-Universität Göttingen.
+
+Obteve seu doutorado nesta universidade em 1996 com a tese _Multivariate nichtparametrische Verfahren für feste Faktoren in mehrfaktoriellen Versuchsanlagen_ (Métodos não paramétricos multivariados para fatores fixos em sistemas experimentais multifatoriais), orientado por Edgar Brunner, com quem também publicou _Nichtparametrische Datenanalyse: Unverbundene Stichproben (Statistik und ihre Anwendungen)_ (Análise de dados não paramétricos: amostras não pareadas (estatísticas e suas aplicações)), em 2002, do qual localizei apenas o original em alemão.
+
+Não conseguimos, até o momento, mais informações a seu respeito, nem se está ativo.
+
+<div align=right><small>
+Informação obtida de https://www.mathgenealogy.org/id.php?id=27718
+</small></div>
+
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td style='width:20%; vertical-align:top; text-align: left; font-size:60%;'>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/Munzel.png")
+```
+
+Ullrich Munzel ()
+<div align=right><small>
+https://www.researchgate.net/scientific-contributions/Ullrich-Munzel-7885469
+</small></div>
+</td>
+</tr></table>
+</div>
+
+## Testes _U_ e _B_
+
+Como o teste _U_ de Mann-Whitney é generalização de uma proposta original de Wilcoxon, existe uma confusão com os nomes destes testes na literatura. É encontrado como:
+
+* Teste U de Mann-Whitney
+* Wilcoxon Rank Sum Test
+* Teste da soma dos postos
+* abreviado como MWW ou WMW
+
+O teste _U_ testa a hipótese nula de igualdade das medianas populacionais da VD ordinal ou intervalar em duas condições independentes, portanto é o correspondente não-paramétrico do teste _t_ de Student. 
+
+O teste _B_ de Brunner-Munzel (2000) é conhecido também como Teste de Mann-Whitney-Wilcoxon generalizado. É o correspondente ao teste _t_ de Welch/Satterthwaite e, portanto, relaxa a suposição de homocedasticidade (Fagerland, 2012). 
+
+Supõe, para a VD nas duas condições independentes (Conover, 1999):
+
+* variável ordinal ou intervalar,
+* o mesmo formato da distribuição,
+* simetria e homocedasticidade,
+* independência das observações.
+
+Se houver simetria, é indiferente formular a hipótese nula como diferença de médias ou medianas, mas resultados diferentes serão esperados com distribuições assimétricas (Fagerland e Sandvik, 2009). Supondo que são testes de igualdade de medianas populacionais, deveríamos formular:
+
+$$\begin{align}
+H_0&: \text{mediana}_A = \text{mediana}_B\\
+H_1&: \text{mediana}_A \ne \text{mediana}_B\\
+\alpha&=0.05
+\end{align}$$
+
+## Exemplo 1 
+
+Avaliou-se o grau de simpatia de atendentes de _telemarketing_ que receberam ou não receberam treinamento (Marôco, 2014, cap. 7).
+
+As notas foram dadas com um item Likert:<br>
+$~$ 1=Nada simpático, 2=Pouco, 3=Medianamente, 4=Muito, 5=Totalmente simpático. 
+
+Temos, portanto, duas condições experimentais independentes (fator) avaliadas por um item Likert (VD ordinal). É, portanto, possível indicar um teste não-paramétrico como solução.
+
+Os testes de Mann-Whitney-Wilcoxon e de Brunner-Munzel foram implementados em [`demo_MWW.R`](demo_MWW.R){target="_blank"} para comparação. Os testes feitos aqui são
+
+* Mann-Whitney-Wilcoxon com a função <code>wilcox.test</code> (versão assintótica),
+* Brunner-Munzel com a função <code>lawstat::brunner.munzel.test</code>,
+* Mann-Whitney-Wilcoxon com a função <code>coin::wilcox_test</code> (versão exata).
+
+Obtém-se:
+
+```{r echo=FALSE}
+source("demo_MWW.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW.R`](demo_MWW.R){target="_blank"}
+</small></small></div>
+
+Com ambos os testes rejeita-se a hipótese nula de que as medianas populacionais são iguais para $\alpha=0.05$.
+
+Como se explica, se estamos comparando medianas dos dois grupos, que as medianas dos grupos neste exemplo sejam numericamente iguais, mas os testes encontrem diferença estatisticamente significante?
+
+### Intervalos de confiança
+
+Vamos utilizar [`demo_MWW_2.R`](demo_MWW_2.R){target="_blank"} para observar as distribuições das respostas:
+
+```{r echo=FALSE, fig.height=4}
+source("demo_MWW_2.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_2.R`](demo_MWW_2.R){target="_blank"}
+</small></small></div>
+
+Qual, então, foi a hipótese nula testada?
+
+"Contrary to common belief, the Mann-Whitney U test does not compare the medians between groups. This is only true under the assumption that the distribution has the same shape in both groups and differs only by its location."
+<div align=right><small>
+Schober & Vetter, 2020
+</small></div>
+
+Os testes _U_ e _B_, de alguma maneira, são afetados pelas diferenças nas distribuições.
+
+### Pseudomediana
+
+* Hollander et al., 2014, p. 56-63
+
+Esta é uma medida de tendência central (uma alternativa às mais tradicionais, média, mediana e moda) que serve para variáveis ordinais (como mediana e moda). Quando a distribuição é simétrica, esta medida coincide com as outras medidas. No entanto, quando a distribuição é assimétrica, ela é diferente da mediana. 
+
+A função <code>DescTools::HodgesLehmann</code> calcula a pseudomediana:
+
+```{r echo=FALSE, out.width ='70%'}
+source("demo_MWW_pm.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_pm.R`](demo_MWW_pm.R){target="_blank"}
+</small></small></div>
+
+"the HL [the Hodges-Lehmann] estimation method [provides a estimative of] location shift model."
+
+"the HL-estimator estimates the difference of median if the distributions of the two samples are symmetric about their respective medians."
+
+<div align=right><small><small>
+Rosenkranz, 2010. 
+</small></small></div>
+
+A pseudomediana é obtida pela mediana das médias (_Walsh averages_) de todas as possíveis combinações dos pares de valores amostrais, incluindo cada elemento consigo mesmo.
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+
+**Como é calculada a pseudomediana?**
+
+Implementamos em [`demo_PseudoMediana.R`](demo_PseudoMediana.R){target="_blank"}, um exemplo que utiliza apenas cinco valores.
+
+```{r echo=FALSE, class.output="bgcodigo"}
+cat(readLines("demo_PseudoMediana.R"), sep = '\n')
+```
+
+Observe os pares formados e a pseudomediana (mediana das médias dos pares):
+
+```{r echo=TRUE}
+source("demo_PseudoMediana.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_PseudoMediana.R`](demo_PseudoMediana.R){target="_blank"}
+</small></small></div>
+
+</td></tr></table>
+</td></tr></table>
+
+Como alternativa à função <code>DescTools::HodgesLehmann</code>, implementamos [`demo_MWW_pm2.R`](demo_MWW_pm2.R) para o exemplo das atendentes de _telemarketing_, computando-se:
+
+```{r echo=FALSE, out.width ='70%'}
+source("demo_MWW_pm2.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_pm2.R`](demo_MWW_pm2.R){target="_blank"}
+</small></small></div>
+
+Finalmente, também podemos ver como a pseudomediana seria obtida por _bootstrapping_, o que também fornece os intervalos de predição de 95%:
+
+```{r echo=FALSE, out.width ='70%'}
+source("demo_MWW_pm3.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_pm3.R`](demo_MWW_pm3.R){target="_blank"}
+</small></small></div>
+
+Os testes _U_ e _B_, portanto, são testes de _shift_, do qual a pseudomediana é uma medida. As hipóteses nulas, então, precisam ser reescritas:
+
+$$\begin{align}
+H_0&: \text{pseudomediana}_A = \text{pseudomediana}_B\\
+H_1&: \text{pseudomediana}_A \ne \text{pseudomediana}_B\\
+\alpha&=0.05
+\end{align}$$
+
+## Testes _t_
+
+### _t_ de Student
+
+Embora não seja o mais indicado, o teste _t_ de Student assume distribuição normal e homocedasticidade populacionais. Além disto não serve para variáveis ordinais. 
+
+Desconsiderando tais premissas, por exercício, vamos supor que o item Likert é uma variável intervalar (numérica) e, portanto, aplicamos o teste _t_.
+
+$$\begin{align}
+H_0&: \mu_A = \mu_B\\
+H_1&: \mu_A \ne \mu_B\\
+\alpha&=0.05
+\end{align}$$
+
+A implementação em [`demo_MWW_tStudent.R`](demo_MWW_tStudent.R){target="_blank"} obtém:
+
+```{r echo=FALSE, class.output="bgcodigo"}
+source("demo_MWW_tStudent.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_tStudent.R`](demo_MWW_tStudent.R){target="_blank"}
+</small></small></div>
+
+Observe que as hipóteses nulas de simetria foram rejeitadas para as duas condições (premissa para o teste _U_, mas não para o teste _B_), embora normalidade não tenha sido rejeitada (os testes nem sempre são consistentes entre si). Além disto, os dois grupos não podem ser considerados heterogêneos em variância pela avaliação com estas amostras (homocedasticidade é premissa para o teste _t_ de _Student_, mas não para o _t_ de Welch). 
+
+Apesar de violarmos parte de suas premissas, a conclusão é a mesma que conseguimos com os testes não-paramétricos: rejeita-se a hipótese nula de igualdade de escores dos grupos 'Sem Treino' e 'Com Treino'.
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+
+Este script utilizou a função <code>shape.test</code> que implementamos em [`eiras.shape.test.R`](eiras.shape.test.R){target="_blank"}, que faz uma descrição breve da anatomia das distribuições. Fornece medidas de tendência central, separatrizes (quartis), medidas de dispersão, simetria (_skewness_) e excesso de curtose (_kurtosis_) com intervalos de confiança, além de testar simetria (teste de Miao-Gel-Gastwirth) e normalidade (teste de Shapiro-Wilk) estatisticamente.
+
+* assimetria (_skewness_)*
+
+Esta é uma medida de assimetria:
+
+* negativa (cauda mais longa à esquerda),
+* simétrica (caudas iguais),
+* positiva (cauda mais longa à direita).
+
+* curtose (_kurtosis_)*
+
+O excesso de curtose é medida de quanto os valores estão concentrados. A distribuição normal é a referência, com excesso de curtose nulo. As distribuições podem ser:
+
+* platicúrticas (curtose negativa, dados menos concentrados ao redor da tendência central),
+* mesocúrticas (curtose nula),
+* leptocúrticas (curtose positiva, dados mais concentrados ao redor da tendência central).
+
+</td></tr></table>
+</td></tr></table>
+
+### _t_ de Welch / Satterthwaite
+
+Este teste _t_ faz as correções necessárias para heterocedasticidade, na medida do necessário. As premissas são verificadas novamente porque a função <code>shape.test</code>, de nossa autoria, é chamada nos dois _scripts_ (por completude).
+
+Com a implementação em [`demo_MWW_t.R`](demo_MWW_t.R){target="_blank"} obtemos:
+
+```{r echo=FALSE, class.output="bgcodigo"}
+source("demo_MWW_t.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_t.R`](demo_MWW_t.R){target="_blank"}
+</small></small></div>
+
+O valor _p_ mudou um pouco (observe, também, os graus de liberdade, que agora são fracionários), mas a conclusão é a mesma. Além das mesmas premissas avaliadas pelo teste _t_ de Student, este _script_ adiciona as médias marginais estimadas (<code>emmeans</code>), que trazem os intervalos de confiança corrigidos após a aplicação do modelo estatístico.
+
+A principal diferença em relação ao teste _t_ de _Student_ é que o teste _t_ de Welch (Satterthwaite) é robusto à heterocedasticidade (mas, neste exemplo, a homocedasticidade foi testada e não rejeitada).
+
+Em comparação com seus correspondentes não paramétricos, o teste _t_ tem hipótese nula mais clara: a inferência é sobre as médias populacionais da Simpatia, que é maior no grupo com treinamento. 
+
+### _t_ por _bootstrapping_
+
+Duas formas de executar o mesmo teste por _bootstrapping_ estão implementadas em [`demo_MWW_tboot.R`](demo_MWW_tboot.R){target="_blank"}:
+
+* um teste _t_ para duas condições independentes utilizando _bootstrapping_ pivotal.
+* uma implementação de ANOVA unifatorial independente (ANOVA, quando feito para apenas dois grupos, corresponde a um teste _t_). 
+
+Obtém-se:
+
+```{r echo=FALSE, class.output="bgcodigo"}
+source("demo_MWW_tboot.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_tboot.R`](demo_MWW_tboot.R){target="_blank"}
+</small></small></div>
+
+
+As conclusões são, novamente, as mesmas que conseguimos com os testes anteriores (rejeitando-se a igualdade de médias entre os grupos 'Sem Treino' e 'Com Treino'): 
+
+* o teste _t_ pivotal não fornece valor _p_ mas a decisão estatística é dada pelo intervalo de confiança 95%, acima e não contendo o valor zero (diferenças computadas com 'Com Treino' - 'Sem Treino').
+* ANOVA foi implementada com <code>lmboot::ANOVA.boot</code>, retornando valor _p_ que usamos, reversamente, para encontrar o valor $F$ observado com a função <code>qf</code> (nativa do R: dada a probabilidade e os graus de liberdade, retorna a estatística $F$ correspondente).
+
+
+# Teste para duas condições dependentes
+
+* não-paramétrico
+    * _W_ de Wilcoxon
+* paramétrico
+    * one-sample _t_
+
+<div align=center>
+<table style="max-width:70%;"><tr>
+<td valign=top width=50%>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/FrankWilcoxon.png")
+```
+
+<div align=right><small>
+Frank Wilcoxon (1892 - 1965)<br>
+</small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td>
+Tornou-se conhecido por ter desenvolvido dois testes muito utilizados: o Teste de Soma de Postos
+(_Wilcoxon Rank Sum Test_), que é equivalente ao teste _U_ de Mann-Whitney, e o Teste de Postos com
+Sinais (_Wilcoxon Signed Rank Test_).  
+<div align=right><small>
+Rosner (1995)
+</small></div>
+</td>
+</tr></table>
+</div>
+
+O nome deste teste poderá ser encontrado como:
+
+    * Teste de Wilcoxon
+    * Wilcoxon Signed Rank Test
+    * Teste de postos com sinais
+
+O teste _W_ de Wilcoxon testa a hipótese nula de igualdade das médias populacionais da VD **quantitativa** em duas condições dependentes. É, portanto, correspondente ao teste _t_ relacionado.
+
+Conover (1999) sumariza as suposições:
+
+* a distribuição das diferenças deve ser **simétrica**.
+* as diferenças devem ser independentes entre si.
+* todas as diferenças precisam ter a mesma média.
+* a medida das diferenças deve ser **pelo menos intervalar**.
+
+A VD **não pode ser**, consequentemente, ordinal (vide a tabela de Conover, 1999). 
+
+Sobre o formato da distribuição, a restrição é forte: este teste não deve ser usado se não estiver claro que a distribuição das diferenças entre os pares de medidas tem distribuição simétrica (Munzel, 1999).
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/Munzel1999.png")
+knitr::include_graphics("./image/Munzel1999intro.png")
+```
+
+## Exemplo 2
+
+Enfermeiros receberam um questionário que media o nível de simpatia com pacientes que sofrem de esclerose múltipla (EM). Para cada enfermeiro, um escore total INTERVALAR que varia entre 1 e 10 foi observado. Os enfermeiros então participaram de um grupo de discussão (uma hora), que incluía pacientes com EM. Mais tarde, um questionário parecido foi dado novamente a eles.
+
+Trata-se, portanto, de um delineamento intraparticipantes, pois os mesmos participantes estão sendo medidos nas condições "antes" e "depois". Nossa hipótese é de que haverá uma mudança significativa entre os escores entre os dois questionários aplicados, de modo que estes sejam maiores após a participação no grupo de discussão.
+
+$$\begin{align}
+H_0&: \mu_\text{Depois} - \mu_\text{Antes} = 0\\
+H_1&: \mu_\text{Depois} - \mu_\text{Antes} \ne 0\\
+\alpha&=0.05
+\end{align}$$
+
+Os dados estão em [`Simpatia.xlsx`](Simpatia.xlsx){target="_blank"}. O teste, que utiliza a diferença entre os escores obtidos de cada enfermeiro entre os dois momentos estudados, está implementado em [`demo_Wilcoxon.R`](demo_Wilcoxon.R){target="_blank"}:
+
+```{r echo=FALSE}
+source("demo_Wilcoxon.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_Wilcoxon.R`](demo_Wilcoxon.R){target="_blank"}
+</small></small></div>
+
+Este é o _density plot_ obtido com os valores amostrais:
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/densDifs_W.png")
+```
+
+Concluímos que a média das notas recebidas pelos enfermeiros após grupo de discussão diferem para $\alpha=0.05$; podemos dizer que aumentaram porque <code>Depois-Antes</code> é maior que zero.
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+
+Note que a restrição forte sobre simetria foi testada. Como a amostra é pequena, verificou-se, além da simetria, se a distribuição das diferenças passa por um teste de normalidade.
+
+O teste _W_ de Wilcoxon utiliza a mesma função <code>wilcox.test()</code> utilizada para o teste _U_, mas muda-se o parâmetro <code>paired=TRUE</code>. 
+</td></tr></table>
+</td></tr></table>
+
+## teste _t_ relacionado
+
+### teste _t_ relacionado, versão analítica
+
+Sendo a variável numérica, uma forma simples de se obter o teste _t_ para medidas repetidas é, meramente, fazer um teste _t_ com um único conjunto de dados: a diferença Depois-Antes observada em cada enfermeiro. Como o teste _W_ de Wilcoxon utiliza também variáveis intervalares, a hipótese nula pode ser escrita da mesma forma ou, como alguns preferem, para explicitar que o conjunto de dados é único, utilizar a diferença computada por $\mu_D = \mu_\text{Depois} - \mu_\text{Antes}$ para expressar:
+
+$$\begin{align}
+H_0&: \mu_D = 0\\
+H_1&: \mu_D \ne 0\\
+\alpha&=0.05
+\end{align}$$
+
+Implementamos [`demo_Wilcoxon_t.R`](demo_Wilcoxon_t.R){target="_blank"}.  Por completude, os testes de simetria e normalidade estão repetidos, como em vários outros, neste _script_. Obtém-se:
+
+```{r echo=FALSE}
+source("demo_Wilcoxon_t.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_Wilcoxon_t.R`](demo_Wilcoxon_t.R){target="_blank"}
+</small></small></div>
+
+A conclusão é a mesma que obtivemos com o teste _W_ de Wilcoxon: as médias são maiores depois da discussão em grupo.
+
+### teste _t_ relacionado por _bootstrapping_
+
+Utilizando-se _bootstrapping_ pivotal, o resultado é:
+
+```{r echo=FALSE}
+source("demo_Wilcoxon_tboot.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_Wilcoxon_tboot.R`](demo_Wilcoxon_tboot.R){target="_blank"}
+</small></small></div>
+
+A conclusão é a mesma que obtivemos com o teste _W_ de Wilcoxon: as médias são maiores depois da discussão em grupo. Esta decisão é tomada pelo intervalo de confiança 95%, que não inclui e está à direita do valor nulo.
+
+# Teste para mais três ou mais condições independentes
+
+* não-paramétrico
+    * _H_ de Kruskal-Wallis
+* paramétrico
+    * One-way ANOVA
+
+<div align=center>
+<table style="max-width:70%;"><tr>
+<td>
+
+Filho de Lillian Oppenheimer, pioneira e difusora do origami nos Estados Unidos. Irmão dos também matemáticos Joseph Kruskal e Martin Kruskal. Estudou matemática na Universidade Harvard, e obteve o doutorado em 1955 na Universidade Columbia. Foi mais tarde professor da Universidade de Chicago. De 1958 a 1961 foi editor do Annals of Mathematical Statistics. Em 1971 foi presidente do Institute of Mathematical Statistics, e em 1982 presidente da American Statistical Association. Em 1990 tornou-se professor emérito.
+
+<div align=right><small>
+https://pt.wikipedia.org/wiki/William_Kruskal
+</small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td valign=top width=50%>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/WilliamKruskal.png")
+```
+
+William Henry Kruskal (1919-2005)<br>
+https://arxiv.org/pdf/0710.5063.pdf
+</td>
+</tr></table>
+</div>
+
+<div align=center>
+<table style="max-width:70%;"><tr>
+<td valign=top width=50%>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/w-allen-wallis.jpg")
+```
+
+<div align=right><small>
+W. Allen Wallis (1912 - 1998)<br>
+https://www.wallis.rochester.edu/about/wallis.html
+</small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td>
+
+Estatístico americano. Wallis formou-se em psicologia pela Universidade de Minnesota em 1932. Ele então estudou economia em Minnesota e na Universidade de Chicago. Posteriormente, ele ocupou cargos nos departamentos de economia em nas Universidades de Columbia, Yale e Stanford. De 1946 a 1962, ele foi Professor de Estatística na Business School of Chicago University. Seu artigo com Kruskal sobre o teste de Kruskal-Wallis foi publicado em 1952. De 1951 a 1959, ele foi Editor do Journal of the American Statistical Association. Em 1962 mudou-se para a Universidade de Rochester (1975–82). Após a aposentadoria da vida universitária, foi nomeado subsecretário de Estado para os Assuntos Econômicos (até 1989). Ele foi agraciado com o Prêmio Wilks da ASA em 1980.
+
+</td>
+</tr></table>
+</div>
+
+## teste _H_ de Kruskal-Wallis
+
+Testa a hipótese nula de igualdade das (pseudo)medianas populacionais da VD ordinal ou intervalar em três ou mais condições independentes. Corresponde, portanto, à ANOVA unifatorial independente. 
+
+**Supõe homocedasticidade** (como testar se a variável for ordinal?).
+
+## Exemplo 3
+
+Pesquisadores, como parte de seu projeto conjunto do ano sobre a utilidade da terapia para pessoas que sofrem de enxaqueca, distribuíram aleatoriamente 18 pessoas que sofrem de enxaqueca em três grupos:
+
+* grupo 1 tem seis sessões de uma hora de terapia com um terapeuta estagiário; 
+* grupo 2 tem seis sessões de autoajuda de uma hora (que não são lideradas por um facilitador - a agenda é determinada pelos próprios membros do grupo), e 
+* grupo 3 consiste em pessoas que sofrem de enxaqueca que gostariam de participar de terapia ou de autoajuda, mas têm que esperar. 
+Os pesquisadores prevêem que os grupos de terapia e de autoajuda terão a percepção de menor sofrimento por enxaquecas do que o grupo na lista de espera quando avaliarem sua enxaqueca em um segundo ponto no tempo. No início do estudo, os participantes avaliam os seus sintomas no último mês, de 0 (sem sofrimento) a 5 (sofrimento terrível). Quatorze dias mais tarde, avaliam os seus sintomas (no último mês) novamente.
+
+$$\begin{align}
+H_0&: \text{pseudomediana}_\text{terapia} = \text{pseudomediana}_\text{auto-ajuda} = \text{pseudomediana}_\text{espera}\\
+H_1&: \text{pelo menos uma pseudomediana é diferente das demais}\\
+\alpha&=0.05\\
+\end{align}$$
+
+Supondo que as variáveis dependentes são ordinais e que avaliaremos apenas o resultado final, os dados estão em [`Enxaqueca.xlsx`](Enxaqueca.xlsx){target="_blank"}. O teste de Kruskal-Wallis está implementado em [`demo_KW.R`](demo_KW.R){target="_blank"}. Os testes _post hoc_ estão implementados em [`demo_KW_posthoc.R`](demo_KW_posthoc.R){target="_blank"}:
+
+```{r echo=FALSE}
+# options(width = 120)
+source("demo_KW.R")
+source("demo_KW_posthoc.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_KW.R`](demo_KW.R){target="_blank"} e [`demo_KW_posthoc.R`](demo_KW_posthoc.R){target="_blank"}
+</small></small></div>
+
+Neste exemplo, as medianas populacionais para as diversas terapias para exaqueca não diferem, considerando $\alpha=0.05$. Caso houvesse diferença, esta poderia é localizada através dos testes _post-hoc_.
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+
+O teste de Kruskal-Wallis está implementado com <code>kruskal.test()</code>. Os testes _post-hoc_ estão implementados com <code>FSA::dunnTest()</code>, que fixa uma condição como referência, e <code>rcompanion::cldList()</code>, que compara todas as condições par-a-par. 
+</td></tr></table>
+</td></tr></table>
+
+## Anova unifatorial independente (_one-way ANOVA_)
+
+Seu correspondente não paramétrico está implementado em [`demo_KW_ANOVA.R`](demo_KW_ANOVA.R){target="_blank"}. Aqui consideraremos as variáveis como intervalares e, portanto, as hipóteses são:
+
+$$\begin{align}
+H_0&: \mu_\text{terapia} = \mu_\text{auto-ajuda} = \mu_\text{espera}\\
+H_1&: \text{pelo menos duas médias populacionais são diferentes}\\
+\alpha&=0.05
+\end{align}$$
+
+Além disto, sendo variáveis intervalares, podemos testar as condições de simetria, normalidade e homocedasticidade, obtendo-se:
+
+```{r echo=FALSE}
+source("demo_KW_ANOVA.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_KW_ANOVA.R`](demo_KW_ANOVA.R){target="_blank"}
+</small></small></div>
+
+A conclusão é a mesma: não temos elementos para afirmar diferença entre os três grupos.
+
+# Teste para mais três ou mais condições dependentes
+
+* não-paramétrico
+    * _Q_ de Friedman
+* paramétrico
+    * ANOVA unifatorial relacionada
+
+<div align=center>
+<table style="max-width:70%;"><tr>
+<td valign=top width=50%>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/Milton_Friedman.jpg")
+```
+
+<div align=right><small>
+Milton Friedman (1912 - 2006)<br>
+https://pt.wikipedia.org/wiki/Milton_Friedman
+</small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td>
+
+Milton Friedman foi um economista, estatístico e escritor norte-americano, que lecionou na Universidade de Chicago por mais de três décadas. Ele recebeu o Prémio de Ciências Económicas em Memória de Alfred Nobel de 1976 e é conhecido por sua pesquisa sobre a análise do consumo, a teoria e história monetária, bem como por sua demonstração da complexidade da política de estabilização.
+<div align=right><small>
+https://pt.wikipedia.org/wiki/Milton_Friedman
+</small></div>
+</td>
+</tr></table>
+</div>
+
+## teste _Q_ de Friedman
+
+Testa a hipótese nula de igualdade dos efeitos populacionais dos tratamentos. Utiliza VDs ordinais ou intervalares em três ou mais condições dependentes.
+
+## Exemplo 4
+
+Seis pessoas (blocos) receberam seis diuréticos diferentes (tratamentos A a F). As respostas são medidas pela concentração de sódio na urina duas horas após o tratamento. O tratamento A é assumido como controle.
+
+$$\begin{align}
+H_0&: \text{Os efeitos dos tratamentos são iguais}\\
+H_1&: \text{Pelo menos algum tratamento tem efeito diferente dos demais}\\
+\alpha&=0.05
+\end{align}$$
+
+Os dados estão no próprio _Rscript_, [`demo_Q.R`](demo_Q.R){target="_blank"}. O teste de Friedman em R está implementado em <code>PMCMRplus::friedmanTest()</code> e os testes _post-hoc_ em <code>PMCMRplus::frdManyOneExactTest()</code>, que fixa uma condição como referência e <code>PMCMRplus::frdAllPairsExactTest()</code>, que compara todas as condições par-a-par:
+
+```{r echo=FALSE}
+source("demo_Q.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_Q.R`](demo_Q.R){target="_blank"}
+</small></small></div>
+
+Os efeitos populacionais do tratamento sobre a medida de sódio diferem com o uso dos diversos diuréticos para $\alpha=0.05$. O teste _post-hoc_ que fixa o diurético A como referência, mostra diferença com C, E e F (é o que deve ser usado de acordo com o enredo deste exemplo). A outra comparação, par-a-par não é adequada à pergunta de pesquisa deste exemplo, mas pode ser aplicável a outras situações e, por isso, foi implementada neste _Rscript_ (além de mostrar diferenças entre A e E, A e F, também mostra diferença entre os diuréticos D e F - note que os valores _p_ mudaram porque mais testes são feitos nesta segunda forma de teste _post-hoc_, modificando a correção por Bonferroni) e a diferença entre A e C desapareceu nesta comparação par a par.
+
+## ANOVA unifatorial relacionada
+
+Para comparação, implementamos uma versão de ANOVA unifatorial relacionada que admite valores faltantes, posto que isto acontece com frequência em estudos observacionais (e.g., falta do paciente em uma consulta). 
+
+$$\begin{align}
+H_0&: \mu_\text{A} = \mu_\text{B} = \cdots =\mu_\text{F}\\
+H_1&: \text{Pelo menos duas médias são diferentes}\\
+\alpha&=0.05
+\end{align}$$
+
+Este procedimento necessita dos dados em formato _long_, então a transformação é feita na própria implementação de [`demo_Q_ANOVA.R`](demo_Q_ANOVA.R){target="_blank"}: 
+
+```{r echo=FALSE}
+source("demo_Q_ANOVA.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_Q_ANOVA.R`](demo_Q_ANOVA.R){target="_blank"}
+</small></small></div>
+
+Aqui, da mesma forma que o teste _Q_ mostrou, a hipótese nula de igualdade de todos os tratamentos foi rejeitada. 
+
+Na versão não-paramétrica havíamos encontrado as seguintes diferenças:
+
+* comparando todos os pares, diferiam: AE, AF, DF.
+* usando A como referência, diferiam deste: C, E, F.
+
+Nesta versão paramétrica, os procedimentos _post hoc_ usam o método de Tukey (comparando todos os tratamentos, par a par) ou Dunnett (que fixa um dos tratamentos como referência - neste exemplo o tratamento A). As diferenças podem ser localizadas numericamente ou graficamente. Os gráficos mostram intervalos de confiança após a aplicação do modelo, i.e., já controlado pela variância intra-indivíduo. O primeiro mostra cada tratamento isoladamente. Os demais espelham os contrastes (em **negrito** estão os que o teste não-paramétrico também localizou):
+
+* comparando todos os pares há várias diferenças (no gráfico correspondem aos intervalos que não contém a diferença nula): AB, AC, **AE**, **AF**, BD, BF, CD, CF, DE, **DF**.
+* usando A como referência, diferiam deste: B, **C**, **E**, **F**.
+
+# Paramétrico vs. Não-paramétrico
+
+## História
+
+Os testes não paramétricos são antigos. Observe as datas de suas publicações originais:
+
+* WILCOXON, F. (1945),
+* MANN, H.B.; WHITNEY D.R. (1947),
+* BRUNNER, E.; MUNZEL, U. (2000) ,
+* KRUSKAL, W. H.; WALLIS, W. A. (1952),
+* FRIEDMAN, M. (1937, 1939, 1940).
+
+**Os testes não paramétricos não evoluíram.**
+
+Enquanto para seus equivalentes paramétricos apareceram soluções multivariadas, controles estatísticos, transformações não lineares e técnicas para contornar as suposições desejadas, desdobrando-se em vários tipos de regressão múltiplas (com várias VIs e uma VD) ou multivariadas (com várias VIs e VDs).
+
+Os testes não-paramétricos receberam poucas alterações e continuaram aplicáveis a delineamentos relativamente mais simples:
+
+* A VI é sempre nominal e apenas uma VD é possível. 
+* São testes simples, não admitem variáveis de controle ou confusão.
+
+# Postos
+
+"Toda a informação concernente às magnitudes das
+observações quantitativas é perdida ao convertê-las em
+postos (_ranks_)."
+
+<div align=right><small><small>
+Runyon & Haber (1973)
+</small></small></div>
+
+“Os testes Mann-Whitney e Wilcoxon avaliam se existe diferença
+estatística significativa entre as **médias dos postos** [_sic_] de duas condições.” 
+
+<div align=right><small><small>
+Dancey & Ready (2019), p.508
+</small></small></div>
+
+Parte da confusão acontece porque o método para a execução dos cálculos, utilizando postos (_ranks_), acaba sendo visto como uma transformação não linear (monotônica e com passos unitários) da própria variável. Há alguns pesquisadores que pensam, então, que as conclusões alcançadas por um teste não-paramétrico é sobre os postos quando, de fato, a variável continua tendo sua natureza intervalar ou ordinal. Os postos são usados como artifício estatístico para comparar duas distribuições. 
+
+$$~$$
+
+<div align=center><big>
+As conclusões de um teste não paramétrico NÃO SÃO sobre os postos, mas sobre a VD em sua forma original.
+</big></div>
+
+# Normalidade
+
+Os testes paramétricos apresentados aqui costumam assumir normalidade da VD na população. Quando esta premissa não é conhecida ou, sabidamente, não é atendida, pesquisadores pensam em indicar testes não-paramétricos, justificando que são _distribution free_.
+
+É verdade que dados assimétricos e amostras muito pequenas e desbalanceadas causam problemas para os testes paramétricos. No entanto, perturba bastante, também, os testes não-paramétricos. 
+
+No entanto, os testes não-paramétricos **não servem** para qualquer distribuição: **prescindem da normalidade** da VD, então devem ser lembrados como _free of **normal** distribution_. Muitos **necessitam das suposições de simetria** e de **homoscedasticidade das distribuições das VDs** nas condições do fator.
+
+Este problema existe quando as amostras são pequenas. Com amostras maiores, a variável de interesse ou de desfecho não precisa ter distribuição normal: o teorema central do limite informa que a distribuição dos estimadores dos parâmetros da VD são aproximadamente normais e os testes paramétricos têm bom desempenho.
+
+Quando há dificuldade em testar a normalidade, pesquisadores usam gráficos para ver o formato da distribuição.
+
+“**Histogramas** [_sic_] para as duas condições foram inspecionados
+separadamente. Como os dados eram assimétricos e o número de
+participantes pequeno, o teste estatístico mais apropriado foi o de
+Mann-Whitney."
+
+<div align=right><small><small>
+Dancey & Ready (2019), p.511
+</small></small></div>
+
+$$~$$
+
+<div align=center><big>
+Histogramas são instrumentos incompetentes para descrever distribuições de probabilidade: não servem para avaliar a forma da distribuição, nem sua assimetria, e muito menos podem servir para descartar um teste paramétrico em favor de um não-paramétrico.
+</big></div>
+$$~$$
+
+"[...] there is the concept that a histogram can
+be useful with the right parametrization  [but] there is
+no guarantee that the cutoff will fall between bars and the
+heights of histogram bars may be an illusion affected by the
+bin sizes [...] a histogram, as traditional as it may be,
+is misleading."
+
+<div align=right><small><small>
+Silveira & Siqueira (2022)<br>
+https://doi.org/10.20982/tqmp.18.1.p091
+</small></small></div>
+
+# Poder
+
+Afirmam:
+
+"Para um dado número de unidades experimentais no estudo,
+N, testes paramétricos são mais poderosos do que os não-
+paramétricos correspondentes, desde que todas as
+suposições dos testes paramétricos e dos não-paramétricos
+sejam satisfeitas."
+
+<div align=right><small><small>
+Runyon & Haber (1973)
+</small></small></div>
+
+O teste _t_ de Student tem a suposição de normalidade a mais que o correspondente teste não-paramétrico U de Mann-Whitney; não supondo homocedasticidade, o teste _t_ de Welch corresponde ao teste de Brunner-Munzel. Há vezes em que a afirmação de que os **testes paramétricos tendem a ser mais poderosos** que os não-paramétricos quando suas suposições **são atendidas** foi transformada no **reverso**, de que "os **testes não-paramétricos são mais poderosos** quando as tais suposições **não são** atendidas. 
+
+Ao menos quando a amostra é suficientemente grande, os testes não-paramétricos são quase equivalentes aos paramétricos. Embora não explore amostras pequenas, Prajapati et al. (2010) sugere que talvez os testes não-paramétricos continuem, ainda, perdendo para os paramétricos em quaisquer condições; talvez os resultados sejam confusos ou erráticos. É difícil aferir o que acontece em todas as possíveis combinações de violações de suposições:
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/Bhavna.png")
+```
+
+# Problemas com empates
+
+No teste _U_ de Mann-Whitney implementado em <code>wilcox.test</code> qualquer valor igual em uma das duas condições resulta em um empate e impede o cálculo do valor _p_ exato (parâmetro <code>exact=TRUE</code>), fornecendo o valor assintótico que pode não ser boa opção com amostras pequenas. 
+
+O teste _W_ de Wilcoxon implementado com a mesma função, apresenta o mesmo problema para o cálculo do valor _p_ exato se houver empates das diferenças mas, também, se houver diferenças nulas. Nestes casos a função oferece o cálculo assintótico do valor _p_, problemático para amostras pequenas. Agrava-se o problema pois os sujeitos com diferenças nulas são eliminados, reduzindo ainda mais o tamanho efetivo da amostra.
+
+# Robustez
+
+Não poder atender às suposições dos testes paramétricos não implica, automaticamente, em atender àquelas dos testes não-paramétricos.
+
+Há quem pense que testes não-paramétricos são robustos a quaisquer condições. A diferença, em geral, é que testes não-paramétricos são um pouco mais permissivos quanto às condições para sua aplicação e, por isso, também menos poderosos.
+
+Os testes não paramétricos não são métodos estatísticos robustos. Há alternativas para os métodos paramétricos:
+
+* Cálculos complexos com dados brutos ou transformações não-lineares:
+    * Transformações potência de Tukey e de Box-Cox (_transformation_)
+    * Aparamento (_trimming_)
+    * Ponderação (_weighting_)
+* Heterocedasticidade da VD e tratável (e.g., teste t de Welch, ANOVA de Welch etc.). 
+* Reamostragem (_bootstrapping_): quando feitos com _bootstrapping_  **supõem _apenas_ a independência das observações** e **são robustos à falta de normalidade da VD**.
+
+## Estatística não-paramétrica
+
+* Cálculos elementares com probabilidades ou postos (_ranking_)
+* em geral **não são robustos à heterocedasticidade** da VD. 
+* não precisam de normalidade da VD (quando a amostra é pequena), mas podem **necessitar de simetria** da distribuição.
+
+<div align=right><small>
+Wonnacott & Wonnacott (1990), página 536.<br>
+Kirkwood & Sterne (2006), Chapter 30: Relaxing model assumptions.
+</small></div>
+
+**Observe o que diz Zimmerman (1998)**:
+
+"Those findings reveal that nonparametric methods are not always acceptable substitutes for parametric methods such as the _t_ test and the $F$ test in research studies when parametric assumptions are not satisfied."
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/Zimmerman.jpeg")
+```
+
+A maioria dos artigos na literatura estudam violações isoladas. Este artigo propõe violações simultâneas das suposições de normalidade e homocedasticidade em graus variados, com amostras de tamanhos modestos (de 15 a 40 por grupo) por simulação. Surpreendentemente, os testes paramétricos, ainda assim, saíram-se melhor que seus correspondentes não paramétricos.
+
+# Cálculos
+
+"Esses testes (Mann-Whitney e Wilcoxon) são muito mais simples do que os testes t, pois não envolvem cálculos de médias, desvios-padrão e erros-padrão.” 
+
+<div align=right><small><small>
+Dancey & Ready (2019), p.508
+</small></small></div>
+
+Em R, muitas vezes, a simplicidade aparente é a mesma; basta escolher o pacote e a função adequada. Anteriormente aos computadores, o cálculo era feito manualmente e esta simplicidade não parece sustentável. Em ambos os mesmos tipos de cálculos eram feitos e, pelo contrário, etapas adicionais e tediosas eram requeridas para computar os testes não-paramétricos.
+
+Para mostrar o cálculo manual, confrontamos um teste U e um teste t. Observe:
+
+<table><tr><td>
+
+<div class='left' style='float:left;width:50%'>
+
+## Teste _U_ de Mann-Whitney
+
+Para o Teste de Mann-Whitney, o referido cálculo simples para dois grupos, $A$ e _B_, implica em: juntar as amostras de diferentes condições experimentais, ordenar os valores preservando a informação do grupo de origem, encontrar os empates e atribuir os postos, voltar os postos de acordo com a condição de origem para somar os postos e encontrar os valores $U_A$ e $U_B$, então escolher o valor _U_ mínimo (ou calcular diretamente o valor _U_) para confrontar com uma tabela  (se $n < 20$) com $U_{crítico}$ ou assintoticamente (para $n \ge 20$) calcular $z$ e usar outra tabela, obtendo o valor _p_.
+
+Por exemplo:
+
+$$A = \{ 288,283,120,119,432,274,890 \} $$
+$$B = \{ 119, 43, 153, 854, 588 \} $$
+$$ A \cup B = \{288, 283, 120, 119, 432, 274, 890, \\ 119,  43, 153, 854, 588\}$$
+
+$$ \text{order}(A \cup B) = \{43, 119, 119, 120, 153, 274, \\ 283, 288,  432, 588, 854, 890 \}$$
+$$\text{groups, order}(A \cup B) = \{B, A, B, A, B, A, \\ A, A, A, B, B, A \}$$
+
+$$\text{Postos} = \{1, 2.5,  2.5,  4, 5, 6, \\ 7, 8, 9, 10, 11, 12 \}$$
+
+
+$$\text{Postos}_A = \{2.5, 	4, 	6, 	7, 	8, 9,	12  \}$$
+$$\text{Postos}_B = \{1, 2.5, 5, 10, 11 \}$$
+Soma dos postos (de onde vem o nome do teste):
+
+$$R_A = 2.5+4+6+7+8+9+12 = 48.5$$
+$$R_B = 1+2.5+5+10+11 = 29.5$$
+Calcula-se a estatística de Mann-Whitney:
+$$ U_A = {n_A n_B + \frac{n_A(n_A+1)}{2} - R_A} = \\
+= 7 \cdot 5 + \frac{7(7+1)}{2} - 48.5 = 14.5$$
+$$ U_B = {n_A n_B + \frac{n_B(n_B+1)}{2} - R_B} = \\
+= 7 \cdot 5 + \frac{5(5+1)}{2} - 29.5 = 20.5$$
+
+Assume-se $U = min(U_A,U_B)$, 
+
+Alternativamente, para não calcular os dois valores de _U_, o mesmo resultado pode ser calculado diretamente usando o $n_{max}$ do grupo com maior $R$ e os valores $R_A$ e $R_B$:
+$$U = n_A n_B + \frac{n_{max}(n_{max}+1)}{2} - \\ 
+max(R_A,R_B) = \\ 
+= 7 \cdot 5 + \frac{7 \cdot 8}{2} - 48.5 = 14.5$$
+
+Para amostras pequenas há tabelas a serem consultadas, verificando-se se o valor _U_ está abaixo ou acima do valor crítico para se tomar a decisão inferencial.
+
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/mann-whitney-alpha-05a.png")
+```
+
+<div align=right><small><small>
+https://www.real-statistics.com/statistics-tables/mann-whitney-table/
+</small></small></div>
+
+Para $n_A=7$ e $n_B=5$ o valor crítico é 5. Rejeita-se a hipótese nula quando $U < U_{crítico}$. Neste exemplo, não se rejeita a igualdade das condições $A$ e _B_.
+
+Para amostras maiores era recomendado o cálculo assintótico, com mais alguma álgebra para converter em seu equivalente valor $z$, o paradigma da situação paramétrica; quase um contra-senso! utilizando-se
+
+$$z = {\frac{U-\frac{n_A n_B}{2}}{\sqrt{\frac{n_A n_B (n_A + n_B + 1)}{12}} } } = \\
+= {\frac{14.5-\frac{7 \cdot 5}{2}}{\sqrt{\frac{7 \cdot 5 (7 + 5 + 1)}{12}} } } = -0.4118$$
+
+Aqui vemos que as estatísticas de teste dos testes não-paramétricos **também** necessitam ter distribuição normal assintótica para qualquer distribuição da VD nas condições do fator. Tendo o valor $z$ calculado, recorria-se a uma segunda tabela para comparar este valor calculado com as áreas sob a distribuição normal padrão já calculadas para obter o valor _p_ correspondente: 
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/ztable.jpg")
+```
+
+<div align=right><small><small>
+https://www.dummies.com/article/academics-the-arts/math/statistics/how-to-use-the-z-table-147241/
+</small></small></div>
+
+Neste exemplo, a tabela fornece o valor _p_ da cauda esquerda que, para $z=0.41 \Leftrightarrow p_{\text{lower tail}}=0.3409$. Nosso teste é bicaudal, então $p=2p_{\text{lower tail}}=0.6818$ e não rejeitamos a igualdade entre os grupos $A$ e _B_.
+
+MUNDRY & FISCHER (1998) comentam que os testes não-paramétricos baseados em valor _p_ assintótico de escore $z$ provocam rejeição excessiva da hipótese nula e, portanto, busca-se desenvolver implementações com o cálculo exato do valor _p_. 
+
+Em R, 
+
+```{r echo=FALSE, class.output="bgcodigo"}
+cat(readLines("demo_MWW_AB.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_MWW_AB.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_AB.R`](demo_MWW_AB.R){target="_blank"}
+</small></small></div>
+
+</div>
+<div class='left' style='float:right;width:50%'>
+
+## Teste _t_ para condições independentes
+
+Por comparação, no teste _t_ (paramétrico) para duas condições independentes, calcula-se as médias ($\bar{x}_A$ e $\bar{x}_B$) e as variâncias ($s_a^2$ e $s_B^2$) dos dois grupos e calcula-se a estatística _t_ com os seguintes passos:
+
+$$A = \{ 288,283,120,119,432,274,890 \} $$
+$$B = \{ 119, 43, 153, 854, 588 \} $$
+$$\bar{x}_A = (288+283+120+119+432+274+890)/7 = 343.7$$
+$$s_A^2 = \frac{\sum_{i=1}^{7}{(A_i-\bar{x}_A)^2}}{7-1} = 264.1$$
+$$\bar{x}_B = (119+43+153+854+588)/5 = 351.4$$
+$$s_B^2 = \frac{\sum_{i=1}^{5}{(B_i-\bar{x}_B)^2}}{5-1} = 352.5$$
+
+$$t = { \frac{\bar{x}_A-\bar{x}_B}{ \sqrt{\frac{(n_A-1)s_A^2 + (n_B-1)s_B^2}{n_A+n_B-2} } \sqrt{\frac{1}{n_A}+\frac{1}{n_B}}}} = \\
+= { \frac{343.7-351.4}{ \sqrt{\frac{(7-1)264.1 + (5-1)352.5}{7+5-2} } \sqrt{\frac{1}{7}+\frac{1}{5}}}} = -0.4338$$
+
+Antes dos computadores recorria-se, também, a uma tabela para comparar este valor calculado com o valor crítico, rejeitando-se a hipótese nula caso o valor $t > t_{crítico}$. Neste exemplo, como o teste é bicaudal, precisamos encontrar o valor $t_{crítico}$ associado com $\alpha/2=0.025$; como $t < t_{crítico}$ não rejeitamos a igualdade entre os grupos $A$ e _B_:
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/ttable.jpg")
+```
+
+<div align=right><small><small>
+https://www.dummies.com/article/academics-the-arts/math/statistics/how-to-use-the-t-table-to-solve-statistics-problems-147282/
+</small></small></div>
+
+Em R, 
+
+```{r echo=FALSE, class.output="bgcodigo"}
+cat(readLines("demo_MWW_ABt.R"), sep = '\n')
+```
+
+```{r echo=FALSE}
+source("demo_MWW_ABt.R")
+```
+
+<div align=right><small><small>
+implementado com [`demo_MWW_ABt.R`](demo_MWW_ABt.R){target="_blank"}
+</small></small></div>
+</div>
+
+</td></tr></table>
+
+# Então, quando usar?
+
+Existem condições para usarmos os não-paramétricos em lugar dos paramétricos?
+
+Em Dancey & Reidy (2019) aparece a tabela 1.2, que busca associar os delineamentos dos estudos com os testes estatísticos. Porém...
+
+```{r out.width = '100%', echo=FALSE}
+knitr::include_graphics("./image/Tabela12.png")
+```
+
+No entanto, em Conover (1999) 
+
+<div align=center>
+<table style="max-width:70%;"><tr>
+<td valign=top>
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/ConoverWJay.jpg")
+```
+
+<div align=right><small><small>
+William Jay Conover<br>http://www.math.ttu.edu/~wconover/
+</small></small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td>
+  <small><small>
+  
+After teaching at the U.S. Naval Academy at Annapolis, Iowa State University, Kansas State University, the University of California at Davis, and the University of Zurich (Switzerland), he joined the Math Department at Texas Tech in 1973. From 1978-2015 he was in the TTU Rawls College of Business, becoming the Area Coordinator of Information Systems and Quantitative Sciences.  In 2015 Dr. Conover returned to the TTU Department of Mathematics & Statistics. While a member of the Rawls College faculty he won several research awards, including the Barney E. Rushing Distinguished Faculty Research Award from the TTU Parents Association, The Don Owen award from the San Antonio Chapter of the American Statistical Association, and the Wilks Medal from the U. S. Army. [He was elected as a Fellow of the American Statistical Association, and appointed a Paul Whitfield Horn Professor by the Texas Tech Board of Regents, becoming a Horn Professor of Statistics for the Texas Tech Department of Mathematics & Statistics in 2015. [...] He was named a Highly Cited Researcher by the ISI Thompson Scientific, and currently has over 38,000 citations to his many books and papers. He is listed in Who’s Who in America, and Who’s Who in the World. 
+
+</small></small>
+</td>
+</tr></table>
+</div>
+
+aparece outra tabela:
+
+```{r out.width = '90%', echo=FALSE}
+knitr::include_graphics("./image/TabelaConover_NP.png")
+```
+
+**Diz Norušis (1998),** 
+
+<div align=center>
+<table style="max-width:70%;"><tr>
+<td valign=top>
+
+```{r out.width = '90%', echo=FALSE}
+knitr::include_graphics("./image/marija_norusis2.jpg")
+```
+
+<div align=right><small><small>
+Marija Norušis<br>http://www.norusis.com/about.php
+</small></small></div>
+</td>
+<td>&nbsp;&nbsp;&nbsp;</td>
+<td>
+  <small><small>
+  
+Marija Norušis earned a Ph.D. in biostatistics from the University of Michigan. She was SPSS's first professional statistician. McGraw-Hill published her first book, The SPSS Introductory Guide. Since then she has written numerous volumes of highly acclaimed SPSS documentation and textbooks that demystify statistics and SPSS. Dr. Norušis has been on the faculties of the University of Chicago and Rush Medical College, teaching statistics to diverse audiences. When not working on IBM SPSS guides, Marija analyzes real data as a statistical consultant.
+
+For those whose Lithuanian is rusty:<br>
+&nbsp;&nbsp;&nbsp;"Marija" is pronounced "Maria," not "Mar-eye-ja."<br>
+&nbsp;&nbsp;&nbsp;"Norušis" is pronounced "Norooshis," not "Neurosis."
+</small></small>
+</td>
+</tr></table>
+</div>
+
+**na página 332, pergunta:**
+
+Se os testes não-paramétricos têm menos suposições sobre os dados, por que não usar apenas eles?
+
+**e responde:**
+
+Os testes paramétricos, tais como _t_, ANOVA e ANCOVA, são naturalmente robustos para normalidade, desde que a distribuição dos dados seja simétrica e tenha poucos _outliers_; além disso, se a amostra é grande, o TCL funciona. Os testes não-paramétricos ignoram a informação de distribuição exata dos dados gerando, e.g., IC95% mais largos, i.e., com menos poder, que os paramétricos.
+
+O que eu deveria fazer se não estou certo se eu tenho que usar um teste paramétrico ou não-paramétrico?
+
+**resposta:** 
+
+Na dúvida, use ambos! Se conseguir a mesma decisão sobre a
+hipótese nula nos testes paramétrico e não-paramétrico, não há
+nada com o que se preocupar. Se o teste não-paramétrico é
+estatisticamente não-significante e o paramétrico é significante, tente descobrir o motivo. Há _outliers_? Valores influentes? A distribuição da VD nos grupos é simétrica? Normal? Há desbalanceamento? Há heterocedasticidade? Se a VD é intervalar e a amostra é grande, tente transformação potência de Tukey para simetrizar as distribuições da VD nas condições, homegeneizar as variâncias das condições e linearizar as relações entre as variáveis.
+
+Conforme Fagerland (2012),
+
+```{r out.width = '90%', echo=FALSE}
+knitr::include_graphics("./image/T1_NEJM.png")
+```
+
+Conforme Nahm (2016),
+
+"Resumo:
+
+Os testes estatísticos convencionais são geralmente chamados de testes paramétricos. 
+
+Testes paramétricos são usados com mais frequência do que testes não paramétricos em muitos artigos médicos [_sic_: Fagerland (2012) mostra empate], porque a maioria dos pesquisadores médicos está familiarizada com eles e os softwares estatísticos oferecem forte suporte para testes paramétricos. 
+
+Testes paramétricos requerem uma suposição importante; a suposição de normalidade, que significa que a distribuição das médias amostrais é normalmente distribuída [_sic_: distribuição da média amostra é normal por TLC; VD normal é suposição]. 
+
+No entanto, o teste paramétrico pode ser enganoso quando essa suposição não é satisfeita. 
+
+Nessa circunstância, os testes não paramétricos são os métodos alternativos disponíveis, pois não exigem a suposição de normalidade. 
+
+Testes não paramétricos são os métodos estatísticos baseados em sinais e ranqueamentos. 
+
+Neste artigo, discutiremos os conceitos básicos e o uso prático dos testes não paramétricos como um guia para o uso adequado."
+
+"Conclusão:
+
+Testes não paramétricos e testes paramétricos: qual devemos usar?
+
+Assim como há mais de uma modalidade de tratamento para uma doença, também existem diversos métodos de análise estatística. 
+
+Os métodos de análise não paramétricos são claramente a escolha correta quando a suposição de normalidade é claramente violada [_sic_: SKOVLUND, E & FENSTAD, GU (2001): e.g.: MW depende fortemente de distribuições de mesmo formato nos grupos e homocedasticidade da VD que pode ser ordinal, sendo que mesmo para o caso da VD ordinal (e.g., item Likert de 5 pontos), teste t de Student são praticamente equivalentes (Winter & Dodou, 2012) e teste t é tão robusto que ele pode ser recomendado para quase todas as aplicações (Rasch et al., 2007, 2011); W de Wilcoxon depende fortemente da suposição de simetria da diferença da VD nas condições dependentes]; no entanto, eles nem sempre são a melhor escolha para casos com tamanhos de amostra pequenos porque possuem menor poder estatístico em comparação com as técnicas paramétricas [_sic_: Fagerland (2012): "Testes não-paramétricos são mais úteis para estudos pequenos; em estudos grandes podem fornecer respostas para questões erradas."] e dificuldades no cálculo do "intervalo de confiança de 95%", que auxilia na compreensão dos leitores. 
+
+Os métodos paramétricos podem levar a resultados significativos em alguns casos, enquanto os métodos não paramétricos podem resultar em resultados mais significativos em outros casos [_sic_]. 
+
+Quaisquer que sejam os métodos selecionados, eles devem suportar os argumentos do pesquisador de maneira mais robusta e ajudar na fácil compreensão dos leitores. 
+
+Quando os métodos paramétricos são selecionados, os pesquisadores devem garantir que todas as suposições necessárias estejam satisfeitas [_sic_: suposições são condições suficientes] . 
+
+Caso contrário, é mais válido usar métodos não paramétricos, pois eles são "sempre válidos, mas nem sempre eficientes" [_sic_: teste não paramétrico tem suposições sobre a VD; e.g.: simetria, homocedasticidade, mesmo formato de distribuição], enquanto os métodos paramétricos são "sempre eficientes, mas nem sempre válidos" [_sic_: Prajapati et al. (2010): têm eficiência relativa assintótica de 0.955 quando a amostra é suficientemente grande].
+
+"Abstract: Conventional statistical tests are usually called parametric tests. Parametric tests are used more frequently than nonparametric tests in many medical articles, because most of the medical researchers are familiar with and the statistical
+software packages strongly support parametric tests. Parametric tests require important assumption; assumption of normality which means that distribution of sample means is normally distributed. However, parametric test can be misleading when this assumption is not satisfied. In this circumstance, nonparametric tests are the alternative methods available, because they do not required the normality assumption. Nonparametric tests are the statistical methods based on signs and ranks. In this article, we will discuss about the basic concepts and practical use of nonparametric tests for the guide to the proper use."
+
+"Conclusion:
+Nonparametric tests and parametric tests: which should we use?
+As there is more than one treatment modality for a disease,
+there is also more than one method of statistical analysis. Nonparametric analysis methods are clearly the correct choice when
+the assumption of normality is clearly violated; however, they
+are not always the top choice for cases with small sample sizes
+because they have less statistical power compared to parametric
+techniques and difficulties in calculating the “95% confidence
+interval,” which assists the understanding of the readers. Parametric methods may lead to significant results in some cases,
+while nonparametric methods may result in more significant
+results in other cases. Whatever methods can be selected to support the researcher’s arguments most powerfully and to help
+the reader’s easy understandings, when parametric methods are
+selected, researchers should ensure that the required assumptions are all satisfied. If this is not the case, it is more valid to use
+nonparametric methods because they are “always valid, but not
+always efficient,” while parametric methods are “always efficient,
+but not always valid”."
+
+Conforme Politi et al. (2021),
+
+"COMO ESCOLHER ENTRE TESTES PARAMÉTRICOS E NÃO PARAMÉTRICOS?
+
+Quando os tamanhos das amostras são grandes, ou seja, maiores que 100, os testes paramétricos geralmente podem ser aplicados independentemente da distribuição da variável de desfecho. 
+
+Isso se deve ao teorema do limite central, que afirma que se o tamanho da amostra for suficientemente grande, a distribuição de uma variável dada é aproximadamente normal [_sic_: TLC não altera o formato da VD]. 
+
+Quanto mais a distribuição se afasta da normalidade, maior será o tamanho da amostra necessário para aproximar a normalidade.
+
+Quando os tamanhos das amostras são pequenos e as distribuições das variáveis de desfecho são extremamente não normais, os testes não paramétricos são mais apropriados. 
+
+Por exemplo, algumas variáveis são naturalmente enviesadas, como o tempo de permanência no hospital ou o número de exacerbações de asma por ano. 
+
+Nestes casos, variáveis extremamente enviesadas devem sempre ser analisadas com testes não paramétricos, mesmo com grandes tamanhos de amostra."
+
+"HOW TO CHOOSE BETWEEN PARAMETRIC
+AND NONPARAMETRIC TESTS?
+When sample sizes are large, that is, greater than
+100, parametric tests can usually be applied regardless
+of the outcome variable distribution. This is due to the
+central limit theorem, which states that if the sample size is large enough, the distribution of a given variable
+is approximately normal. The farther the distribution
+departs from being normal, the larger the sample size
+will be necessary to approximate normality.
+When sample sizes are small, and outcome variable
+distributions are extremely non-normal, nonparametric
+tests are more appropriate. For example, some
+variables are naturally skewed, such as hospital LOS
+or number of asthma exacerbations per year. In these
+cases, extremely skewed variables should always be
+analyzed with nonparametric tests, even with large
+sample sizes.(2)"
+
+# A Lenda do Teste Não-Paramétrico
+
+<table style="border:0; background-color:#CAE0AB; 
+width: 90%; margin-left: auto; margin-right: auto;"><tr>
+<td style='width:15%; vertical-align:top'>
+
+```{r fig.align="left", out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/coruja.png")
+```
+
+</td>
+<td style='width:85%'>
+<table style="border:0; background-color:#CAE0AB"><tr><td>
+**Lenda** (substantivo feminino)<br><br>
+1	narrativa de caráter maravilhoso em que um fato histórico se amplifica e transforma sob o efeito da evocação poética ou da imaginação popular; legenda<br>
+2	m.q. mito ('relato fantástico')<br>
+Ex.: a lenda da cobra-d'água<br> 
+3	Derivação: por extensão de sentido.<br>
+tradição popular<br>
+Ex.: uma cultura com raízes na lenda e não na ciência <br>
+4	Derivação: sentido figurado.<br>
+atitude enganadora, falsa; engodo, fraude, mentira<br>
+Ex.: as curas apregoadas pelo charlatão eram pura lenda <br>
+5	Derivação: sentido figurado.<br>
+narrativa fastidiosa; ladainha, lenga-lenga.<br>
+<div align=right><small>
+Houaiss Eletrônico, 2009, editora Objetivo.
+</small></div>
+</td>
+<td>
+$~$
+```{r out.width = '90%', echo=FALSE}
+knitr::include_graphics("./image/cuca.png")
+```
+$~$
+<div align=right><small><small>
+https://www.educacaoetransformacao.com.br/
+</small></small></div>
+</td></tr></table>
+</td></tr></table>
+
+```{r out.width = '90%', echo=FALSE}
+knitr::include_graphics("./image/icebergnaoparametrico.png")
+```
+
+<!-- 
+
+# O que mais dizem por aí...
+
+"Talvez você tenha ouvido em algum lugar que deve usar testes não paramétricos quando seus dados não atendem às suposições do teste paramétrico, especialmente a suposição sobre dados normalmente distribuídos. Essa parece ser uma maneira boa e simples de escolher, mas há outras coisas a serem consideradas."
+<div align=right><small>
+https://blog.minitab.com/pt/como-escolher-entre-um-teste-nao-parametrico-e-um-teste-parametrico
+</small></div>
+
+## Lembrar que:
+
+* as suposições em geral são condições suficientes (mas não necessárias) para os testes estatísticos.
+* nos testes paramétricos, o TCL vale para tamanhos de amostra suficiente grandes (e _bootstrapping_ pode ser usado para as menores).
+* 
+
+
+# Paramétricos vs. não-paramétricos
+
+
+# Conceitos (nem sempre corretos)
+
+**Dizem Dancey & Reidy (2019), página 502, <span style="color:red;">mas não concordamos</span>:**
+
+> “Nos capítulos anteriores, você foi apresentado aos testes paramétricos.  Os testes paramétricos, como você sabe, têm certas suposições.
+
+* Não é isto o que diferencia os testes paramétricos dos não-paramétricos, que também têm suposições.
+
+> Os dados precisam ser obtidos de uma população normalmente distribuída (consulte o Capítulo 5).
+
+* Isto não faz sentido. Na população, a variável (implicitamente, a variável de interesse ou de desfecho) não precisa ter distribuição normal necessariamente. Além disto, quando recorremos ao teorema central do limite (TCL), a preocupação está em saber se a distribuição dos estimadores dos parâmetros da VD são aproximadamente normais, de forma a sustentar as respectivas distribuições das estatísticas de teste. No entanto, esta também é necessidade dos testes não-paramétricos.
+
+> Quando você atende aos pressupostos dos testes paramétricos, eles são mais poderosos do que os testes não paramétricos, e os psicólogos os preferem.
+
+* Há duas dificuldades nesta sentença. Em primeiro lugar, segundo Prajapati et al. (2010), os testes não paramétricos podem ser praticamente equivalentes às suas contrapartes paramétricas para amostras grandes mas, mesmo nestas condições, tendem a ser um pouco inferiores. Em segundo lugar, Dancey & Reidy (2019) não citam a fonte dos estudos que indicam esta preferência dos psicólogos. Talvez seja a preferência destes autores (ousamos dizer, uma preferência que talvez seja equivocada).
+
+> Em muitas situações de pesquisa, não podemos usar testes paramétricos porque nossos dados não atendem às suposições subjacentes ao seu uso.
+
+* Sim, embora dizer que "não podemos" é um tanto exagerado. Há vários artifícios que utilizamos para contornar várias destas dificuldades (e.g., _bootstrapping_, propriedades do TCL, transformações potência de Tukey, correções para heterocedasticidade de Welch e de White estão entre os vários procedimentos vistos em capítulos anteriores).
+
+
+
+> Por exemplo, podemos ter dados assimétricos ou com tamanhos de amostra muito pequenos ou desiguais - então não teríamos certeza se nossos dados foram extraídos de uma população normalmente distribuída.
+
+* Esta é outra **lenda** sobre os testes não-paramétricos. É verdade que dados assimétricos e amostras muito pequenas e desbalanceadas causam problemas para os testes paramétricos. No entanto, perturba também os testes não-paramétricos. Além disto, **nunca** temos certezas; o problema mal compreendido da normalidade (da VD) na população é recorrente e já foi discutido acima.
+
+
+
+
+
+
+> Os testes não paramétricos não fazem suposições sobre os dados e você pode usar com segurança os testes descritos neste capítulo para analisar os dados quando achar que pode não ser capaz de atender às suposições dos testes paramétricos.”
+
+* Isto é falso. As suposições são populacionais. Há suposições, sempre, em qualquer teste estatístico e os testes não-paramétricos não são uma exceção. Segurança é outro mito. Não poder atender às suposições dos testes paramétricos não implica, automaticamente, em atender àquelas dos testes não-paramétricos. 
+
+
+
+
+
+**Dancey & Reidy (2019) prosseguem, na defesa dos testes não-paramétricos**<br>
+(os negritos são nossos):
+
+> “Esses testes (Mann-Whitney e Wilcoxon) são muito mais simples
+do que os testes _t_, pois **não envolvem** [_sic_] cálculos de médias,
+desvios-padrão e erros-padrão.” (Dancey & Ready, 2019, p. 508)
+
+* Em R, muitas vezes, a simplicidade aparente é a mesma; basta escolher o pacote e a função adequada. Anteriormente aos computadores, o cálculo era feito manualmente e esta simplicidade não parece sustentável. Em ambos os mesmos tipos de cálculos eram feitos e, pelo contrário, etapas adicionais e tediosas eram requeridas para computar os testes não-paramétricos. 
+
+
+> “Estamos somente interessados em U, embora a conversão para
+um valor-z seja útil, pois o **valor-z dá uma medida do tamanho do
+efeito** [_sic_] (veja a Seção 4.2).” (Dancey & Ready, 2019, p. 511)
+
+O erro principal desta afirmação é confundir o valor $z$ com tamanho de efeito: NÃO É, pois $z$ é uma estatística de teste dependente do tamanho do estudo. Uma agravante é que esta é uma aproximação de $z$ calculada a partir do artifício dos postos.
+
+
+
+# Existe espaço para testes não-paramétricos?
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/Skovlund.png")
+```
+<div align=right><small><small>
+Skovlund & Fenstad (2001)
+</small></small></div>
+
+Segundo estes autores, para amostras pequenas, na comparação entre os testes _t_ de Student e Satterthwaite/Welch e _U_ de Mann-Whitney (delineamento entre participantes):
+
+* _U_ é o método de escolha sem competição quando há homocedasticidade populacional entre grupos e assimetria populacional em cada grupo.
+* note que _t_ de Welch também é o método de escolha quando há heterocedasticidade mas a distribuição da VD populacional é normal em cada grupo e as amostras são desbalanceadas.
+* nas situações de heterocedasticidade, _U_ nunca é o método de escolha.
+* nenhum dos métodos é adequado quando há heterocedasticidade populacional e assimetria populacional em cada grupo; os autores recomendam transformações não lineares<sup>a</sup>, mas para amostras pequenas tais transformações são arriscadas (JCE Editor 2011, Neuhauser 2010).
+
+"Conclusion: The generalized Wilcoxon test [Brunner-Munzel] should be applied when it cannot be assumed that variances are equal and that the distribution is symmetric. This test is preferable to a transformation, because the use of transformations can be problematic, in particular when sample sizes are small."
+<div align=right><small>
+Neuhauser 2010
+</small></div>
+
+# Distribuição e parâmetros
+
+A distribuição normal tem dois parâmetros, média ($\mu$) e desvio-padrão ($\sigma$). Outras características existem, mas **não** são seus parâmetros: mediana, percentil, moda, intervalo interquartílico, assimetria e curtose, para citar alguns. 
+
+Isto fica claro na própria função <code>dnorm()</code>, cuja documentação mostra:
+
+<pre>
+<big>The Normal Distribution</big>
+
+<b>Description</b>
+Density, distribution function, quantile function and
+random generation for the normal distribution with
+mean equal to mean and standard deviation equal to sd.
+
+<b>Usage</b>
+dnorm(x, mean = 0, sd = 1, log = FALSE)
+</pre>
+
+Além do valor solicitado (<code>x</code>) bastam a média (<code>mean</code>) e o desvio-padrão (<code>sd</code>, _standard deviation_) para que a distribuição normal seja completamente definida.
+
+A VD, além da normal, pode assumir distribuição contínua, discreta ou mista, assimétrica ou simétrica, unimodal ou multimodal, truncada ou não, limitada ou infinita. Várias delas são formalmente definidas por um ou poucos parâmetros; outras são casos particulares, sem propriedades conhecidas. Portanto, a quantidade de distribuições que a VD pode assumir é infinita e variada. 
+
+Por exemplo, vamos experimentar com uma distribuição qui-quadrado centrada, cujo domínio se inicia em zero e vai a infinito (assimetria positiva). Esta distribuição tem apenas um parâmetro, os graus de liberdade. Sabe-se que a média destas distribuições qui-quadrado é igual ao número de graus de liberdade (_df_).
+
+Na distribuição normal, a média se modifica independentemente da variância. Em uma distribuição assimétrica como a qui-quadrado centrada, o comportamento de seu formato é complexo (Hart, 2001), como podemos demonstrar com [demo_quiquadrado.R](demo_quiquadrado.R):
+
+```{r echo=FALSE}
+source("demo_quiquadrado.R")
+```
+<div align=right><small>
+baseado em https://en.wikipedia.org/wiki/Chi-square_distribution
+</small></div>
+
+Observe que o formato da distribuição se altera quando a média muda: a mediana acompanha a média quase linearmente, a variância aumenta linearmente mas com inclinação maior que a média, enquanto a assimetria e o excesso de curtose reduzem-se (sabe-se que tende a uma distribuição normal). Este resultado é válido, em geral, para distribuições assimétricas.
+
+Porém, uma das suposições fundamentais para que o teste _U_ de Mann-Whitney seja aplicado para comparar medianas populacionais é que as distribuições da VD nos dois grupos sejam iguais. Portanto, ao contrário da crença geral, quando uma condição tem efeito na média ou mediana em VDs com distribuição assimétrica, este teste não paramétrico pode não ser adequado.
+
+# Tipos de hipótese nula
+
+Os testes de hipótese nula não são apenas para os parâmetros de uma distribuição (Landoni et al., 2016). Podem ser comparações das condições experimentais:
+
+* de parâmetros (e.g., média de normal),
+* de características (e.g., mediana de qui-quadrado ou lognormal),
+* das distribuições inteiras.
+
+```{r out.width = '70%', echo=FALSE}
+knitr::include_graphics("./image/H0.png")
+```
+<div align=right><small>
+Ogassavara et al. (2020)
+</small></div>
+
+# O teorema central do limite
+
+Para a média amostral aceita-se, em geral, que o teorema central do limite leva a uma distribuição normal das médias amostrais para $n \ge 30$. Para a discussão dos testes não-paramétricos, qual é o comportamento em relação às medianas amostrais? Implementamos [demo_Estatura.R](demo_Estatura.R) utilizando os dados de estatura dos estudantes do sexo masculino disponibilizados em [Adm2008.xlsx](Adm2008.xlsx):
+```{r echo=FALSE}
+source("demo_Estatura.R")
+```
+Nesta saída exibimos o resultado obtido por _bootstrapping_ das médias e das medianas amostrais com $n=51$ (o tamanho da amostra). Observa-se que a distribuição das médias adere bastante bem à distribuição normal, mas a distribuição das medianas amostrais tem aderência sofrível.
+
+-->
+
+# Referências
+
+* BEHRENS, J. & Yu, C. (2003) _Exploratory data analysis_. Willey.
+BRUNNER, E; MUNZEL, U (2000) The nonparametric Behrens-Fisher problem: Asymptotic theory and a small-sample approximation. _Biometrical Journal_ 42(1): 17–25.
+* CONOVER, WJ (1999) _Practical nonparametric Statistics_. 3rd ed. NJ: Wiley.
+* DANCEY CP, REIDY J. (2019) _Estatística sem matemática para Psicologia_, 7a. ed., Porto Alegre: Penso.
+* FAGERLAND, MW (2012) t-tests, non-parametric tests, and large studies - a paradox of statistical practice? _BMC Med Res Methodol_ 12, 78: 1-7. https://doi.org/10.1186/1471-2288-12-78
+* FAGERLAND, MW and SANDVIK, L (2009), The Wilcoxon-Mann-Whitney test under scrutiny. _Statistics in Medicine_, 28: 1487-1497. https://doi.org/10.1002/sim.3561
+* FRIEDMAN, M. (1937). The use of ranks to avoid the assumption of normality implicit in the analysis of variance. _Journal of the American Statistical Association_ 32 (200): 675–701. doi:10.1080/01621459.1937.10503522. 
+* FRIEDMAN, M. (1939). A correction: The use of ranks to avoid the assumption of normality implicit in the analysis of variance. _Journal of the American Statistical Association_ 34 (205): 109. doi:10.1080/01621459.1939.10502372. 
+* FRIEDMAN, M. (1940). A comparison of alternative tests of significance for the problem of m rankings. _The Annals of Mathematical Statistics_ 11 (1): 86–92. doi:10.1214/aoms/1177731944. 
+* HART, A (2001) Mann-Whitney test is not just a test of medians: differences in spread can be importante. _British Medical Journal_ 323: 391-3.
+* HOLLANDER, M et al. (2014) _Nonparametric Statistical Methods_, 3rd ed. NJ: Wiley.
+* HOLLEY, J. W. and GUILFORD, J. P. (1964) A note on the G index of agreement. _Educational and Psychological Measurement_, 24(4). https://doi.org/10.1177/001316446402400402
+* JCE Editor in reply to FAGERLAND MW (2011) Transformations can be avoided when comparing skewed distributions with unequal variances. _Journal of Clinical Epidemiology_ 64:451-5.
+* KIRKWOOD, BR; STERNE, JAC (2006) _Essential medical statistics_. 2nd ed. USA: Blackwell. 
+* KRUSKAL, W. H.; WALLIS, W. A. (1952). Use of ranks in one-criterion variance analysis. _Journal of the American Statistical Association_ 47 (260): 583–621. 10.1080/01621459.1952.10483441
+* LANDONI, E et al. (2016) Parametric and nonparametric two-sample tests for feature screening in class comparison: a simulation study. _Epidemiology Biostatistics and Public Health_, 13(2): 1-11. * LUDBROOK, J (1996) The Wilcoxon-Mann-Whitney test condemned. _British Journal of Surgery_ 83: 132-8.
+* MANN, H.B.; WHITNEY D.R. (1947). On a Test of Whether one of Two Random Variables is Stochastically Larger than the Other. _Annals of Mathematical Statistics_ 18 (1): 50–60. doi:10.1214/aoms/1177730491. MR 0022058.
+* MARÔCO, J (2014) _Análise estatística com SPSS Statistics_. 6a ed. Lisboa: ReportNumber.
+* MUNDRY & FISCHER (1998) Use of statistical programs for nonparametric tests of small samples often leads to incorrect P values. _Animal Behavior_ 56, 256–259.
+* MUNZEL, U (1999) Nonparametric methods for paired. S_tatistica Neerdanlica_, 53(3): 277-86.
+* NAHM, FS (2016) Nonparametric statistical tests for the continuous data: the basic concept and the practical use. _Korean journal of anesthesiology_, 69(1), 8–14. https://doi.org/10.4097/kjae.2016.69.1.8
+* NEUHAUSER, M (2010) A nonparametric two-sample comparison for skewed data with unequal variances. _Journal of Clinical Epidemiology_ 63: 691-3.
+* NEUHAUSER, M (2010) A nonparametric two-sample comparison for skewed data with unequal variances. _Journal of Clinical Epidemiology_ 63:691-3.
+* NORUSIS, M (1998) _SPSS 8 Guide to data analysis_. NJ: Prentice-Hall.
+* OGASSAVARA, NC et al. (2020) The Edmonton Obesity Staging System: assessing a potential tool to improve the management of obesity surgery in the Brazilian public health services. _Surgery for Obesity and Related Diseases_ 16(1): 40-47. 
+* POLITI, MT et al. (2021) Nonparametric statistical tests: friend or foe?. Jornal brasileiro de pneumologia : publicacao oficial da _Sociedade Brasileira de Pneumologia e Tisilogia_, 47(4), e20210292. https://doi.org/10.36416/1806-3756/e20210292
+* PRAJAPATI, B; DUNNE, M; ARMSTRONG, R (2010) Sample size estimation and statistical power analyses. Clinical. Disponível para [download](http://floppybunny.org/robin/web/virtualclassroom/stats/basics/articles/gpower/Gpower_tutorial_Prajapati_2010-.pdf){target="_blank"}.
+* RASCH, D et al. (2007) How robust are tests for two independent samples? _Journal of Statistical Planning and Inference_ 137: 2706-2720.
+* RASCH, D et al. (2011) The two-sample t test: pre-testing its assumptions does not pay off. _Stat Papers_ 52: 219-231.
+* ROSNER, B (1995) _Fundamentals of Biostatistics_. 4th ed. Belmont: Duxbury.
+* ROSENKRANZ GK (2010) A note on the Hodges-Lehmann estimator. _Pharm Stat._ 9(2):162-7. doi: 10.1002/pst.387. 
+* RUNYON, R. & HABER, A. (1973) _Fundamentals of behavioral statistics_. USA: Addison-Wesley, p. 235-236) 
+* SCHOBER P, VETTER TR (2020) Nonparametric Statistical Methods in Medical Research, _Anesthesia & Analgesia_ 131(6): 1862-3 doi:10.1213/ANE.0000000000005101
+* SILVEIRA PSP, SIQUEIRA JO. (2023) Better to be in agreement than in bad company : A critical analysis of many kappa-like tests. _Behav Res Methods_. 55(7):3326-3347. doi: 10.3758/s13428-022-01950-0. 
+* SILVEIRA, P. S. P.; Siqueira, J. O. (2022). Histogram lies about distribution shape and Pearson’s coefficient of variation lies about relative variability. _The Quantitative Methods for Psychology_ 18(1), 91–111. https://doi.org/10.20982/tqmp.18.1.p091
+* SKOVLUND, E & FENSTAD, GU (2001) Should we always choose a nonparametric test when comparing two apparently nonnormal distributions? _Journal of Clinical Epidemiology_ 54: 86-92.
+* WILCOXON, F. (1945). Individual comparisons by ranking methods. _Biometrics Bulletin_ 1 (6): 80–83. doi:10.2307/3001968.
+* WINTER, JCF & DODOU, D (2012) Five-point Likert items: t test versus Mann-Whitney-Wilcoxon. _Practical Assessment, Research & Evaluation_ 15(11).
+* WONNACOTT, T & WONNACOTT, R (1990) _Introductory statistics for business and economics_, 4th ed. NJ: Wiley.
+* XIAOFENG LIU (2011) The Effect of a Covariate on Standard Error and Confidence Interval Width. _Communications in Statistics - Theory and Methods_ 40:3, 449-456, DOI: 10.1080/03610920903391337
+* ZIMMERMAN, DW (1998) Invalidation of parametric and nonparametric statistical tests by concurrent violation of two assumptions, The _Journal of Experimental Education_, 67(1): 55-68, DOI: 10.1080/00220979809598344

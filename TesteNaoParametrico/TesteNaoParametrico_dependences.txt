@@ -1,0 +1,73 @@
+
+# Pacotes, funções e arquivos necessários
+
+* packages
+```{r, echo=TRUE, eval=FALSE, class.source="bgcodigo", class.output="bgsaida"}
+options(warn=-1)
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(coin, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(eiras, warn.conflicts=FALSE))
+suppressMessages(library(emmeans, warn.conflicts=FALSE))
+suppressMessages(library(exactRankTests, warn.conflicts=FALSE))
+suppressMessages(library(FSA, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(gplots, warn.conflicts=FALSE))
+suppressMessages(library(jmv, warn.conflicts=FALSE))
+suppressMessages(library(lattice, warn.conflicts=FALSE))
+suppressMessages(library(lawstat, warn.conflicts=FALSE))
+suppressMessages(library(lmboot, warn.conflicts=FALSE))
+suppressMessages(library(lmerTest, warn.conflicts=FALSE))
+suppressMessages(library(multcomp, warn.conflicts=FALSE))
+suppressMessages(library(PMCMRplus, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(rcompanion, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(rstatix, warn.conflicts=FALSE))
+suppressMessages(library(stats, warn.conflicts=FALSE))
+options(warn=0)
+```
+
+
+* scripts
+
+    * [demo_Confronto_MWW.R](demo_Confronto_MWW.R)
+    * [demo_Confronto_t.R](demo_Confronto_t.R)
+    * [demo_Confronto_t2.R](demo_Confronto_t2.R)
+    * [demo_ConfrontoAmostra_desempenho.R](demo_ConfrontoAmostra_desempenho.R)
+    * [demo_ConfrontoAmostra.R](demo_ConfrontoAmostra.R)
+    * [demo_ConfrontoAmostras.R](demo_ConfrontoAmostras.R)
+    * [demo_ConfrontoPop.R](demo_ConfrontoPop.R)
+    * [demo_ConfrontoTCL.R](demo_ConfrontoTCL.R)
+    * [demo_HistogramLies.R](demo_HistogramLies.R)
+    * [demo_KW_ANOVA.R](demo_KW_ANOVA.R)
+    * [demo_KW_posthoc.R](demo_KW_posthoc.R)
+    * [demo_KW.R](demo_KW.R)
+    * [demo_MWW_2.R](demo_MWW_2.R)
+    * [demo_MWW_AB.R](demo_MWW_AB.R)
+    * [demo_MWW_ABt.R](demo_MWW_ABt.R)
+    * [demo_MWW_pm.R](demo_MWW_pm.R)
+    * [demo_MWW_pm2.R](demo_MWW_pm2.R)
+    * [demo_MWW_pm3.R](demo_MWW_pm3.R)
+    * [demo_MWW_t.R](demo_MWW_t.R)
+    * [demo_MWW_tboot.R](demo_MWW_tboot.R)
+    * [demo_MWW_tStudent.R](demo_MWW_tStudent.R)
+    * [demo_MWW.R](demo_MWW.R)
+    * [demo_PseudoMediana.R](demo_PseudoMediana.R)
+    * [demo_Q_ANOVA.R](demo_Q_ANOVA.R)
+    * [demo_Q.R](demo_Q.R)
+    * [demo_Wilcoxon_t.R](demo_Wilcoxon_t.R)
+    * [demo_Wilcoxon_tboot.R](demo_Wilcoxon_tboot.R)
+    * [demo_Wilcoxon.R](demo_Wilcoxon.R)
+    * [eiras_plotIC.R](eiras_plotIC.R)
+    * [eiras.create.population.R](eiras.create.population.R)
+    * [eiras.friendlycolor.R](eiras.friendlycolor.R)
+    * [eiras.pseudomediana.R](eiras.pseudomediana.R)
+    * [eiras.shade.polygon.R](eiras.shade.polygon.R)
+    * [eiras.shape.test.R](eiras.shape.test.R)
+
+
+* files
+
+    * [Enxaqueca.xlsx](Enxaqueca.xlsx)
+    * [Simpatia.xlsx](Simpatia.xlsx)
