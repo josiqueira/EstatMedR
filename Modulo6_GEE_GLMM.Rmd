@@ -1,0 +1,939 @@
+--- 
+title: "MAN5728: Tópicos Essenciais da Bioestatística"
+subtitle: "Módulo 6: GEE (Generalized Estimating Equations) e GLMM (Generalized Linear Mixed Model)"
+author: |
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    font_adjustment: 1
+    css: style.css
+    df_print: tibble
+    footer: "Modulo6_GEE_GLMM.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  slidy_presentation:
+    font_adjustment: -1
+    css: style.css
+    footer: "Modulo6_GEE_GLMM.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+---
+
+```{r set-options, echo=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 16px;
+  background-color: white;
+  border: 1px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+ }
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+ }
+.bgobs {
+  background-color: #a0d8d8;
+ }
+.bgcodigo {
+  background-color: #eeeeee;
+ }
+.bgsaida {
+  background-color: #ecf7db;
+ }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:", "Usuarios", "Jose", "scilab2023", "bin", "Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+# Pacotes do R
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(HSAUR3, warn.conflicts=FALSE))
+suppressMessages(library(gee, warn.conflicts=FALSE))
+suppressMessages(library(lme4, warn.conflicts=FALSE))
+suppressMessages(library(lmerTest, warn.conflicts=FALSE))
+suppressMessages(library(MASS, warn.conflicts=FALSE))
+suppressMessages(library(rmcorr, warn.conflicts=FALSE))
+suppressMessages(library(weights, warn.conflicts=FALSE))
+suppressMessages(library(lsr, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(rstatix, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts=FALSE))
+suppressMessages(library(magrittr, warn.conflicts=FALSE))
+suppressMessages(library(purrr, warn.conflicts=FALSE))
+suppressMessages(library(tidyr, warn.conflicts=FALSE))
+suppressMessages(library(rsample, warn.conflicts=FALSE))
+suppressMessages(library(ggpubr, warn.conflicts=FALSE))
+suppressMessages(library(IDPmisc, warn.conflicts=FALSE))
+suppressMessages(library(estimatr, warn.conflicts=FALSE))
+suppressMessages(library(broom.mixed, warn.conflicts=FALSE))
+suppressMessages(library(geepack, warn.conflicts=FALSE))
+```
+
+# Conteúdo
+
+* GEE (Generalized Estimating Equations) 
+* GLMM (Generalized Linear Mixed Model)
+  
+# Análise de dados agrupados e longitudinais 
+
+Estudos longitudinais são caracterizados por mensurações realizadas nas mesmas unidades experimentais que na Medicina consistem, por exemplo, em pacientes, profissionais da saúde, serviços médicos e unidades familiares, ao longo do tempo, permitindo o estudo direto de mudanças decorrentes da evolução de uma doença ou do efeito sequencial de uma intervenção. 
+
+O objetivo principal de um estudo longitudinal é caracterizar os fatores que influenciam as mudanças observadas de maneira mais precisa do que se pode obter com uma única observação.
+
+Uma outra característica dos dados é que eles podem ser agrupados hierarquicamente. Em estudos com agrupamentos hierarquizados, os agrupamentos são compostos por medidas repetidas de uma unidade experimental. 
+
+As observações dentro de um nível hierárquico de agrupamento exibem frequentemente correlações positivas que devem ser levadas em consideração na análise, pois esperamos que medidas em unidades experimentais de um agrupamento sejam mais similares que as medidas em unidades de diferentes agrupamentos. 
+
+Famílias, serviços hospitalares, práticas médicas, bairros e escolas, por exemplo, são instâncias nas quais naturalmente ocorre o efeito de agrupamento.
+
+Um estudo pode ser longitudinal e com agrupamentos hierarquizados, o que exige conhecimento do pesquisador para, corretamente, obter inferências sobre os fatores que estuda. 
+
+No decorrer da década de 80 ocorreram importantes inovações computacionais, principalmente em termos de aprimoramentos de algoritmos iterativos, que propiciaram o desenvolvimento de novas classes de modelos, mais complexos e gerais. 
+
+Dentre esses modelos, dois se destacam: 
+
+* GEE (_Generalized Estimating Equations_) 
+* GLMM (_Generalized Linear Mixed Models_)
+
+Ambos os modelos deram consideráveis saltos de qualidade para a modelagem de dados relacionados aos problemas da área da saúde, em particular, e da ciência, em geral. 
+
+Os dois modelos surgiram em departamentos de Bioestatística: 
+
+- GEE no Departamento de Bioestatística da _Johns Hopkins University_ em 1986; 
+- GLMM no Departamento de Bioestatística da _Harvard School of Public Health_ em 1982. 
+
+Os sistemas computacionais, no entanto, permitem que profissionais da saúde tirem proveito de tais técnicas estatísticas, desde que as entendam conceitualmente e possam escolher adequadamente o que utilizar e como interpretar seus resultados.
+
+```{r eval=TRUE, echo=FALSE, out.width="80%", fig.cap="Figure 1: Comparison of the numbers of papers that used three statistical methods published in five journals in the behavioural sciences between 2001 and 2014. <br> Pekár & Brabec, 2017, p. 88."}
+knitr::include_graphics("GEExGLMM.png")
+```
+
+"Os métodos estatísticos tradicionais são baseados na suposição de que as observações em uma amostra são independentes umas das outras, ou seja, o valor de uma observação não é influenciado pelo valor de outra. 
+
+Essa suposição de independência é violada se os dados são agrupados (_clustered_), ou seja, se as observações em um agrupamento tenderem a ser mais semelhantes entre si do que com os indivíduos do restante da amostra. 
+
+Os dados agrupados surgem de três maneiras principais:
+
+1. _Medidas repetidas em estudos longitudinais_: Neste caso os clusters são os sujeitos; observações repetidas sobre o mesmo sujeito serão mais semelhantes entre si do que observações sobre outros sujeitos. 
+
+Por exemplo:
+
+- em estudos de asma ou outras doenças crônicas, os episódios da doença podem ocorrer em mais de uma ocasião no mesmo sujeito; 
+
+- em estudos longitudinais de doenças comuns da infância em países em desenvolvimento, as crianças podem apresentar vários episódios de diarreia, malária ou infecções respiratórias agudas durante o estudo;
+
+- em um estudo de doenças cardiovasculares e obesidade, as medições da pressão arterial, índice de massa corporal e níveis de colesterol podem ser repetidas a cada 3 meses.
+
+2. _Várias medidas sobre o mesmo sujeito_: Por exemplo, em pesquisas odontológicas são feitas observações em mais de um dente no mesmo sujeito. Neste caso, os agrupamentos (_clusters_) são novamente os sujeitos.
+
+3. _Estudos em que os sujeitos são agrupados_: Isso ocorre, por exemplo, em:
+
+- _ensaios randomizados em cluster_, nos quais grupos, em vez de indivíduos, são randomizados para receber as diferentes intervenções em estudo. Por exemplo, a unidade de randomização pode ser prática geral (https://en.wikipedia.org/wiki/General_practice), com todos os pacientes registrados em uma prática recebendo a mesma intervenção. Como os pacientes em uma prática geral podem ser mais semelhantes entre si do que com pacientes em outras práticas gerais, por exemplo, porque algumas áreas tendem a ser mais carentes do que outras ou devido à exposição a um risco ambiental comum, os dados são agrupados. Neste caso o cluster é o grupo de pacientes cadastrados na prática geral;
+
+- _estudos de família_, uma vez que indivíduos de uma mesma família tendem a ser mais semelhantes entre si do que indivíduos de famílias diferentes, pois compartilham genes e ambiente semelhantes. Neste caso o cluster é a família;
+
+- pesquisas em que a _amostragem por conglomerados_ é empregada. Por exemplo, para estimar a porcentagem de jovens de 14 anos em Londres que trabalham nos fins de semana, podemos selecionar 1.000 crianças por amostragem aleatória de 20 escolas de todas as escolas de Londres e, em seguida, amostrar aleatoriamente 50 crianças de cada uma das escolas selecionadas. Como as crianças de uma escola podem ser mais parecidas entre si do que as crianças de escolas diferentes, os dados são agrupados. Neste caso, os clusters são as escolas.
+
+É essencial que a presença de agrupamento seja permitida nas análises estatísticas. 
+
+A principal razão para isso, como veremos, é que os erros padrão podem ser muito pequenos se não levarem em conta o agrupamento nos dados. 
+
+Isso levará a intervalos de confiança muito estreitos e valores P muito pequenos.
+
+Discutiremos quatro maneiras apropriadas de analisar dados agrupados:
+
+1. calcular medidas de resumo para cada cluster e analisar essas medidas de resumo usando métodos-padrão;
+2. usar erros-padrão robustos para corrigir erros-padrão para o agrupamento;
+3. utilizar modelos de efeitos aleatórios (GLMM) que modelam explicitamente a similaridade entre indivíduos de um mesmo cluster;
+4. usar equações de estimação generalizadas (GEE) que ajustam tanto os erros-padrão quanto as estimativas de parâmetros para permitir o agrupamento."
+
+> Kirkwood & Sterne, 2003, p. 355-6
+
+"RESUMO DAS ABORDAGENS PARA A ANÁLISE DE DADOS AGRUPADOS
+
+1. Se os dados estiverem agrupados, é essencial que o agrupamento seja permitido nas análises. Em particular, a falha em permitir o agrupamento pode significar que os erros-padrão das estimativas dos parâmetros são muito pequenos, de modo que os intervalos de confiança são muito estreitos e os valores _p_ são muito pequenos.
+
+2. É sempre válido derivar medidas-resumo para cada agrupamento e depois analisá-las usando métodos-padrão.
+
+3. O provável efeito do agrupamento nos erros-padrão pode ser avaliado pela especificação de erros-padrão robustos que permitem o agrupamento. As estimativas de parâmetros não são afetadas. Para que esses erros-padrão robustos sejam confiáveis, precisamos de um número razoável de agrupamentos (pelo menos 30). Testes de Wald, em vez de testes de razão de verossimilhança (LR), devem ser usados.
+
+4. Os modelos de efeitos aleatórios (multinível), GLMM, permitem a presença de agrupamento modificando o preditor linear por uma quantidade constante no agrupamento. Supõe-se que os efeitos aleatórios variem aleatoriamente entre os agrupamentos. Modelos de efeitos aleatórios funcionam bem para desfechos normalmente distribuídos e regressão de Poisson, mas a estimativa de modelos logísticos de efeitos aleatórios é difícil e computacionalmente exigente.
+
+5. Equações de estimação generalizadas (GEE) modificam tanto as estimativas de parâmetros quanto os erros-padrão para permitir o agrupamento. Novamente, deve haver um número razoável de agrupamentos A abordagem GEE é particularmente útil em análises de regressão logística e quando o foco de interesse está no efeito de exposição estimado e onde o agrupamento não tem interesse intrínseco."
+
+> Kirkwood & Sterne, 2003, p. 369-70
+
+# Análise de medidas repetidas
+
+```{r eval=TRUE, echo=FALSE, out.width="100%", fig.cap="Hamaker, 2013, in Mehl & Conner, p. 43-61."}
+knitr::include_graphics("Fig31.png")
+```
+
+```{r eval=TRUE, echo=FALSE, out.width="100%", fig.cap="Sainani, 2010, p. 861."}
+knitr::include_graphics("Table5.png")
+```
+
+# Formato de arquivo de dados
+
+Largo (_wide_)
+
+* Cada linha do arquivo corresponde a uma unidade experimental distinta
+
+Longo (_long_)
+
+* Cada linha do arquivo corresponde a cada observação da VD de cada unidade experimental distinta.
+
+O formato do arquivo de dados para análise estatística por meio do Modelo Linear Geral (GLM) é o largo.
+
+O formato longo é usado para análises com Modelo Linear Misto Generalizado (GLMM) e Equações de Estimação Generalizadas (GEE).
+
+# Análise de correlação com dados agrupados
+
+O coeficiente de correlação de Pearson avalia o grau de linearidade entre duas variáveis intervalares num delineamento entre participantes. A correlação de Pearson varia de -1 a 1, não depende do tamanho da amostra e é adimensional: [Wikipedia: Pearson correlation coefficient](https://en.wikipedia.org/wiki/Pearson_correlation_coefficient)
+
+```{r eval=TRUE, echo=FALSE, out.width="100%", fig.cap="https://en.wikipedia.org/wiki/Pearson_correlation_coefficient#/media/File:Correlation_examples2.svg"}
+knitr::include_graphics("Correlation_examples2.png")
+```
+
+# Correlação intra: pHi & PaCO2
+
+Disóxia tecidual e a hipóxia são os maiores fatores determinantes do surgimento e propagação da falência de múltiplos órgãos em pacientes críticos.
+
+* A disóxia tecidual ocorre quando há uma quantidade insuficiente de oxigênio disponível nos tecidos do corpo, apesar de haver uma quantidade adequada de oxigênio no sangue arterial. Esse fenômeno difere da hipóxia, que se refere à deficiência de oxigênio no sangue. A disóxia pode ser causada por problemas na utilização do oxigênio pelas células, devido a disfunções metabólicas ou envenenamento por cianeto, que impede que as células utilizem o oxigênio presente. 
+
+A medida do pH intramural (pHi) ou pH intramucoso gástrico (pHim)  reflete o balanço ácido-básico tecidual em uma das primeiras regiões do corpo a desenvolver disóxia no choque.
+
+O objetivo é avaliar a associação entre pHi e PaCO<sub>2</sub> (pressão parcial de CO<sub>2</sub> no sangue arterial) (https://en.wikipedia.org/wiki/PCO2).
+
+"Vários estudos clínicos demonstraram que a acidose intramucosa gástrica detectada por esse procedimento prevê um aumento da mortalidade de adultos gravemente doentes em unidades de terapia intensiva (UTI) médicas e cirúrgicas, e que é um melhor preditor de mortalidade por doença crítica do que outras medidas de entrega global de oxigênio e hemodinâmica sistêmica."
+
+> Baigorri et al., 1997
+
+```{r eval=TRUE, echo=FALSE, out.width="80%", fig.cap="A tonometria gástrica determina o PaCO<sub>2</sub> intraluminal, que se presume estar em equilíbrio com o PaCO<sub>2</sub> na mucosa gástrica. O pHi pode ser calculado pela equação de Henderson-Hasselbalch, usando o valor de PaCO<sub>2</sub> determinado pela tonometria gástrica e a concentração de íon bicarbonato no sangue arterial."}
+knitr::include_graphics("pHi.png")
+```
+
+> Baigorri et al., 1997
+
+Os dados usados para testar esta associação estão em Bland & Altman (1995a).
+
+# Análise descritiva de correlação intraparticipantes
+
+``` {r eval=TRUE, echo=TRUE}
+alfa <- 0.05
+
+Dados <- rmcorr::bland1995
+Dados$Subject <- factor(Dados$Subject)
+print(Dados)
+
+car::scatterplot(Dados$PaCO2, 
+                 Dados$pH, 
+                 groups=Dados$Subject,
+                 regLine=FALSE, smooth=FALSE, 
+                 ellipse=list(levels=c(.68), 
+                              robust=TRUE, 
+                              fill=FALSE), 
+                 col="black", xlab="PaCO2", ylab="pHi")
+Dados %>% 
+  ggplot2::ggplot(ggplot2::aes(x=PaCO2, y=pH, 
+                               color=Subject)) + 
+  ggplot2::geom_point() + 
+  ggplot2::geom_smooth(method="lm", formula=y~x, se=FALSE) + 
+  ggpubr::stat_cor(method="pearson", cor.coef.name="r", 
+                   na.rm=TRUE, r.digits=3, p.digits=2,
+                   label.x=6.5) + 
+  ggplot2::labs(x="PaCO2", y="pHi") +
+  ggplot2::xlim(3,9) +
+  ggplot2::theme_test()
+```
+
+# Correlação intraparticipantes por `cor.test`: incorreta
+
+``` {r eval=TRUE, echo=TRUE}
+print(cor.test(Dados$PaCO2, Dados$pH))
+```
+
+Para um delineamento intraparticipantes, é possível estimar e testar a o coeficiente de correlação de Pearson implícito entre duas variáveis intervalares. Esta correlação implícita intraparticipantes nao é: (i) a média aritmética das correlações dos participantes; (ii) a média ponderada das correlações dos participantes. Bland & Altman (1995a) mostraram a maneira correta de estimar a correlação intra.
+
+```{r eval=TRUE, echo=FALSE, out.width="80%", fig.cap="Bland & Altman, 1995a"}
+knitr::include_graphics("r_intra_wrong.png")
+```
+
+# IC95% por _bootstrapping_ das correlações intraparticipantes
+
+
+``` {r eval=TRUE, echo=TRUE}
+boot_corr <- Dados %>% 
+  tidyr::nest(data=-c(Subject)) %>% # grouping the Subject 
+  dplyr::mutate(boots=purrr::map(data, 
+                     ~rsample::bootstraps(.x, times=1e2, 
+                                          apparent=FALSE))) %>% 
+  tidyr::unnest(boots) %>% dplyr::mutate(correlations=purrr::map(splits,                                              ~rstatix::cor_test(PaCO2,                                                                 pH,                                                  data=rsample::analysis((.)))))
+corr <- boot_corr %>% 
+  tidyr::unnest(correlations) %>% # unnesting tidied data frames 
+  dplyr::select(-data, -splits, -id) 
+corr <- IDPmisc::NaRV.omit(corr)
+
+# bootstrap confidence interval
+point <- Dados %>% 
+  dplyr::group_by(Subject) %>% 
+  rstatix::cor_test(PaCO2, pH, method="pearson") 
+CI <- corr %>% 
+  dplyr::group_by(Subject) %>% 
+  dplyr::summarise(lwr_CI=quantile(cor, alfa/2), 
+            .estimate=median(cor), 
+            upr_CI=quantile(cor, 1-alfa/2)) 
+print(CI)
+```
+
+# Correlação intraparticipantes por _bootstrapping_: correta
+
+A estimativa do valor absoluto da correlação de Pearson para medidas repetidas é a raiz quadrada do eta parcial ao quadrado de PaCO2.
+
+O sinal da correlação é obtido por meio do sinal da estimativa do parâmetro beta da regressão entre PaCO2 e pH intramural controlada pelo fator Subject.
+
+``` {r eval=TRUE, echo=TRUE}
+# Bland & Altman, 1995a
+print(rmcorr::rmcorr(participant=Subject, 
+                     measure1=PaCO2, 
+                     measure2=pH, 
+                     dataset=Dados,
+                     CI.level=1-alfa,
+                     CIs="bootstrap",
+                     nreps=1e4), digits=4)
+# 95% confidence interval (analytic)  = -0.7112297 -0.223255 
+# 95% confidence interval (bootstrap) = -0.727479  -0.06999879 
+```
+
+# Medida média: "entre participantes"
+
+``` {r eval=TRUE, echo=TRUE}
+Dados.media <- aggregate(Dados, x=cbind(PaCO2, pH)~Subject, FUN=mean)
+Dados.n <- aggregate(Dados, x=cbind(Subject)~Subject, FUN=length)
+Dados.media <- cbind(Dados.media,Dados.n[,2])
+names(Dados.media) <- c(names(Dados.media)[1:(length(names(Dados.media))-1)], 
+                        "Number")
+names(Dados.media) <- c("Subject", "PaCO2.mean", "pH.mean", "Number")
+print(Dados.media, digits=4)
+```
+
+# Correlação "entre participantes" por `cor.test`: incorreta
+
+``` {r eval=TRUE, echo=TRUE}
+print(cor.test(Dados.media$PaCO2.mean, Dados.media$pH.mean))
+```
+
+
+# Correlacao "entre participantes" por `weights::wtd.cor`: correta
+
+``` {r eval=TRUE, echo=TRUE}
+# Bland & Altman 1995b: analitica e boostrapping
+print(weights::wtd.cor(Dados.media$PaCO2.mean, 
+                       Dados.media$pH.mean, 
+                       weight=Dados.media$Number,
+                       bootp=TRUE, bootse=TRUE, bootn=1e4), digits=4)
+```
+
+# Desenhando as correlações intra e entre participantes
+
+## Within correlation
+
+<code>
+r = -0.51
+
+degrees of freedom = 38
+
+p-value = 0.00085
+
+95% confidence interval (analytic)  = -0.71 -0.22
+
+95% confidence interval (bootstrap) = -0.73  -0.07
+</code>
+
+## Between correlation
+
+`correlation       bootcor   std.err       t.value p.value`
+
+`0.067             0.004     0.584         0.0066  0.900`
+
+```{r eval=TRUE, echo=FALSE, out.width="80%", fig.cap="Hamaker, 2013, in Mehl & Conner, p. 43-61."}
+knitr::include_graphics("Fig33.png")
+```
+
+# rcGLM: robust clustered General Linear Model
+
+"Dada esta revisão da literatura e nossas novas simulações, achamos que a maioria dos pesquisadores pode continuar usando confortavelmente o software OLS padrão, de preferência com os erros-padrão robustos, em vez de mudar para os métodos semiparamétricos mais recentes."
+
+> Judkins DR & Porter KE, 2016
+
+"`estimatr` is a package in R dedicated to providing fast estimators that take into consideration designs often used by social scientists. 
+
+Estimators are statistical methods for estimating quantities of interest like treatment effects or regression parameters. 
+
+Many of the estimators included with the R programming language or popular R packages are slow and have default settings that lead to statistically inappropriate estimates. 
+
+Certain estimators that reflect cutting-edge advances in statistics are not yet implemented in R packages for convenient use. 
+
+`estimatr` is designed to solve these problems and provide estimators tuned for design-based inference."
+
+The current estimators we provide are:
+
+* `lm_robust`: for fitting linear models with heteroskedasticity/cluster-robust standard errors
+* `lm_lin`: a wrapper for lm_robust() to simplify interacting centered pre-treatment covariates with a treatment variable
+* `iv_robust`: two stage least squares estimation of instrumental variables regression
+* `difference_in_means`: for estimating differences in means with appropriate standard errors for unit-randomized, cluster-randomized, block-randomized, matched-pair randomized, and matched-pair clustered designs
+* `horvitz_thompson`: for estimating average treatment effects taking into consideration treatment probabilities or sampling probabilities for simple and cluster randomized designs
+
+> Sonnet, ?
+
+# Regressão linear ponderada: `estimatr::lm_robust`
+
+``` {r eval=TRUE, echo=TRUE}
+Dados.media %>% 
+  ggplot2::ggplot(ggplot2::aes(x=PaCO2.mean, y=pH.mean)) + 
+  ggplot2::geom_point() + 
+  ggplot2::stat_smooth(method="lm", formula=y~x, se=TRUE, 
+                       ggplot2::aes(weight=Number)) + 
+  ggplot2::labs(x="PaCO2", y="ipH", 
+                title="Weighted Linear Regression") +
+  ggplot2::theme_test()
+```
+
+# Regressão linear ponderada robusta com dados médios: `estimatr::lm_robust`
+
+A correlação de Pearson entre participantes entre os valores médios de pH e PaCO2 pode ser obtida por meio da regressão linear ponderada robusta com a função `estimatr::lm_robust` da seguite forma:
+
+``` {r eval=TRUE, echo=TRUE}
+wfit <- estimatr::lm_robust(pH.mean ~ PaCO2.mean, 
+                            weights=Number, 
+                            data=Dados.media)
+print(out <- summary(wfit))
+
+sunflowerplot(x=Dados.media$PaCO2.mean, 
+              y=Dados.media$pH.mean, 
+              number=Dados.media$Number, seg.col="black",
+              xlab="PaCO2.mean", ylab="pH.mean", 
+              main="Robust Weighted Linear Regression")
+abline(reg=wfit)
+rw <- sign(out$coefficients[2])*sqrt(out$r.squared)
+cat("Between Pearson's correlation coefficient =", rw, ", p =", wfit$p.value[2])
+```
+
+# Regressão linear ponderada robusta: `estimatr::lm_robust`
+
+``` {r eval=TRUE, echo=TRUE}
+fit <- estimatr::lm_robust(PaCO2 ~ pH, 
+                           clusters=Subject, 
+                           data=Dados)
+print(summary(fit))
+```
+
+# Regressão linear robusta INCORRETA: `estimatr::lm_robust`
+
+``` {r eval=TRUE, echo=TRUE}
+fit <- estimatr::lm_robust(PaCO2 ~ pH, 
+                           data=Dados)
+print(summary(fit))
+```
+
+
+# GEE: Generalized Estimating Equations
+
+As Equações de Estimativa Generalizadas (GEE) foram desenvolvidas para estender o Modelo Linear Generalizado (GLM) para acomodar dados longitudinais e agrupados.
+
+O GEE destina-se a agrupamento simples ou medidas repetidas. Ele não pode acomodar facilmente delineamentos mais complexos, como grupos aninhados ou cruzados; por exemplo, medidas repetidas aninhadas dentro de um sujeito ou grupo. Isso é algo mais adequado para um modelo de efeito misto (GLMM).
+
+Pacotes do R
+
+* `geepack::geeglm`, `glmtoolbox::glmgee` 
+
+* `yags`, `MuMIn`: QIC for GEE model selection 
+
+```{r eval=TRUE, echo=TRUE}
+Dados <- rmcorr::bland1995
+Dados$Subject <- factor(Dados$Subject)
+
+fitgeeglm <- geepack::geeglm(PaCO2 ~ pH,
+                             id=Subject,
+                             family=gaussian("identity"),
+                             corstr="exchangeable",
+                             data=Dados)
+print(anova(fitgeeglm))
+print(summary(fitgeeglm, corr=FALSE))
+```
+
+# GEE: Regressão logística: `geepack::geeglm`: artrite reumatóide
+
+Uma nova droga é testada para o alívio da dor provocada por artrite reumatóide (AR). 
+
+O arquivo contém dois graus de alívio (Baixo, Satisfatório) após a aplicação de dois tratamentos (Placebo, Droga ativa) medidos em 3 semanas em 51 pacientes adultos do sexo feminino e masculino. 
+Cada paciente recebeu um dos tratamentos randomizadamente.
+
+> Norusis, 2012
+
+``` {r eval=TRUE, echo=TRUE}
+Dados <- readxl::read_excel("arthritis_long.xlsx")
+Dados$Paciente <- factor(Dados$Paciente)
+Dados$Tratamento <- factor(Dados$Tratamento)
+Dados$Tratamento <- relevel(Dados$Tratamento,
+                            ref="Placebo")
+Dados$AlivioDor <- factor(Dados$AlivioDor)
+Dados$AlivioDor <- relevel(Dados$AlivioDor,
+                           ref="Baixo")
+Dados$Semana <- as.numeric(Dados$Semana)
+print(summary(Dados))
+print(head(Dados))
+print(tail(Dados))
+
+Dados <- na.omit(Dados)
+fitgeeglm <- try(geepack::geeglm(AlivioDor ~ Tratamento, 
+                                 id=Paciente,
+                                 family=binomial("logit"),
+                                 corstr="exchangeable",
+                                 data=Dados))
+```
+
+# GEE: Regressão de Poisson: `geepack::geeglm`: epilepsia
+
+Para 59 pacientes, o número total de episódios epilépticos num período de referência de 8 semanas foi registrado, sendo que um dos pacientes foi considerado inválido e foi excluído da análise, restando 58 casos.
+
+Após o período de referência, os pacientes foram atribuídos ou ao grupo placebo ou ao grupo da droga ativa, e as contagens dos episódios para os 4 períodos de 2 semanas subsequentes foram obtidos.
+
+O objetivo do estudo é determinar se o tratamento com a droga ativa é efetivo na redução dos episódios epilépticos.
+
+> Norusis, 2012
+
+VD
+
+* Número de episódios epilépticos por período: _seizure_
+* log(episódios por semana) = log(#episódios/#semanas)
+* Número de semanas: _time_
+* Variável _offset_: log(_time_) = _logtime_
+
+VI de interesse
+
+* Fator: _treatment_
+
+VI de controle
+
+* Período de tratamento: _active_
+
+Se o fator _treatment_ diminui o número de episódios epilépticos, i.e., é protetivo, então o RR (_risk ratio_) do treatment para o nível _drug_ é significante e menor que 1.
+
+``` {r eval=TRUE, echo=TRUE}
+Dados <- readxl::read_excel("epilepsy.xlsx")
+Dados$ID <- factor(Dados$ID)
+Dados$treatment <- factor(Dados$treatment)
+Dados$treatment <- relevel(Dados$treatment, ref="Placebo")
+Dados$active <- factor(Dados$active)
+Dados$active <- relevel(Dados$active, ref="Baseline")
+print(summary(Dados))
+print(head(Dados))
+print(tail(Dados))
+
+fitglmer <- lme4::glmer(seizure ~ treatment*active + (1|ID), 
+                        data=Dados, 
+                        family=poisson("log"))
+print(car::Anova(fitglmer))
+out <- summary(fitglmer, corr=FALSE)
+print(out)
+ci <- confint(fitglmer)
+print(ci, digits=4)
+cat("RR de treatment(drug) =", exp(out$coefficients[4]), 
+    "[", exp(as.numeric(ci[5,1:2])), "]")
+```
+
+# GLMM: Generalized Linear Mixed Model
+
+GLMM é o modelo linear generalizado de efeitos fixos e aleatórios para uma VD.
+
+## Fator fixo 
+
+- é a população dos níveis do fator;
+- contém todos os níveis de interesse do pesquisador;
+- efeito de interesse do pesquisador a ser testado estatisticamente.
+
+## Fator aleatório 
+
+- amostra aleatória dos níveis do fator;
+- contém os níveis de interesse do pesquisador com dependência entre os valores da VD dentro de cada nível e independência entre os níveis;
+- efeito de controle usado para testar estatisticamente efeito fixo.
+
+Na presença de fator aleatório (agrupamento), a conclusão sobre o efeito do fator fixo se aplica à população do fator aleatório.
+
+O efeito de interação entre efeitos fixo e aleatório é aleatório.
+
+Todo modelo com pelo menos um fator aleatório é misto, pois o intercepto é efeito fixo.
+
+GLMM não exige independência entre as observações e homocedasticidade da VD.
+
+## Causas de dependência
+
+* Agrupamento (_cluster_): região, escola, hospital, loja, participante;
+
+* Medidas repetidas: mensurações periódicas das mesmas variáveis nas mesmas unidades experimentais.
+
+## Distribuição da VD (FD)
+
+- A VD não precisa ser necessariamente normal. GLMM permite VD com distribuição da família exponencial: normal ou gaussiana, binomial (sucesso/fracasso), Poisson (eventos raros: acidente, incidência de doença), gama (valores positivos com assimetria positiva: duração de vida), gaussiana inversa (valores positivos com assimetria positiva: duração de casamento).
+
+## Função de ligação (FL)
+
+A FL é função não-linear que estabelece uma relação linear entre a média condicionada da VD e a combinação linear das VI.
+
+A combinação entre a distribuição da VD e a função de ligação resulta em diferentes modelos:
+
+- GLM (ANOVA e Regressão): FD: normal, FL: identidade
+- Modelo de regressão logística binária: FD: binomial, FL: logit
+- Modelo loglinear: FD: Poisson, FL: log
+- Modelo probit: FD: binomial, FL: probit
+- Modelo de regressão ordinal: FD: multinomial, FL: logit
+
+## Modelos hierárquicos 
+
+GLMM permite a integração os dados de níveis hierárquicos na mesma análise.
+
+Níveis de dependência por agrupamento
+
+- Nível 1: dados sobre a unidade observacional
+- Nível 2: dados sobre o agrupamento 1
+- Nível 3: ...
+
+<!-- ## Pacotes do R -->
+
+<!-- * {glmmTMB::glmmTMB} {lme4::glmer} {nlme::lme} {lmerTest::lmer}  {lme4::nlmer} {merTools} -->
+
+# GLMM: Regressão linear: `lme4::glmer`: pHi e PaCO2
+
+``` {r eval=TRUE, echo=TRUE}
+Dados <- rmcorr::bland1995
+Dados$Subject <- factor(Dados$Subject)
+fitglmer <- lme4::glmer(PaCO2 ~ pH + (1|Subject),
+                        family=gaussian("identity"),
+                        data=Dados)
+print(fitglmer)
+print(summary(fitglmer))
+print(anova(fitglmer))
+print(car::Anova(fitglmer))
+```
+
+``` {r eval=TRUE, echo=TRUE}
+fitlmer <- lmerTest::lmer(PaCO2 ~ pH + (1|Subject),
+                          data=Dados)
+print(anova(fitlmer))
+print(summary(fitlmer, corr=FALSE))
+print(car::Anova(fitglmer, test.statistic="F"))
+
+fitlme <- nlme::lme(PaCO2 ~ pH,
+                    random=~1|Subject,
+                    data=Dados)
+print(anova(fitlme))
+print(summary(fitlme, corr=FALSE))
+print(nlme::intervals(fitlme))
+print(car::Anova(fitlme, test.statistic="F"))
+```
+
+# GLMM: Regressão logística: 'lme4::glmer': artrite reumatóide
+
+``` {r eval=TRUE, echo=TRUE}
+Dados <- readxl::read_excel("arthritis_long.xlsx")
+Dados$Paciente <- factor(Dados$Paciente)
+Dados$Tratamento <- factor(Dados$Tratamento)
+Dados$Tratamento <- relevel(Dados$Tratamento,
+                            ref="Placebo")
+Dados$AlivioDor <- factor(Dados$AlivioDor)
+Dados$AlivioDor <- relevel(Dados$AlivioDor,
+                           ref="Baixo")
+Dados$Semana <- as.numeric(Dados$Semana)
+print(summary(Dados))
+print(head(Dados))
+print(tail(Dados))
+
+fit <- lme4::glmer(AlivioDor ~ Tratamento + (1|Paciente), 
+                   data=Dados, 
+                   family=binomial("logit"))
+print(car::Anova(fit))
+print(summary(fit, corr=FALSE))
+or <- broom.mixed::tidy(fit,
+                        conf.int=TRUE,
+                        exponentiate=TRUE,
+                        effects="fixed")
+cat("OR de Tratamento Droga ativa =", or$estimate[2], 
+    "[", or$conf.low[2], or$conf.high[2], "]")
+cat("OR de Tratamento Placebo =", 1)
+```
+
+# GLMM: Regressão de Poisson: `lme4::glmer`: epilepsia
+
+``` {r eval=TRUE, echo=TRUE}
+Dados <- readxl::read_excel("epilepsy.xlsx")
+Dados$ID <- factor(Dados$ID)
+Dados$treatment <- factor(Dados$treatment)
+Dados$treatment <- relevel(Dados$treatment, ref="Placebo")
+Dados$active <- factor(Dados$active)
+Dados$active <- relevel(Dados$active, ref="Baseline")
+print(summary(Dados))
+print(head(Dados))
+print(tail(Dados))
+
+fitglmer <- lme4::glmer(seizure ~ treatment*active + (1|ID), 
+                        data=Dados, 
+                        family=poisson("log"))
+print(car::Anova(fitglmer))
+out <- summary(fitglmer, corr=FALSE)
+print(out)
+print(ci <- confint(fitglmer))
+cat("RR de treatment(drug) =", exp(out$coefficients[4]), 
+    "[", exp(as.numeric(ci[5,1:2])), "]")
+```
+
+# GEE vs. GLMM
+
+Um exemplo de semelhança dos resultados de GEE e GLMM está em:
+
+* Getting Started with Generalized Estimating Equations: https://data.library.virginia.edu/getting-started-with-generalized-estimating-equations/
+
+"Mixed model [GLMM] is close to GEE with exchangeable correlation:
+Nearly identical coefficients and slightly different SEs."
+
+> Shi, 2012, slide 62
+
+"GEE (population average model):
+
+  * On average, is there a trend in score change over time?
+  * Robust: even if correlation model is wrong, SE still valid
+
+[GLMM] Mixed effects (subject specific model):
+
+  * Are there any differences between subjects on the trend in score change over time? (Do all subjects have the same trend over time?)
+  * Advantages
+    * Characterization of heterogeneity
+    * Incomplete unbalanced data"
+
+> Shi, 2012, slide 64
+
+# GEE x GLMM: Regressão: pHi e PaCO2
+
+``` {r eval=TRUE, echo=TRUE}
+Dados <- rmcorr::bland1995
+Dados$Subject <- factor(Dados$Subject)
+
+fitgeeglm <- geepack::geeglm(PaCO2 ~ pH,
+                             id=Subject,
+                             family=gaussian("identity"),
+                             corstr="exchangeable",
+                             data=Dados)
+print(anova(fitgeeglm))
+print(summary(fitgeeglm, corr=FALSE))
+
+fitglmer <- lme4::glmer(PaCO2 ~ pH + (1|Subject),
+                        data=Dados)
+print(anova(fitglmer))
+print(summary(fitglmer, corr=FALSE))
+print(car::Anova(fitglmer, test.statistic="F"))
+
+fitlmer <- lmerTest::lmer(PaCO2 ~ pH + (1|Subject),
+                          data=Dados)
+print(anova(fitlmer))
+print(summary(fitlmer, corr=FALSE))
+print(car::Anova(fitlmer, test.statistic="F"))
+```
+
+# GEE x GLMM: Regressão logística: artrite reumatóide
+
+``` {r eval=TRUE, echo=TRUE}
+Dados <- readxl::read_excel("arthritis_long.xlsx")
+Dados$Paciente <- factor(Dados$Paciente)
+Dados$Tratamento <- factor(Dados$Tratamento)
+Dados$Tratamento <- relevel(Dados$Tratamento,
+                            ref="Placebo")
+Dados$AlivioDor <- factor(Dados$AlivioDor)
+Dados$AlivioDor <- relevel(Dados$AlivioDor,
+                           ref="Baixo")
+Dados$Semana <- as.numeric(Dados$Semana)
+
+fit <- lme4::glmer(AlivioDor ~ Tratamento + (1|Paciente), 
+                   data=Dados, 
+                   family=binomial("logit"))
+print(car::Anova(fit))
+print(summary(fit, corr=FALSE))
+or <- broom.mixed::tidy(fit,
+                        conf.int=TRUE,
+                        exponentiate=TRUE,
+                        effects="fixed")
+cat("OR de Tratamento Droga ativa =", or$estimate[2], 
+    "[", or$conf.low[2], or$conf.high[2], "]")
+cat("OR de Tratamento Placebo =", 1)
+
+Dados <- na.omit(Dados)
+fitgeeglm <- try(geepack::geeglm(AlivioDor ~ Tratamento, 
+                                 id=Paciente,
+                                 family=binomial("logit"),
+                                 corstr="exchangeable",
+                                 data=Dados))
+```
+
+# GEE x GLMM: Regressão de Poisson: epilepsia
+
+``` {r eval=TRUE, echo=TRUE}
+Dados <- readxl::read_excel("epilepsy.xlsx")
+Dados$ID <- factor(Dados$ID)
+Dados$treatment <- factor(Dados$treatment)
+Dados$treatment <- relevel(Dados$treatment, ref="Placebo")
+Dados$active <- factor(Dados$active)
+Dados$active <- relevel(Dados$active, ref="Baseline")
+
+fitgeeglm <- geepack::geeglm(seizure ~ treatment*active,
+                             offset=logtime,
+                             id=ID,
+                             family=poisson("log"),
+                             corstr="exchangeable",
+                             data=Dados)
+print(anova(fitgeeglm))
+print(summary(fitgeeglm, corr=FALSE))
+rr <- broom.mixed::tidy(fitgeeglm,
+                        conf.int=TRUE,
+                        exponentiate=TRUE,
+                        effects="fixed")
+cat("RR de treatment(drug) =", rr$estimate[4], 
+    "[", rr$conf.low[4], rr$conf.high[4], "]")
+
+fitglmer <- lme4::glmer(seizure ~ treatment*active + (1|ID), 
+                        data=Dados, 
+                        family=poisson("log"))
+print(car::Anova(fitglmer))
+out <- summary(fitglmer, corr=FALSE)
+print(out)
+print(ci <- confint(fitglmer))
+cat("RR de treatment(drug) =", exp(out$coefficients[4]), 
+    "[", exp(as.numeric(ci[5,1:2])), "]")
+```
+
+# Referências
+
+* Baigorri, F & Calvet, X & Joseph, D (1997) Equipment review: Gastric intramucosal pH measurement. _Crit Care_ 1: 61. https://doi.org/10.1186/cc104.
+* Bakdash, JZ & Marusich, LR (2017) Repeated measures correlation.
+_Front. Psychol_. 8:456. doi: 10.3389/fpsyg.2017.00456. https://osf.io/djphm/ 
+* Bland, JM & Altman, DG (1995a) Calculating correlation coefficients with repeated observations: Part 1 - Correlation within subjects. _BMJ_ 310(6977): 446. https://doi.org/10.1136/bmj.310.6977.446 
+* Bland JM & Altman DG (1995b) Calculating correlation coefficients with repeated observations: Part 2 - Correlation between subjects. _BMJ_ 310(6980): 633. doi: 10.1136/bmj.310.6980.633. Erratum in: BMJ 1996 312(7030):572. 
+* Chartier, S & Faulkner, A (2008) General linear models: An integrated approach to statistics. _Tutorial in Quantitative Methods for Psychology_ 4(2), 65-78.
+* Clark, M (?) _Mixed model with R_. https://m-clark.github.io/mixed-models-with-R/.
+* Duursma, R & Powell, J (2016) _Linear mixed-effects models_. http://www.hiercourse.com/mixedeffects.
+* Duursma, R & Powell, J (2016) _Linear mixed-effects models: Solutions_. http://www.hiercourse.com/mixedeffects.
+* Faraway, JJ (2016) _Extending the linear model with R: Generalized linear, mixed effects and nonparametric regression models_. 2 ed. USA: CRC. 
+* Francq, GF et al. (2019) Confidence, prediction, and tolerance in linear mixed models. _Statistics in Medicine_ 38(30): 5603-22.
+* Francq, GF et al. (2020) Erratum: Confidence, prediction, and tolerance in linear mixed models. _Statistics in Medicine_ 39(14): 2015-2015.
+* Hamaker, EL (2013) Why researchers should think “within-person”:  A paradigmatic rationale. In Mehl MR &, Conner TS (Eds.) (2013) _Handbook of research methods for studying daily life_. NY: Guilford. p. 43-61. 
+* Hothorn, T & Everitt, BS (2014) _A handbook of statistical analyses using R_. 3rd ed. Chapman & Hall/CRC, 2014. https://rdrr.io/cran/HSAUR3/. R package HSAUR3.
+* Judkins DR & Porter KE (2016) Robustness of ordinary least squares in randomized clinical trials. _Stat Med._ 35(11):1763-73. doi: 10.1002/sim.6839.
+* Kirkwood, BR & Sterne, JAC (2003) _Essential medical statistics_. 2nd ed. USA: Blackwell. Chapter 13: Analysis of clustered data.
+* Konrad, M (2021) _Clustered standard errors with R_. https://www.r-bloggers.com/2021/05/clustered-standard-errors-with-r/.
+* Laird, NM and Ware, JH (1982) Random-effects models for longitudinal data. _Biometrics_ 38(4): 963-74.
+* Magnusson, K (2015) _Using R and lme/lmer to fit different two- and three-level longitudinal models_.  https://rpsychologist.com/r-guide-longitudinal-lme-lmer.
+* _Mixed effects logistic regression: R data analysis examples_. https://stats.oarc.ucla.edu/r/dae/mixed-effects-logistic-regression/.
+* Norusis, MJ (2012) _IBM SPSS statistics 19 advanced statistical procedures companion_. NJ: Prentice-Hall.
+* Oikawa, KF (2019) _Análise estatística de dados longitudinais e hierárquicos em psicologia: uma análise comparativa entre GEE e GLMM_. Tese de Doutorado, Psicologia Experimental, Instituto de Psicologia, Universidade de São Paulo, São Paulo. doi:10.11606/T.47.2019.tde-18112019-183159. Recuperado em 2022-05-08, de www.teses.usp.br. 
+* Oliveira, AA (Coord.) (?) _Modelos generalizados mistos (GLMM)_.  Laboratório de Ecologia de Florestas Tropicais do Instituto de Biocências da USP. http://labtrop.ib.usp.br/doku.php?id=cursos:planeco:roteiro:12-glmm.
+* Pekár, S & Brabec, M (2017) Generalized estimating equations: A pragmatic and flexible approach to the marginal GLM modelling of correlated data in the behavioural sciences. _Ethology_ 124:86–93. DOI: 10.1111/eth.12713.
+* Sainani, K. (2010) The importance of accounting for correlated observations. _Physical Medicine and Rehabilitation_ 2(9):858-61. doi: 10.1016/j.pmrj.2010.07.482. 
+* Shi, L (2012) _Application of GEE and Mixed Effects model in longitudinal data analysis_. Umass Boston: Dana-Farber/Harvard Cancer Center. 
+* Sonnet, L (?) _Getting started using estimatr_. https://declaredesign.org/r/estimatr/articles/getting-started.html.
+* Xu, C et al. (2019) An R package for model fitting, model selection and the simulation for longitudinal data with dropout missingness. _Commun Stat Simul Comput_ 48(9): 2812–29. doi:10.1080/03610918.2018.1468457. 
+* Winter, B & Wieling, M (2016) How to analyze linguistic change using mixed models, growth curve analysis and generalized additive modeling. _Journal of Language Evolution_ 1(1): 7–18. https://doi.org/10.1093/jole/lzv003.
+* Zeger, SL, Liang, KY & Albert, PS (1988) Models for longitudinal data: A generalized estimating equation approach. _Biometrics_ 44(4): 1049-60.
+* Zuur, A et al. (2009) _Mixed effects models and extensions in ecology with R_. NY: Springer.
+
+<!-- # Incorporar -->
+
+<!-- * Márcio Braga de Melo, Dimitri Daldegan-Bueno, Maria Gabriela Menezes Oliveira, Altay Lino de Souza (2022) Beyond ANOVA and MANOVA for repeated measures: Advantages of generalized estimated equations and generalized linear mixed models and its use in neuroscience research. _European Journal of Neuroscience_ 56(12): 6089-98. -->
+
+<!-- * Real longitudinal data analysis for real people - Building a good enough mixed model - Cheng et al - 2009 -->
+<!-- * How to analyze linguistic change using mixed models, Growth Curve Analysis and Generalized Additive Modeling - Winter & Wieling - 2016 -->
+
+
+
+

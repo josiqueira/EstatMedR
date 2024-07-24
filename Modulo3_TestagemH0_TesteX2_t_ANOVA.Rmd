@@ -1,0 +1,1276 @@
+--- 
+title: "MAN5728: Tópicos Essenciais da Bioestatística"
+subtitle: "Módulo 3: Testagem de Hipótese Nula <br> Testes qui-quadrado, t e ANOVA"
+author: | 
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    font_adjustment: 1
+    css: style.css
+    df_print: tibble
+    footer: "Modulo3_TestagemH0_TesteX2_t_ANOVA.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  slidy_presentation:
+    font_adjustment: -1
+    css: style.css
+    footer: "Modulo3_TestagemH0_TesteX2_t_ANOVA.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+---
+
+```{r set-options, echo=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 1px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+ }
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+ }
+.bgobs {
+  background-color: #a0d8d8;
+ }
+.bgcodigo {
+  background-color: #eeeeee;
+ }
+.bgsaida {
+  background-color: #ecf7db;
+ }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:", "Usuarios", "Jose", "scilab2023", "bin", "Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+# Pacotes R
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(effectsize, warn.conflicts=FALSE))
+suppressMessages(library(MBESS, warn.conflicts=FALSE))
+suppressMessages(library(RVAideMemoire, warn.conflicts=FALSE))
+suppressMessages(library(corrplot, warn.conflicts=FALSE))
+suppressMessages(library(gplots, warn.conflicts=FALSE))
+suppressMessages(library(RcmdrMisc, warn.conflicts=FALSE))
+suppressMessages(library(rcompanion, warn.conflicts=FALSE))
+suppressMessages(library(Rmisc, warn.conflicts=FALSE))
+suppressMessages(library(reshape2, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(lsr, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(rstatix, warn.conflicts=FALSE))
+suppressMessages(library(jmv, warn.conflicts=FALSE))
+source("summarySEwithin2.R")
+```
+
+# Conteúdo
+
+* Teste de hipótese nula: conceito 
+* Teste qui-quadrado 
+* Testes paramétricos mais utilizados na área da saúde: 
+  * teste t
+  * ANOVA
+
+# Ler planilha 
+
+Os dados da planilha Excel `Biometria_FMUSP.xlsx` foram coletados pelos docentes do curso de Medicina da FMUSP dos estudantes do segundo ano de uma mesma disciplina em três anos consecutivos.
+
+As variáveis do arquivo são:
+
+* ID: idenficador do(a) estudante	
+* Ano da coleta dos dados: 1, 2, 3	
+* Turma: A, B	
+* Sexo: Feminino, Masculino	
+* Mao: Destro, Canhoto, Ambidestro	
+* TipoSang: A+, A-, ...	
+* ABO: A, B, AB, O
+* Rh: +, -
+* AtivFisica: nível de atividade física	
+* Sedentarismo: Não, Sim	
+* MCT: massa corporal total (kg)
+* Estatura: cm	
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+Dados <- readxl::read_excel(path="Biometria_FMUSP.xlsx",
+                            sheet="dados",
+                            na=c("NA","na","Na","nA"))
+Dados$MCT[Dados$MCT==max(Dados$MCT,na.rm=TRUE)] <- NA
+Dados$Estatura[Dados$Estatura==min(Dados$Estatura,na.rm=TRUE)] <- NA
+Dados$ID <- factor(Dados$ID)
+Dados$Ano <- factor(Dados$Ano)
+Dados$Turma <- factor(Dados$Turma)
+Dados$Sexo <- factor(Dados$Sexo)
+Dados$Mao <- factor(Dados$Mao)
+Dados$TipoSang <- factor(Dados$TipoSang)
+Dados$ABO <- factor(Dados$ABO)
+Dados$Rh <- factor(Dados$Rh)
+Dados$AtivFisica <- factor(Dados$AtivFisica,
+                           levels=c("sempre_inativo",
+                                    "atualmente_inativo",
+                                    "baixa_intensidade",
+                                    "media_intensidade",
+                                    "alta_intensidade"),
+                           labels=c("sempre_inativo",
+                                    "atualmente_inativo",
+                                    "baixa_intensidade",
+                                    "media_intensidade",
+                                    "alta_intensidade"))
+Dados$Sedentarismo <- factor(Dados$Sedentarismo)
+Dados.F <- subset(Dados, Sexo=="F")
+Dados.M <- subset(Dados, Sexo=="M")
+```
+
+# Teste de hipótese: conceito
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center"}
+knitr::include_graphics("RejectH0.png")
+```
+
+# Teste z bilateral para uma condição: não rejeição da hipótese nula
+
+A distribuição da estatura do homem brasileiro de 19 anos de 2016 é normal com desvio-padrão $\sigma$ = 7 cm.
+
+Testar se a média populacional $\mu$ é igual a  177 cm hipotetizada.
+
+Quatro participantes deste grupo de 2020 tiveram suas estaturas medidas, cujos valores em centímetro são: 169, 174, 175, 186.
+
+<br>
+
+_Teste_
+
+Média populacional hipotetizada: $\mu$ = 177 cm 
+
+<br>
+
+_Suposições_
+
+a. $n = 4$ observações independentes: 169, 174, 175, 186
+
+b. Se $n<30$, estatura tem distribuição normal; se $n\ge30$, estatura tem distribuição qualquer (Teorema Central do Limite)
+
+c. Desvio-padrão $\sigma$ = 7 cm conhecido 
+
+d. Teste bilateral
+
+e. Nível de confiança adotado de 95% (ou nível de significância de 5%)
+
+
+<br>
+
+_Hipóteses_
+
+$H_{0}: μ = 177$
+
+$H_{1}: μ \ne 177$
+
+ou equivalentemente
+
+$H_{1}: μ < 177 \; \text{ou} \; μ > 177$
+
+<br>
+
+_Estatísticas_
+
+$\bar{x} = \dfrac{175+186+169+174}{4} = 176$
+
+$ep = \dfrac{\sigma}{\sqrt{n}} = \dfrac{7}{\sqrt{4}}= 3.5$
+
+$\text{IC}^{95\%}(\mu) = [176 \pm 1.96\times3.5] = [169.14, 182.86]$
+
+Estatística de teste $z = \dfrac{\bar{x}-177}{ep}=\dfrac{176−177}{3.5}=−0.29$
+
+Estatística de tamanho de efeito $d=\dfrac{|\bar{x}-177|}{\sigma}=\dfrac{|176-177|}{7}=0.14$ (muito pequeno)
+
+<br>
+
+_Decisão_  
+
+Critério do valor crítico: Como $|z| = 0.29 < 1.96$, não rejeitar $H_{0}$ 
+
+Critério do $IC$: Como $\text{IC}^{95\%}$ contém 177, não rejeitar $H_{0}$ 
+
+Critério do valor _p_: Como o valor _p_ bilateral = `r round(2*pnorm(-abs(-0.29)),2)` é maior que 0.05, não rejeitar $H_{0}$
+
+```{r eval=TRUE, echo=TRUE}
+alfa <- 0.05
+estatura <- c(169, 174, 175, 186)
+shapiro.test(estatura)
+DescTools::ZTest(x=estatura, 
+                 sd_pop=7,
+                 mu=177,
+                 alternative="two.sided",
+                 conf.level=1-alfa,
+                 na.rm=TRUE)
+effectsize::interpret_cohens_d(d=0.14, rules="cohen1988")
+```
+
+```{r eval=TRUE, echo=FALSE}
+alfa <- 0.05
+q1 <- round(qnorm(p=alfa/2, mean=0, sd=1),2)
+q2 <- round(qnorm(p=1-alfa/2, mean=0, sd=1),2)
+DescTools::PlotProbDist(breaks=c(-3,q1,-0.29,0.29,q2,3), 
+                        function(x) dnorm(x, mean=0, sd=1), 
+                        blab=c(q1,-0.29,0.29,q2), 
+                        alab=c("RejH0","p/2","","p/2","RejH0"),
+                        xlim=c(-3,3),
+                        main="normal(0,1)",                                              col=c("darkred","black",                                                "black","black","darkred"), 
+                        density=c(20,20,0,20,20))
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="80%", fig.align="center"}
+knitr::include_graphics("pvalue.png")
+```
+
+# Teste z bilateral para uma condição: rejeição da hipótese nula
+
+A distribuição da estatura do homem brasileiro de 19 anos de 2016 é normal com desvio-padrão $\sigma$ = 7 cm.
+
+Testar se a média populacional $\mu$ é igual a  177 cm hipotetizada.
+
+Mil participantes deste grupo de 2020 tiveram suas estaturas medidas, cujos valores em centímetro são: 169, 174, 175, 186, ...
+
+<br>
+
+_Teste_
+
+Média populacional hipotetizada: $\mu$ = 177 cm 
+
+<br>
+
+_Suposições_
+
+a. $n = 1000$ observações independentes: 169, 174, 175, 186, ...
+
+b. Se $n<30$, estatura tem distribuição normal; se $n\ge30$, estatura tem distribuição qualquer (Teorema Central do Limite)
+
+c. Desvio-padrão $\sigma$ = 7 cm conhecido 
+
+d. Teste bilateral
+
+e. Nível de confiança adotado de 95% (ou nível de significância de 5%)
+
+<br>
+
+_Hipóteses_
+
+$H_{0}: μ = 177$
+
+$H_{1}: μ \ne 177$
+
+<br>
+
+_Estatísticas_
+
+$\bar{x} = \dfrac{175+186+169+174+\cdots}{1000} = 176$
+
+$ep = \dfrac{\sigma}{\sqrt{n}} = \dfrac{7}{\sqrt{1000}}= 0.22$
+
+$\text{IC}^{95\%}(\mu) = [176 \pm 1.96\times 0.22] = [175.57, 176.43]$
+
+Estatística de teste $z = \dfrac{\bar{x}-177}{ep}=\dfrac{176−177}{0.22}=−4.52$
+
+Estatística de tamanho de efeito $d=\dfrac{|\bar{x}-177|}{\sigma}=\dfrac{|176-177|}{7}=0.14$ (muito pequeno)
+
+<br>
+
+_Decisão_  
+
+Critério do valor crítico: Como $|z| = 4.52 > 1.96$,  rejeitar $H_{0}$ 
+
+Critério do $IC$: Como $\text{IC}^{95\%}$ não contém 177, rejeitar $H_{0}$
+
+Critério do valor _p_: Como o valor _p_ bilateral = $6.2\times10^{-6}$ é menor que 0.05, rejeitar $H_{0}$
+
+
+```{r eval=TRUE, echo=TRUE}
+alfa <- 0.05
+set.seed(123)
+s <- rnorm(999, 175.9, 7)
+estatura <- c(s, 176*1000-999*mean(s))
+shapiro.test(estatura)
+DescTools::ZTest(estatura, 
+                 sd_pop=7,
+                 mu=177,
+                 alternative="two.sided",
+                 conf.level=1-alfa,
+                 na.rm=TRUE)
+effectsize::interpret_cohens_d(d=0.14, rules="cohen1988")
+```
+
+```{r eval=TRUE, echo=FALSE}
+alfa <- 0.05
+q1 <- round(qnorm(p=alfa/2, mean=0, sd=1),2)
+q2 <- round(qnorm(p=1-alfa/2, mean=0, sd=1),2)
+DescTools::PlotProbDist(breaks=c(-5,-4.52,q1,q2,4.52,5), 
+                        function(x) dnorm(x, mean=0, sd=1), 
+                        blab=c(-4.52,q1,q2,4.52), 
+                        alab=c("","RejH0","","RejH0",""),
+                        xlim=c(-5,5),
+                        main="normal(0,1)",                                              col=c("darkred","darkred",                                             "black","darkred","darkred"),                              density=c(20,20,0,20,20))
+```
+
+"[...] there is always a large enough sample size $n$ for which any simple null hypothesis $H_{0}: \mu=\mu_{0}$ will be rejected by a frequentist $\alpha$-significance level test."
+
+> Spanos, 2014, p. 646
+
+# Análise estatística inferencial
+
+* Significância estatística: valor _p_ (existência de efeito)
+* Significância prática: $d$ de Cohen, $\eta^{2}$ de Cohen e V de Cramer (tamanho de efeito)
+
+# Erro amostral
+
+"Constitui um dos problemas enfrentados quando conduzimos uma pesquisa o fato de não sabermos qual é o padrão existente na população de interesse. 
+
+De fato, o motivo de realizarmos a pesquisa é, em primeiro lugar, determinar esse padrão.
+
+Você precisa estar ciente de que, algumas vezes, devido ao erro amostral, obteremos padrões nas amostras que não refletem de forma acurada a população de onde as amostras foram retiradas.
+
+Assim, precisamos de um algum meio para avaliar a probabilidade de que a amostra selecionada seja um retrato fiel da população.
+
+Os testes estatísticos nos auxiliam nesta decisão, mas isso ocorre de uma forma não de todo intuitiva."
+
+> Dancey & Reidy, 2019
+
+# Efeito populacional
+
+* Associação/ concordância entre variáveis na população
+* Diferença entre condições na população
+
+# Hipóteses nula e alternativa
+
+* Hipótese nula/ $H_{0}$ 
+  * A hipótese nula sempre declara que NÃO existe efeito na população. 
+* Hipótese de pesquisa/ alternativa/ $H_{1}$/ $H_{a}$  
+  * A hipótese de pesquisa declara que existe efeito na população. 
+
+# Teste estatístico de hipótese nula
+
+"Em Estatística, assim como em Economia, Psicologia, Medicina e Direito, o problema de testagem de hipótese nula envolve a mediação de objetivos conflitantes.
+
+Há uma analogia legal interessante: no julgamento de um crime de homicídio, pede-se ao júri que decida entre a hipótese nula $H_{0}$: O réu não é culpado e a hipótese alternativa $H_{1}$: o réu é culpado.
+
+O sistema judiciário não é perfeito. 
+
+Comete-se um erro do tipo I condenando-se um inocente. A probabilidade do erro do tipo I é chamado de nível de significância do teste ($\alpha$). 
+
+O nível de confiança do teste (probabilidade de absolver o inocente) é $1 – \alpha$.
+
+O erro do tipo II consiste em absolver um culpado. A probabilidade do erro do tipo II é o $\beta$. 
+
+O poder do teste (probabilidade de condenar um culpado) é igual a $1 – \beta$. 
+
+A advertência do juiz ao júri, de que o crime “a culpa pelo crime de homicídio deve ser provada além de qualquer dúvida razoável” significa que $\alpha$ deve ser muito pequena.
+
+Tem havido muitas reformas legais (e.g., limitar o poder da polícia para obter confissão) elaboradas a fim de reduzir $\alpha$.
+
+Porém, essas mesmas reformas têm contribuído para aumentar $\beta$.
+
+Não há meios de reduzir $\alpha$ a 0 (impossibilidade total de condenar um inocente) sem elevar $\beta$ a 1 (tender a libertar todos os culpados, invalidando o julgamento). 
+
+A única maneira de reduzir $\alpha$ e $\beta$ concomitantemente é aumentar a evidência, i.e., aumentar o tamanho da amostra."
+
+> Wonnacott & Wonnacott, 1981
+
+"Quais das seguintes situações representam um erro do tipo I e quais um erro do tipo II?
+
+1. Você verificou, em um estudo, a existência de um relacionamento entre a quantidade de chá ingerida por dia e a quantidade de dinheiro ganho na loteria. Você conclui que, para ganhar na loteria, deve beber muito chá.
+    + Solução: $H_{0}$: Não há relacionamento entre quantidade de chá ingerida e quantidade de dinheiro ganho na loteria. Um estudo concluiu que essa relação existe, pois $p<0.05$. Na realidade essa relação não existe! Portanto, $H_{0}$ foi rejeitada, sendo que ela é verdadeira, i.e., o erro do tipo I foi cometido.
+
+2. Você verificou, em um estudo, que não existe diferença entre as velocidades das tartarugas e dos guepardos. Você conclui que as tartarugas são tão rápidas quanto os guepardos.
+    + Solução: $H_{0}$: Não há diferença entre as velocidades das tartarugas e guepardos. Um estudo concluiu que essa relação não existe, pois $p>0.05$. Na realidade essa diferença existe! Portanto, $H_{0}$ não foi rejeitada, sendo que ela é falsa, i.e., o erro do tipo II foi cometido.
+
+3. Você verificou, em um estudo, que existe um relacionamento entre estilo de vida e renda anual. No entanto, em virtude de a probabilidade associada com o relacionamento ser de $0.5$, você conclui que não existe relacionamento entre as duas variáveis.
+    + Solução: $H_{0}$: Não há relacionamento entre estilo de vida e renda anual. Um estudo concluiu que essa relação não existe, pois $p>0.05$; Na realidade esse relacionamento existe! Portanto, $H_{0}$ não foi rejeitada sendo que ela é falsa, i.e., o erro do tipo II foi cometido."
+
+> Dancey & Reidy, 2019
+
+# Teste de hipótese nula em ação
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="100%", fig.align="center"}
+knitr::include_graphics("TesteH0unilateralGrafico.png")
+```
+
+[Understanding Statistical Power and Significance Testing: An interactive visualization](http://rpsychologist.com/d3/NHST/){target="_blank"}
+
+# Decisão estatística vs. Estado da natureza
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="100%", fig.align="center"}
+knitr::include_graphics("DecisionStat.png")
+```
+
+# Estatística de teste
+
+<iframe 
+width="100%" height="200%"
+src="https://en.wikipedia.org/wiki/Test_statistic">
+</iframe>
+
+[Wikipedia: Test statistic](https://en.wikipedia.org/wiki/Test_statistic){target="_blank"}
+
+# Valor _p_
+
+"O valor _p_ é a probabilidade de que a estatística de teste seja igual ou mais extrema que o valor observado na direção prevista pela hipótese alternativa ($H_{1}$), presumindo que a hipótese nula ($H_{0}$) é verdadeira."
+
+> Agresti & Finlay, 2012, p. 171
+
+"Mínimo $\alpha$ que rejeita $H_{0}$."
+
+> Wonnacott & Wonnacott, 1981
+
+"Valores _p_ e métodos de testagem de hipótese nula são frequentemente mal utilizados em pesquisas clínicas."
+
+> Mark et al., 2016, p. 1048
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center",  out.width="90%"}
+knitr::include_graphics("p1.png")
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center",  out.width="90%"}
+knitr::include_graphics("p2.png")
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center",  out.width="90%"}
+knitr::include_graphics("p3.png")
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center",  out.width="90%"}
+knitr::include_graphics("p4.png")
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center",  out.width="90%"}
+knitr::include_graphics("p5.png")
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center",  out.width="90%"}
+knitr::include_graphics("p6.png")
+```
+
+> Dancey & Reidy, 2019
+
+# Por que estabelecer $\alpha = 0.05$?
+
+"Não recomendamos abandonar o valor _p_, nem reduzir arbitrariamente o limiar de significância [$\alpha = 0.05$]."
+
+> Di Leo & Sardanelli, 2020, p. 6
+
+# Testes unilateral e bilateral
+
+* Quando a direção do relacionamento ou da diferença (efeito) é especificada, então o teste é unilateral; caso contrário, é bilateral.
+* Em geral (mas nem sempre), se você tiver obtido um valor _p_ para um teste bilateral e quiser saber o valor mínimo correspondente para o teste unilateral, então: $p_{\text{unilateral}} ≥ p_{\text{bilateral}}/2$
+* Observe que o que deve ser dobrado ou dividido por 2 não é a estatística de teste (e.g.: $z$ ou $t$).
+* $H_{0}: \mu \ge \mu_{0}$ vs. $H_{1}: \mu < \mu_{0}$ é equivalente a $H_{0}: \mu = \mu_{0}$ vs. $H_{1}: \mu < \mu_{0}$
+  * Demonstração em Gatás, 1978, p. 220-3.
+
+"Testes unicaudais raramente devem ser usados para pesquisa básica ou aplicada em ecologia, comportamento animal ou qualquer outra ciência."
+
+> Lombardi & Hurlbert, 2009, p. 447
+
+"Testes unicaudais também se mostram úteis em uma
+área de interesse estatístico chamada 'não inferioridade' e
+testes de 'equivalência'."
+
+> Lombardi & Hurlbert, 2009, p. 462
+
+# Teste de hipótese nula & Intervalo de confiança
+
+* Os critérios de valor _p_ e de intervalo de confiança são equivalentes.
+
+# Críticas contra o teste de hipótese nula
+
+"Não recomendamos abandonar o valor _p_, nem reduzir arbitrariamente o limiar de significância [$\alpha = 0.05$]."
+
+> Di Leo & Sardanelli, 2020, p. 6
+
+"A testagem da hipótese nula é a abordagem dominante na Psicologia e Medicina.
+
+Apesar das críticas à testagem da hipótese nula, isso não significa que tal abordagem deve ser abandonada completamente. 
+
+Ao invés disso, devemos ter um entendimento completo de seu significado para podermos nos beneficiar desta tecnologia da decisão.
+
+Além do valor _p_, é importante usar o intervalo de confiança e de tamanho de efeito."
+
+> Dancey & Reidy, 2019
+
+# Significância prática 
+
+"Mesmo efeitos muito pequenos poderão apresentar significância estatística quando o tamanho da amostra for bem grande.
+
+Para determinar a significância prática, a melhor abordagem consiste em obter uma medida do tamanho do efeito, sendo que essa medida não depende do tamanho da amostra. 
+
+E.g.: o coeficiente de correlação de Pearson amostral mede a intensidade da associação linear entre duas variáveis quantitativas e não depende do tamanho da amostra."
+
+> Dancey & Reidy, 2019
+
+# Interpretação errônea do valor _p_
+
+* Muitos pesquisadores sem experiência em estatística (e mesmo aqueles com alguma) equiparam o valor _p_ com o tamanho do efeito, i.e., quanto menor o valor _p_, mais forte seria, por exemplo, o relacionamento entre duas variáveis; talvez, de fato, quanto mais forte o relacionamento, mais baixo o valor _p_, mas não significa que isso necessariamente ocorrerá.
+* O valor _p_ não é a probabilidade de que a hipótese nula seja verdadeira; de fato, não sabemos qual é a probabilidade de que a hipótese nula seja verdadeira.
+* $1 – p$  não é a probabilidade de que a hipótese alternativa seja verdadeira; de fato, não sabemos qual é a probabilidade de que a hipótese alternativa seja verdadeira.
+
+> Dancey & Reidy, 2019
+
+# Replicação
+
+"A replicação é uma das pedras angulares da ciência.
+Se você observa um fenômeno uma vez, então pode ter sido por acaso; se o observa duas, três ou mais vezes, pode estar começando a aprender algo sobre o fenômeno estudado.
+
+Se o seu estudo foi o primeiro neste assunto, é sensato que você trate os resultados com certo grau de cautela."
+
+> Dancey & Reidy, 2019
+
+"Infelizmente, nenhuma ferramenta ou técnica estatística pode garantir o acesso ao caminho mais curto para a verdade.
+
+Experimentos repetidos, como Fisher reconheceu anos atrás, podem ser a melhor maneira de domar grande parte da bagunça. 
+
+Se isso não for viável, e muitas vezes não é, a medicina ainda pode realizar muito fazendo uso pragmático e bem fundamentado das evidências que possui."
+
+> Mark et al., 2016, p. 1054
+
+# Planejamento do estudo: falando grego
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="center",  out.width="85%"}
+knitr::include_graphics("poweranalysis.png")
+```
+
+> Coelho et al. 2008, Tabela 4.1
+
+"A análise de poder é uma das ferramentas mais fundamentais que os pesquisadores podem usar ao planejar estudos."
+
+> Perugini et al., 2018 
+
+"Resumo
+
+Antecedentes: 
+
+A crença continua generalizada de que os estudos de pesquisa médica devem ter poder estatístico de pelo menos 80% para serem cientificamente sólidos, e os revisores geralmente questionam se o poder é alto o suficiente.
+
+Discussão: 
+
+Este requisito e os métodos para atendê-lo apresentam falhas graves. 
+
+Notavelmente, a verdadeira natureza de como o tamanho da amostra influencia o valor científico ou prático projetado de um estudo impede qualquer designação abrangente de <80% de poder como “inadequada”. 
+
+Além disso, os cálculos padrão são inerentemente não confiáveis, e focar apenas no poder negligencia os resultados mais importantes de um estudo concluído: estimativas e intervalos de confiança. 
+
+As convenções atuais prejudicam o processo de pesquisa de várias maneiras: promovendo má interpretação de estudos concluídos, corroendo a integridade científica, dando poder arbitrário aos revisores, inibindo a inovação, pervertendo padrões éticos, desperdiçando esforços e desperdiçando dinheiro.
+
+A pesquisa médica se beneficiaria de abordagens alternativas, incluindo o valor estabelecido dos métodos de informação, escolhas simples baseadas no custo ou viabilidade que foram recentemente justificadas, análises de sensibilidade que examinam uma série significativa de descobertas possíveis e seguindo estudos análogos anteriores. 
+
+Para promover abordagens mais racionais, o treinamento em pesquisa deve abranger as questões apresentadas aqui, os revisores devem ser extremamente cuidadosos antes de levantar questões de tamanho de amostra “inadequado” e relatórios de estudos concluídos não devem discutir poder.
+
+Resumo: 
+
+Convenções e expectativas comuns em relação ao tamanho da amostra são profundamente falhas, causam sérios danos ao processo de pesquisa e devem ser substituídas por alternativas mais racionais."
+
+> Bacchetti, 2010, p. 8
+
+# $p>0.05$ e análise de poder retrospectivo 
+
+"Evite o erro “ausência de evidência = evidência de ausência” [ou aceitar $H_{0}$ se $p>0.05$]. 
+
+Se um teste de hipótese tem um valor _p_ acima do nível $\alpha$ escolhido, não é correto inferir que não houve efeito ou diferença entre os grupos."
+
+> Althouse et al., 2021, p. e73
+
+"Cálculos de poder _post hoc_ usando o tamanho do efeito observado são uma simples transformação do valor _p_ do estudo e nunca devem ser usados porque não respondem a uma pergunta importante.
+
+Se um cálculo de poder não foi realizado, então pode ser aceitável relatar um “cálculo de poder” ilustrando que o tamanho da amostra disponível foi suficiente para abordar a questão de interesse do estudo. 
+
+Observe que isso deve ser baseado em algum tamanho mínimo de efeito de interesse para a inferência primária, não nos dados observados."
+
+> Althouse et al., 2021, p. e87
+
+"Repetimos pontos relatados por outros autores que o uso do poder estimado para interpretar resultados é logicamente inconsistente e redundante com o valor _p_, e esse poder estimado pode ser tendencioso e altamente não confiável."
+
+> Gerard et al., 1998, p. 802
+
+## Análise de poder retrospectivo (_plug in_) de ANOVA unifatorial independente balanceada (Gerard et al., 1998)
+
+```{r eval=TRUE, echo=TRUE}
+k <- 3 # numero de condicoes independentes
+n <- 20 # numero de observacoes independentes de cada condicao
+alfa <- 0.05
+dfn <- k - 1
+dfd <- k*(n - 1)
+Fcrt <- qf(1-alfa, dfn, dfd)
+Fobs <- Fcrt*0.99 
+eta2 <- dfn*Fobs/(dfn*Fobs+dfd)
+eta2lims <- MBESS::ci.pvaf(Fobs, dfn, dfd, k*n, 1-alfa)
+f2 <- eta2/(1-eta2)
+f2.ll <- eta2lims$Lower.Limit.Proportion.of.Variance.Accounted.for/
+  (1-eta2lims$Lower.Limit.Proportion.of.Variance.Accounted.for)
+f2.ul <- eta2lims$Upper.Limit.Proportion.of.Variance.Accounted.for/
+  (1-eta2lims$Upper.Limit.Proportion.of.Variance.Accounted.for)
+ncp.p <- dfd*f2 # ou dfn*Fobs
+ncp.p.ll <- dfd*f2.ll 
+ncp.p.ul <- dfd*f2.ul 
+cat(paste("n =", k*n, "\tk =", k, "\tFcrt =", round(Fcrt,2),"\tFobs =", round(Fobs,2),"\n"))
+poder.p <- 1-pf(Fcrt,dfn, dfd, ncp.p)
+cat(paste("Estimativa pontual do poder retrospectivo =", round(poder.p,3),"\n"))
+poder.p.ll <- 1-pf(Fcrt,dfn, dfd, ncp.p.ll)
+cat(paste("Limite inferior do IC95% do poder retrospectivo =", round(poder.p.ll,3),"\n"))
+poder.p.ul <- 1-pf(Fcrt,dfn, dfd, ncp.p.ul)
+cat(paste("Limite superior do IC95% do poder retrospectivo =", round(poder.p.ul,3),"\n"))
+```
+
+# Teste qui-quadrado
+
+Os testes baseados na estatística qui-quadrado podem ser divididos em dois tipos
+
+1. Teste de aderência uma variável nominal com duas ou mais categorias: teste de frequências hipotetizadas;
+
+2. Teste de independência entre duas variáveis nominais com duas ou mais categorias.
+
+# Teste qui-quadrado de aderência por _bootstrapping_
+
+O teste de aderência nos permite descobrir se um conjunto de frequências observadas difere de um outro conjunto de frequências hipotetizadas.
+
+Suposição
+
+Independência das observações: cada observação da unidade observacional deve ser alocada em apenas um categoria da variável nominal.
+
+> Siegel & Castellan Jr, 1988, p. 46
+
+# Distribuição do tipo sanguíneo no Brasil
+
+<iframe 
+width="100%" height="50%"
+src="https://pt.wikipedia.org/wiki/Distribui%C3%A7%C3%A3o_do_tipo_sangu%C3%ADneo_por_pa%C3%ADs">
+</iframe>
+
+[Wikipedia: Distribuição do tipo sanguíneo por país](https://pt.wikipedia.org/wiki/Distribui%C3%A7%C3%A3o_do_tipo_sangu%C3%ADneo_por_pa%C3%ADs){target="_blank"} 
+
+* `ABO_cluster.R`
+
+<code>dados$Cluster: 1
+
+ [1] "Indígenas"          "Bascos"             "Belgas"            
+ [4] "Brasileiros"        "Povo_san"           "Neerlandeses"      
+ [7] "Ingleses"           "Georgianos"         "Islandeses"        
+[10] "Irlandeses"         "Italianos_Milão"    "Māori"             
+[13] "Escoceses"          "Sul-africanos"      "Americanos_brancos"</code>
+
+* `ABORh_cluster.R`
+
+<code>dados$Cluster: 5
+
+ [1] "Austrália"     "Brasil"        "Canadá"        "Grécia"       
+
+ [5] "Itália"        "Líbano"        "Lituânia"      "Países Baixos"
+
+ [9] "Nova Zelândia" "Somália"       "Sri Lanka"     "Reino Unido" </code>
+
+```{r eval=TRUE, echo=TRUE}
+tipsang.freq <- as.numeric(table(Dados$TipoSang))
+tipsang.prob <- c(0.08, 0.34, 0.005, 0.025,
+                  0.02, 0.08, 0.09, 0.36)
+tslab <- c("A-", "A+", "AB-", "AB+", 
+           "B-", "B+", "O-", "O+")
+plot(tipsang.prob, type="p", lty=1, 
+     lwd=1, pch=2, col="black", 
+     xaxt = "n", xlab='Tipo Sanguineo', ylab="Probabilidade")
+axis(1, at=1:length(tslab), labels=tslab)
+lines(tipsang.freq/sum(tipsang.freq), pch=21, 
+      type="p", lty=1, lwd=1, col="black")
+legend("top", legend=c("Prob.Hipotet","Prob.Observ"), 
+       pch=c(2,21), bty="n")
+cat(tslab,"\n")
+print(tipsang.freq)
+print(round(tipsang.freq/sum(tipsang.freq), 3))
+print(tipsang.prob)
+round(ICM <- DescTools::MultinomCI(x=tipsang.freq,                                   conf.level=1-alfa/length(unique(Dados$TipoSang))),4)
+ICM <- as.data.frame(ICM)
+print(ICM, digits=3)
+ICM <- cbind(ICM,sort(unique(Dados$TipoSang)))
+names(ICM) <- c("est", "lwr.ci", "upr.ci", "ts")
+ggplot2::ggplot(ICM, 
+                ggplot2::aes(x=ts,
+                             y=est)) + 
+  ggplot2::geom_errorbar(ggplot2::aes(ymin=lwr.ci, 
+                                      ymax=upr.ci), 
+                         width=.5) +
+  ggplot2::geom_point(size=1,
+                      shape=19) +
+  ggplot2::xlab("Tipo Sanguineo") +
+  ggplot2::ylab("Proporção") +
+  ggplot2::ggtitle("I95% Bonferroni de MCT") +
+  ggplot2::theme_bw()
+RVAideMemoire::multinomial.multcomp(tipsang.freq, p.method = "bonferroni")
+out <- chisq.test(x=tipsang.freq, 
+                  p=tipsang.prob,
+                  simulate.p.value=TRUE, 
+                  B=1e6) 
+df <- chisq.test(tipsang.freq, p=tipsang.prob)$parameter
+X2 <- out$statistic
+p <- out$p.value
+n <- sum(chisq.test(tipsang.freq, p=tipsang.prob)$observed)
+cat("X^2 = ", X2 , " df = ",  df, " p = ", p, "\n", sep="")
+cat("Heuristica de significancia: X^2/df > 2\n", round(X2/df,2), "\n")
+cat("Residuos estandardizados\n", round(out$stdres,2), "\n")
+V <- sqrt((X2/n)/df)
+cat("V de Cramer = ", round(V,2), "\n")
+# cat("Grau de nao aderencia:\n")
+print(effectsize::interpret_cramers_v(V))
+```
+
+# Teste qui-quadrado de independência por _bootstrapping_
+
+O teste qui-quadrado de independência de Pearson permite que se descubra se existe um relacionamento ou efeito de interação entre duas variáveis nominais com duas ou mais categorias.
+
+Suposição
+
+Cada observação da unidade observacional deve ser alocada em apenas um categoria de cada uma das duas variáveis nominais.
+
+> Siegel & Castellan Jr, 1988, p. 111
+
+```{r eval=TRUE, echo=TRUE}
+tabela <- xtabs(~TipoSang+Sexo, data=Dados)
+tabela
+gplots::balloonplot(t(tabela), main ="", xlab ="", ylab="",
+                    label=TRUE, show.margins=TRUE,
+                    dotcolor="gray")
+res <- chisq.test(tabela,
+                  simulate.p.value=TRUE, 
+                  B=1e6)
+res
+df <- chisq.test(tabela)$parameter
+cat("Graus de liberdade (df) = ", df, "\n")
+x2 <- res$statistic
+n <- sum(res$observed)
+r <- nrow(tabela) 
+c <- ncol(tabela) 
+df <- (r-1)*(c-1) 
+cat("Heuristica de significancia: X^2/df > 2\n", round(x2/df,2), "\n")
+STAR <- res$stdres 
+cat("MCSTAR\n") # Moment-Corrected STandardized Adjusted Residual
+print(MCSTAR <- STAR/(sqrt((1-1/r)*(1-1/c))), digits=3) 
+alfa <- 0.05
+alfaBonf <- alfa/df
+zcrit <- abs(qnorm(alfaBonf/2))
+cat("|MCSTAR critico| (alfaBonferroni=5%/",df,") =",zcrit,"\n\n")
+pSTAR <- (1-pnorm(abs(MCSTAR)))*2
+pSTAR <- abs(MCSTAR)<abs(zcrit)
+pSTAR <- pSTAR*1
+if(prod(pSTAR)!=1)
+  {
+    corrplot::corrplot(MCSTAR, is.corr = FALSE, 
+                       insig="label_sig",
+                       p.mat=pSTAR,
+                       pch="*", 
+                       pch.cex=3, 
+                       pch.col="yellow")  
+  } else
+  {
+    pSTAR <- pSTAR*0
+    corrplot::corrplot(MCSTAR, 
+                       is.corr = FALSE, 
+                       p.mat=pSTAR)  
+  }
+V <- DescTools::CramerV(tabela)
+cat("V de Cramer = ", round(V,2), "\n")
+effectsize::interpret_cramers_v(V)
+```
+
+# Teste qui-quadrado de independência
+
+1. Delineamento entre participantes (observações independentes)
+
+    + $H_{0}$: independência ou ausência de efeito de interação entre as duas variáveis nominais
+
+2. Suposições do teste qui-quadrado de Pearson
+    + Valor-p assintótico: até $20\%$ das caselas com frequência esperada menor que 5 e todas as caselas com frequência esperada maior que 1
+    + Valor-p exato ou por _bootstrapping_: sem restrições
+
+3. Número de graus de liberdade (df) = $(r-1)(c-1)$
+
+4. Número de dimensões da tabela de contingência: $dim = mínimo\{r,c\} - 1$
+
+5. MCSTAR (_Moment-Corrected STandardized Adjusted Residual_) 
+    + Escore-z da casela que indica quanto ela se afasta em unidade de desvio-padrão da hipótese nula de independência
+    + Adequado se a frequência absoluta da casela é pelo menos 12 e se o número de dimensões é igual a 1 ou 2; se o número de dimensões é 3 ou mais, usar Análise de Correspondência Simples
+    + MCSTAR positivo (negativo): valor da casela acima (abaixo) do valor esperado indica associação positiva (negativa) entre as categorias das duas variáveis nominais
+    + A associação entre as categorias é estatisticamente significante se $|MCSTAR| > z_{crítico}$ com correção de Bonferroni (nível de significância ajustado=$0.05/df$)
+
+6. $\phi^{2}$: grau de associação entre as duas variáveis nominais: varia entre $-dim$ e $dim$
+
+7. V de Cramér: medida de tamanho de efeito (correlação implícita absoluta) 
+    + Valor adimensional que varia entre 0 e 1 
+    + Não depende do tamanho da amostra e do número de dimensões da tabela de contingência  
+    + Quanto maior, maior o grau de dependência ou do efeito de interação entre as duas variáveis nominais
+
+8. $\eta^{2}=V^{2}$: medida de tamanho de efeito: porcentagem da variância compartilhada entre as duas variáveis nominais
+
+# Teste t para uma condição
+
+```{r eval=TRUE, echo=TRUE}
+alfa <- 0.05
+estatura <- c(169, 174, 175, 186)
+shapiro.test(estatura)
+fit <- t.test(x=estatura, 
+       mu=177,
+       alternative="two.sided",
+       conf.level=1-alfa)
+fit
+d <- lsr::cohensD(estatura, mu=177)
+cat("d de Cohen =", round(d,2), "\n")
+effectsize::interpret_cohens_d(d=d, rules="cohen1988")
+df <- fit$parameter
+q1 <- round(qt(p=alfa/2, df=df),2)
+q2 <- round(qt(p=1-alfa/2, df=df),2)
+t <- round(abs(fit$statistic),2)
+DescTools::PlotProbDist(breaks=c(-4.5,q1,-t,t,q2,4.5), 
+                        function(x) dt(x, df=df), 
+                        blab=c(q1,-t,t,q2), 
+                        alab=c("RejH0","p/2","","p/2","RejH0"),
+                        xlim=c(-4.5,4.5),
+                        main=paste0("t(",df,")"),
+                        col=c("darkred","black",
+                              "black","black","darkred"), 
+                        density=c(20,20,0,20,20))
+```
+
+# Número de graus de liberdade
+
+Tamanho do amostra é o tamanho nominal do amostra.
+
+O número de graus de liberdade (gl) constitui o tamanho efetivo da amostra.
+
+> Eisenhauer, 2008
+
+O número de graus de liberdade (gl) é a quantidade necessária de unidades experimentais para que o estimador da variância do estimador do efeito do teste (diferença padronizada entre a média amostral e a média hipotetizada), usando todas as medidas independentes da amostra, seja não-viesado.
+
+$$E\left(S^{2}\right)=\sigma^{2}, \; \text{se} \; S^{2}=\dfrac{\sum_{i=1}^{n}\left(X_{i}-\bar{X}\right)^{2}}{n-1} $$
+
+> Wonnacott & Wonnacott, 1990, p. 262
+
+# Teste t de Welch para duas condições independentes
+
+1. Delineamento entre participantes: independência entre as unidades experimentais
+
+2. Uma VD intervalar
+
+3. Uma VI nominal dicotômica (fator entre participantes)
+
+4. Normalidade da VD nas duas condições independentes, se o tamanho total da amostra é menor que 30; se maior ou igual a 30, a normalidade não é requerida (Teorema Central do Limite)
+
+5. O teste t de Welch robusto à heterocedasticidade é o default da função `stats::t.test` do R
+
+```{r eval=TRUE, echo=TRUE}
+alfa <- 0.05
+print(psych::describeBy(Dados$MCT, group=Dados$Sexo, mat=2))
+boxplot(MCT ~ Sexo, 
+        data=Dados, 
+        ylab="MCT (kg)", 
+        xlab="Sexo")
+gplots::plotmeans(MCT ~ Sexo, 
+                  data=Dados, 
+                  p=1-alfa/2,
+                  xlab="Instructor", 
+                  ylab="MCT (kg)", 
+                  main="IC95% Bonferroni da média de MCT",
+                  barcol="black",
+                  connect=FALSE)
+print(RcmdrMisc::normalityTest(MCT ~ Sexo, data=Dados))
+cat("IC95% das medias brutas estimadas de MCT\n")
+print(Rmisc::group.CI(MCT ~ Sexo, data=Dados, ci=1-alfa/2))
+fit <- t.test(MCT ~ Sexo, 
+              data=Dados)
+fit
+d <- lsr::cohensD(MCT ~ Sexo, 
+                  data=Dados,
+                  method="unequal")
+cat("d de Cohen =", round(d,2), "\n")
+effectsize::interpret_cohens_d(d)
+df <- fit$parameter
+t <- fit$statistic # estatistica de teste t
+F <- t^2 # estatistica de teste F de Fisher
+eta2 <- F/(F+df)
+cat("eta^2 = R^2 = ",round(eta2,2),"\n")
+effectsize::interpret_eta_squared(eta2, rules="cohen1992")
+cat("IC95% Bonferroni das medias marginais estimadas de MCT\n")
+Sum <- rcompanion::groupwiseMean(MCT ~ Sexo, 
+                                 data=Dados, 
+                                 conf=1-alfa/2, 
+                                 digits=3, 
+                                 traditional=FALSE, 
+                                 percentile=TRUE,
+                                 na.rm=TRUE)
+print(Sum)
+ggplot2::ggplot(Sum, 
+                ggplot2::aes(x = Sexo,y = Mean)) +
+  ggplot2::geom_errorbar(ggplot2::aes(ymin = Percentile.lower,
+                    ymax = Percentile.upper),width=0.05,size=0.5)+
+  ggplot2::geom_point(shape=15,size=4) + 
+  ggplot2::theme_bw() +
+  ggplot2::theme(axis.title=ggplot2::element_text(face="bold")) +
+  ggplot2::ggtitle("IC95 Bonferroni de media marginal de MCT (kg)") 
+```
+
+# $\eta^{2}$ de Cohen
+
+$\eta^{2}$ de Cohen é:
+
+1. Uma estatística de tamanho de efeito que
+    + Não depende do tamanho da amostra
+    + Varia entre 0 e 1
+    + É adimensional
+2. A proporção da variância da VD explicada pela VI
+3. Uma estatística igual ao coeficiente de determinação $R^{2}$
+4. O coeficiente de correlação de Pearson implícita ao quadrado entre a VD e a VI do modelo linear geral (GLM).
+
+# Teste t para duas condições dependentes
+
+1. Delineamento intraparticipantes: independência entre as unidades experimentais
+
+2. Uma VD intervalar
+
+3. Uma VI nominal dicotômica (fator intraparticipantes)
+
+4. Normalidade da diferença da VD nas duas condições dependentes, se o tamanho total da amostra é menor que 30; se maior ou igual a 30, a normalidade não é requerida (Teorema Central do Limite)
+
+5. O teste t relacionado é executado por meio da função `stats::t.test` do R 
+
+# Programa de Educação Nutricional: ingestão de sódio
+
+No exemplo a seguir, o nutricionista faz com que seus mesmos alunos do Programa de Educacao Nutricional mantenham diários do
+que comem por uma semana e, em seguida, calculem a ingestão diária de sódio em miligramas.
+
+Como a turma recebeu os mesmos programas de educação nutricional,
+eles querem ver se a ingestão média de sódio é a mesma entre duas semanas consecutivas.
+
+> [rcompanion.org de Salvatore S. Mangiafico](http://rcompanion.org/handbook/I_04.html){target="_blank"} 
+
+"A quantidade diaria de sodio disponível para consumo nos
+domicilios brasileiros foi de 4,7 g para ingestao diaria de 2.000 kcal, mantendo-se mais de duas vezes superior ao limite recomendado de ingestao desse nutriente."
+
+> SARNO et al. (2013) Estimativa de consumo de sodio pela
+populacao brasileira 2008-9. _Rev Saude Publica_ 47(3):571-8.
+
+```{r eval=TRUE, echo=TRUE}
+Tabela <- ("
+Participante Semana1 Semana2
+a            1200    1100
+b            1400    1200
+c            1350    1250
+d             950    1050
+e            1400    1200
+f            1150    1250
+g            1300    1350
+h            1325    1350
+i            1425    1325
+j            1500    1525
+k            1250    1225
+l            1150    1125
+")
+Dados <- read.table(textConnection(Tabela),header=TRUE)
+Dados$Participante <- factor(Dados$Participante)
+dif <- Dados$Semana2 - Dados$Semana1
+alfa <- 0.05
+boxplot(dif, ylab="Sodio Depois-Antes")
+car::densityPlot(dif)
+shapiro.test(dif)
+Dados_long <- reshape2::melt(Dados,
+                             id.vars="Participante",
+                             measure.vars=c("Semana1","Semana2"),
+                             variable.name="Semana")
+names(Dados_long) <- c("Participante", "Semana", "Sodio")
+print(Dados_long)
+print(psych::describeBy(Sodio~Semana, data=Dados_long, mat=2, digits=2))
+print(psych::describe(dif))
+```
+
+```{r eval=TRUE, echo=TRUE}
+ggplot2::ggplot(Dados_long, 
+                ggplot2::aes(x=Semana, 
+                             y=Sodio, 
+                             colour=Participante, 
+                             group=Participante)) +
+  ggplot2::geom_line() + 
+  ggplot2::geom_point(shape=21, 
+                      fill="white") + 
+  ggplot2::ylab("Sodio (mg/dia)") +
+  ggplot2::ggtitle("Perfil do Participante") +
+  ggplot2::theme_bw()
+```
+
+```{r eval=TRUE, echo=TRUE}
+Dados_long_ICIP <- summarySEwithin2(Dados_long, 
+                                    measurevar="Sodio", 
+                                    withinvars="Semana",
+                                    idvar="Participante", 
+                                    na.rm=TRUE, 
+                                    conf.interval=1-alfa/2)
+print(Dados_long_ICIP)
+```
+
+```{r eval=TRUE, echo=FALSE}
+ggplot2::ggplot(Dados_long_ICIP, 
+                ggplot2::aes(x=Semana, 
+                             y=Sodio)) +
+  ggplot2::geom_errorbar(width=.1, 
+                         ggplot2::aes(ymin=Sodio-ci, 
+                                      ymax=Sodio+ci)) +
+  ggplot2::geom_point(shape=21, 
+                      size=3, 
+                      fill="white") +
+  ggplot2::ylab("Sodio (mg/dia)") +
+  ggplot2::ggtitle("IC95% Bonferroni intraparticipantes") +
+  ggplot2::theme_bw()
+```
+
+```{r eval=TRUE, echo=TRUE}
+cat("Analise de significancia estatistica: valor p\n")
+print(res <- t.test(dif,mu=0))
+cat("Analise de significancia pratica: tamanho de efeito\n")
+d <- lsr::cohensD(x=Dados$Semana2, 
+                  y=Dados$Semana1,
+                  method="paired")
+cat("d de Cohen =", round(d,2), "\n")
+effectsize::interpret_cohens_d(d)
+t <- res$statistic
+F <- t^2
+df <- res$parameter
+eta2 <- F/(F+df)
+cat("eta^2 = R^2 = ", eta2, "\n\n")
+effectsize::interpret_eta_squared(eta2, rules="cohen1992")
+```
+
+# ANOVA unifatorial independente de Welch
+
+1. Delineamento entre participantes: independência entre as unidades experimentais
+
+2. Uma VD intervalar
+
+3. Uma VI nominal politômica (fator entre participantes)
+
+4. Normalidade da VD nas três ou mais condições independentes, se o tamanho total da amostra é menor que 30; se maior ou igual a 30, a normalidade não é requerida (Teorema Central do Limite)
+
+5. Teste _omnibus_: ANOVA de Welch robusta à heterocedasticidade é teste default da função `stats::oneway.tests` do R
+
+6. Teste _post hoc_: testes de Games-Howell para a par robustos à heterocedasticidade; função `rstatix::games_howell_test` do R
+
+
+## Teste _omnibus_
+
+* $H_{0}$: As médias populacionais da VD nas condições são iguais
+
+* $H_{1}$: Pelo menos duas médias populacionais da VD nas condições são diferentes
+
+## Teste _post hoc_
+
+* Testes de Games-Howell par a par.
+
+# ANOVA de Welch: MCT~AtivFisica (Masculino)
+
+```{r eval=TRUE, echo=TRUE}
+# MCT~AtivFisica Masculino
+print(psych::describeBy(Dados.M$MCT, 
+                  Dados.M$AtivFisica, 
+                  mat=2, 
+                  digits=2))
+boxplot(MCT~AtivFisica, data=Dados.M)
+print(RcmdrMisc::normalityTest(MCT~AtivFisica, data=Dados.M))
+s <- Rmisc::summarySE(Dados.M, 
+                      measurevar="MCT", 
+                      groupvars=c("AtivFisica"),
+                      conf.interval = 1-alfa/(length(unique(Dados.M$AtivFisica))),
+                      na.rm=TRUE)
+```
+
+```{r eval=TRUE, echo=TRUE}
+ggplot2::ggplot(s, 
+                ggplot2::aes(x=AtivFisica, 
+                             y=MCT)) + 
+  ggplot2::geom_errorbar(ggplot2::aes(ymin=MCT-ci, 
+                                      ymax=MCT+ci), 
+                         width=.3) +
+  ggplot2::geom_point(size=3,
+                      shape=21) +
+  ggplot2::xlab("Nivel de Atividade Fisica") +
+  ggplot2::ylab("MCT (kg)") +
+  ggplot2::ggtitle("IC95% Bonferroni de MCT Masculino") +
+  ggplot2::ylim(62,80) +  
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.justification=c(1,0),
+                 legend.position=c(1,0))
+```
+
+```{r eval=TRUE, echo=TRUE}
+cat("Teste omnibus")
+fit.M <- oneway.test(MCT~AtivFisica, 
+                     data=Dados.M, 
+                     na.action=na.omit)
+print(fit.M)
+cat("Teste post hoc")
+ph.M <- rstatix::games_howell_test(MCT~AtivFisica, 
+                                   data=Dados.M)
+print(as.data.frame(ph.M), digits=4)
+cat("Analise de significancia pratica: tamanho de efeito\n")
+F <- as.numeric(fit.M$statistic)
+dfn <- as.numeric(fit.M$parameter[1])
+dfd <- as.numeric(fit.M$parameter[2])
+eta2 <- dfn*F/(dfn*F+dfd)
+cat("eta^2 = R^2 = ", round(eta2,4), "\n\n")
+effectsize::interpret_eta_squared(eta2, rules="cohen1992")
+```
+
+# ANOVA unifatorial independente de Welch sem dados brutos
+
+```{r eval=TRUE, echo=TRUE}
+nA <- 35
+nB <- 89
+nC <- 30
+nD <- 50
+nE <- 108
+mediaA <- 67.91
+mediaB <- 70.42
+mediaC <- 73.63
+mediaD <- 70.06
+mediaE <- 73.89
+dpA <- 10.03
+dpB <- 14.04
+dpC <- 10.37
+dpD <- 9.24
+dpE <- 12.22
+n <- c(nA,nB,nC,nD, nE)
+media <- c(mediaA,mediaB,mediaC,mediaD, mediaE)
+dp <- c(dpA,dpB,dpC,dpD, dpE)
+J <- length(n)
+balanc <- max(dp)/min(dp)
+var <- dp^2
+w <- n/var
+U <- sum(w)
+X_til <- as.numeric(w%*%media/U)
+gl_num <- J - 1
+A <- as.numeric(w%*%((media - X_til)^2)/(J-1))
+B <- as.numeric((2*(J - 2)/(J^2 - 1))*(((1 - w/U)/(n-1))%*%(1 - w/U)))
+gl_denom <- 1/(((3/2)/(J-2))*B)
+F <- A/(1+B)
+p <- pf(F,gl_num,gl_denom,lower.tail=FALSE)
+razao <- max(dp)/min(dp)
+eta2 <- as.numeric(gl_num*F/(gl_num*F + gl_denom))
+razao <- max(dp)/min(dp) 
+es <- effectsize::interpret_eta_squared(eta2, rules="cohen1992")
+cat("\nmax(dp)/min(dp) = ", razao,"")
+cat("\nAnalise de significancia estatistica (ANOVA unifatorial de Welch): valor-p")
+cat("\n	F(",gl_num,",",gl_denom,") = ",F,", p = ",p,"",sep="")
+cat("\nAnalise de significancia pratica: tamanho de efeito")
+cat("\n	eta^2 = R^2 = ",eta2," (",es[1],")",sep="")
+```
+
+# Referências
+
+* AGRESTI, A & FINLAY, B (2012) _Métodos estatísticos para as Ciências Sociais_. Porto Alegre: PENSO.
+* ALTHOUSE, AD et al. (2021) Recommendations for statistical reporting in cardiovascular medicine: A special report from the American Heart Association. _Circulation_ 144(4): e70-e91.
+* BACCHETTI, P (2010) Current sample size conventions: Flaws, harms, and alternatives. _BMC Med_ 8: 17. https://doi.org/10.1186/1741-7015-8-17.
+* COELHO, JP et al. (2008) _Inferência estatística: com utilização do SPSS e G\*Power_. Lisboa: Sílabo.
+* DANCEY, C & REIDY, J (2019) _Estatística sem Matemática para Psicologia_. 7ª ed. Porto Alegre: Penso.
+* DI LEO, G & SARDANELLI, F (2020) Statistical significance: p value, 0.05 threshold, and applications to radiomics-reasons for a conservative approach. _Eur Radiol Exp_ 4: 18. https://doi.org/10.1186/s41747-020-0145-y.
+* EISENHAUER, JG (2008) Degrees of freedom. _Teaching Statistics_ 30(3): 75-8.
+* García-pérez, MA & Núñez-antón, V (2003) Cellwise Residual Analysis in Two-Way Contingency Tables. _Educational and Psychological Measurement_, 63(5), 825–839. https://doi.org/10.1177/0013164403251280.
+* GATÁS, RR (1978) _Elementos de probabilidade e inferência_. SP: Atlas.
+* GERARD, PD & SMITH, DR & WEERRAKKODY, G (1998) Limits of retrospective power analysis. _The Journal of Wildlife Management_ 62(2): 801–7. https://doi.org/10.2307/3802357.
+* LOMBARDI, CM & HURLBERT, SH (2009) Misprescription and misuse of one-tailed tests. _Austral Ecology_ 34: 447-68.
+* MARK, DB et al. (2016) Understanding the Role of P Values and Hypothesis Tests in Clinical Research. _JAMA Cardiol._ 1(9): 1048–54. doi:10.1001/jamacardio.2016.3312.
+* PERUGINI, M et al. (2018) A practical primer to power analysis for simple experimental designs. _International Review of Social Psychology_ 31(1): 1–23, DOI: https://doi.org/10.5334/irsp.181. Scripts R e Rmd: https://github.com/mcfanda/primerPowerIRSP.
+* SIEGEL, S & CASTELLAN Jr, NJ (1988) _Nonparametric statistics for the behavioral sciences_. 2ª ed. NY: McGraw-Hill.
+* SPANOS, A (2014) Recurring controversies about P values and confidence intervals revisited. _Ecology_ 95(3):645-51. doi: 10.1890/13-1291.1. PMID: 24804448.
+* STEPHENS, LJ (2009) _Statistics in Psychology_. NY: McGraw-Hill, Schaum’s Outline Series. 
+* WONNACOTT, T & WONNACOTT, R (1981) _Estatística aplicada à Economia e à Administração_. RJ: LTC.
+* WONNACOTT, T & WONNACOTT, R (1990) _Introductory Statistics for Business and Economics_. 4ª ed. NJ: Wiley.
+
+# Script R completo
+
+```{r eval=TRUE, echo=TRUE}
+  cat(readLines("Modulo3.R"), sep="\n")
+```
+
+
+

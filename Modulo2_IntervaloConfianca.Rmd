@@ -1,0 +1,1280 @@
+--- 
+title: "MAN5728: Tópicos Essenciais da Bioestatística"
+author: |
+  | José O Siqueira (siqueira@usp.br)
+  | Paulo SP Silveira (silveira@usp.br)
+subtitle: "Módulo 2: Intervalo de Confiança"
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    font_adjustment: 1
+    css: style.css
+    df_print: tibble
+    footer: "Modulo2_IntervaloConfianca.Rmd"
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+  slidy_presentation:
+    font_adjustment: -1
+    css: style.css
+    footer: "Modulo2_IntervaloConfianca.Rmd"
+    highlight: pygments
+    theme: cerulean
+    df_print: tibble
+    number_sections: no
+    toc: yes
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+---
+
+```{r set-options, echo=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 1px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+ }
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+ }
+.bgobs {
+  background-color: #a0d8d8;
+ }
+.bgcodigo {
+  background-color: #eeeeee;
+ }
+.bgsaida {
+  background-color: #ecf7db;
+ }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:", "Usuarios", "Jose", "scilab2023", "bin", "Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(readxl, warn.conflicts=FALSE))
+suppressMessages(library(psych, warn.conflicts=FALSE))
+suppressMessages(library(HH, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(MVN, warn.conflicts=FALSE))
+suppressMessages(library(Rmisc, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(reshape2, warn.conflicts=FALSE))
+source("summarySEwithin2.R")
+```
+
+# Conteúdo
+
+* Métodos básicos de estatística inferencial
+* Intervalo de confiança.
+
+# Ler planilha 
+
+Os dados da planilha Excel `Biometria_FMUSP.xlsx` foram coletados pelos docentes do curso de Medicina da FMUSP dos estudantes do segundo ano de uma mesma disciplina em três anos consecutivos.
+
+As variáveis do arquivo são (`missing = NA`):
+
+* ID: idenficador do(a) estudante	
+* Ano da coleta dos dados: 1, 2, 3	
+* Turma: A, B	
+* Sexo: Feminino, Masculino	
+* Mao: Destro, Canhoto, Ambidestro	
+* TipoSang: A+, A-, ...	
+* ABO: A, B, AB, O
+* Rh: +, -
+* AtivFisica: nível de atividade física	
+* Sedentarismo: Não, Sim	
+* MCT: massa corporal total (kg)
+* Estatura: cm	
+
+```{r eval=TRUE,  echo=TRUE, warning=FALSE, error=FALSE}
+Dados <- readxl::read_excel(path="Biometria_FMUSP.xlsx",
+                            sheet="dados",
+                            na=c("NA","Na","nA","na"))
+Dados$MCT[Dados$MCT==max(Dados$MCT,na.rm=TRUE)] <- NA
+Dados$Estatura[Dados$Estatura==min(Dados$Estatura,na.rm=TRUE)] <- NA
+Dados$ID <- factor(Dados$ID)
+Dados$Ano <- factor(Dados$Ano)
+Dados$Turma <- factor(Dados$Turma)
+Dados$Sexo <- factor(Dados$Sexo)
+Dados$Mao <- factor(Dados$Mao)
+Dados$TipoSang <- factor(Dados$TipoSang)
+Dados$ABO <- factor(Dados$ABO)
+Dados$Rh <- factor(Dados$Rh)
+Dados$AtivFisica <- factor(Dados$AtivFisica)
+Dados$Sedentarismo <- factor(Dados$Sedentarismo)
+Dados$IMC <- Dados$MCT/(Dados$Estatura/100)^2
+Dados.F <- subset(Dados, Sexo=="F")
+Dados.M <- subset(Dados, Sexo=="M")
+alfa <- 0.05
+```
+
+# Amostragem e inferência estatística
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="70%", fig.align="center"}
+knitr::include_graphics("sampling.png")
+```
+
+* Referências
+  * White, C (1953) Sampling in medical research. _BMJ_ 12: 1284-8.
+  * Roach, KE (2001) A clinician's guide to specification and sampling. _Journal of Orthopaedic & Sports Physical Therapy_ 31(12): 753-8.
+  * Ranstam, J (2009) Sampling uncertainty in medical research. _Osteoarthritis and Cartilage_ 17:1416-9.
+  
+  
+# Como seria o mundo se tivesse 100 pessoas?
+
+* LORD, A (2016) _The World as 100 People: A Visual Guide to 7 Billion Humans_. Smith Street Books.
+* Vídeo: [The world as 100 people](https://www.youtube.com/watch?v=VxNAU7pdxGU){target="_blank"}
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="70%", fig.align="center"}
+knitr::include_graphics("World100.png")
+```
+
+# Amostragem estatística
+
+* [Wikipedia: Sampling (statistics)](https://en.wikipedia.org/wiki/Sampling_(s)tatistics){target="_blank"}
+
+* Amostragem aleatória simples (SRS)
+```{r eval=TRUE, out.width="70%", echo=FALSE}
+knitr::include_graphics("SimpleRandomSample.png")
+```
+
+* Amostragem sistemática 
+```{r eval=TRUE, out.width="70%", echo=FALSE}
+knitr::include_graphics("SS.png")
+```
+
+* Amostragem estratificada
+```{r eval=TRUE, out.width="70%", echo=FALSE}
+knitr::include_graphics("StS.png")
+```
+
+* Amostragem por conglomerado
+```{r eval=TRUE, out.width="70%", echo=FALSE}
+knitr::include_graphics("CS.png")
+```
+
+* Vídeos sobre Amostragem
+  * [Vídeo 1](https://www.youtube.com/watch?v=pTuj57uXWlk){target="_blank"}
+  * [Vídeo 2](https://www.youtube.com/watch?v=be9e-Q-jC-0){target="_blank"}
+
+# Intervalo de predição vs. Intervalo de confiança
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="left", out.width="90%"}
+knitr::include_graphics("sd_se.png")
+```
+
+# Intervalo de predição da variável
+
+$$\Large IP^{\le75\%}(X) = \left[\bar{x} \pm 2\,s\right]$$
+
+<div class=customlist>
+* $X$: variável intervalar
+* $\bar{x}$: média amostral
+* $s$: desvio-padrão amostral
+</div>
+
+## Descrição da amostra
+
+Independentemente da distribuição de MCT por condição, o intervalo simétrico centrado na média com amplitude de 4 desvios-padrão contém pelo menos 75% das observações da amostra. 
+> [Desigualdade de Chebyshev](https://en.wikipedia.org/wiki/Chebyshev%27s_inequality){target="_blank"}
+
+## "Teste" de normalidade
+
+A distribuição normal contém aproximadamente 95% dos valores da amostra no intervalo simétrico centrado na média com amplitude 4 desvios-padrão.
+
+> [Distribuição normal](https://en.wikipedia.org/wiki/Normal_distribution){target="_blank"}
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="left", out.width="80%"}
+knitr::include_graphics("pred.png")
+```
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+# summarySE provides the standard deviation, standard error of the mean, and a (default 95%) confidence interval
+s <- Rmisc::summarySE(Dados, 
+                      measurevar="MCT", 
+                      groupvars=c("Sexo","Sedentarismo"),
+                      na.rm=TRUE)
+pd <- ggplot2::position_dodge(0.5) # move them .05 to the left and right
+# Intervalo de predicao >= 75%: Standard deviation (sd)
+k75 <- 2
+ggplot2::ggplot(s, 
+                ggplot2::aes(x=Sexo, 
+                             y=MCT, 
+                             colour=Sedentarismo)) + 
+  ggplot2::geom_errorbar(ggplot2::aes(ymin=MCT-k75*sd, 
+                             ymax=MCT+k75*sd), 
+                width=.3, 
+                position=pd) +
+  ggplot2::geom_line(position=pd) +
+  ggplot2::geom_point(position=pd, 
+             size=3,
+             shape=21) +
+  ggplot2::xlab("Sexo") +
+  ggplot2::ylab("MCT (kg)") +
+  ggplot2::ggtitle("Intervalo de predição de >= 75% de MCT") +
+  ggplot2::ylim(30,100) + 
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.justification=c(1,0),
+        legend.position=c(1,0))
+
+# 75% Error bar: sd
+k75 <- 2
+ggplot2::ggplot(s, 
+                ggplot2::aes(x=Sexo, 
+                             y=MCT, 
+                             # group=Sedentarismo,
+                             colour=Sedentarismo)) + 
+  ggplot2::geom_bar(position=ggplot2::position_dodge(1), 
+           stat="identity",
+           width=.8,
+           fill="white") +
+  ggplot2::geom_errorbar(ggplot2::aes(ymin=MCT-k75*sd, 
+                             ymax=MCT+k75*sd), 
+                width=.3, 
+                position=pd) +
+  ggplot2::geom_line(position=pd) +
+  ggplot2::geom_point(position=pd, 
+             size=3,
+             shape=21) +
+  ggplot2::xlab("Sexo") +
+  ggplot2::ylab("MCT (kg)") +
+  ggplot2::ggtitle("Intervalo de predição >= 75% de MCT") +
+  ggplot2::scale_y_continuous(breaks=0:100*10) +
+  ggplot2::coord_cartesian(ylim=c(30,100)) +
+  ggplot2::theme_bw()
+```
+
+# Intervalo de confiança da média
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, fig.align="left", out.width="80%"}
+knitr::include_graphics("me.png")
+```
+
+[Wikipédia: Margem de erro](https://pt.wikipedia.org/wiki/Margem_de_erro){target="_blank"}
+
+[Wikipédia: Intervalo de confiança](https://pt.wikipedia.org/wiki/Intervalo_de_confian%C3%A7a){target="_blank"}
+
+* [Vídeo: Confidence Interval Creation](https://www.youtube.com/watch?v=vNdxtdEjBQk){target="_blank"}
+* [Demo: Confidence Interval Creation](https://wise.cgu.edu/portfolio2/demo-confidence-interval-creation/){target="_blank"}
+
+* Referências
+  * Cumming, G & Finch, S (2005) Inference by eye: Confidence intervals and how to read pictures of data. _American Psychologist_ 60(2): 170-80.
+  * Krzywinski, M & Altman, N (2013) Importance of being uncertain. _Nature Methods_ 10(9): 809-10. 
+  * Puth, M et al. (2015) On the variety of methods for calculating confidence intervals by bootstrapping. _Journal of Animal Ecology_ 84: 892-7.
+  * Weissgerber TL, Milic NM, Winham SJ, Garovic VD (2015) Beyond bar and line graphs: Time for a new data presentation paradigm. _PLoS Biol_ 13(4): e1002128. doi:10.1371/journal.
+  * Banjanovic, ES & Osborne, JW (2016) Confidence intervals for effect sizes: Applying bootstrap resampling. _Practical Assessment, Research & Evaluation_ 21(5).
+  * Wonnacott, TH & Wonnacott, RJ (1969) _Introductory Statistics_. NJ: Wiley. 
+  * Wonnacott, TH & Wonnacott, RJ (1981) Estatística aplicada à Economia e à Administração. RJ: LTC.
+  * Wonnacott, TH & Wonnacott, RJ (1990) _Introductory Statistics for Business and Economics_. NJ: Wiley.
+
+# Estimação de intervalo de confiança
+
+* MCT
+  * sd: desvio-padrão
+  * se: erro-padrão (desvio-padrão da média)
+
+group |   n |  mean |    sd|  se| 
+:----:|----:|------:|-----:|---:|
+F     | 230 |  57.6 |   9.1| 0.6|     
+M     | 312 |  71.6 |  12.1| 0.7|
+
+```{r}
+# IC95% por formula
+## MCT Feminino
+n.F <- sum(!is.na(Dados.F$MCT))
+m.F <- mean(Dados.F$MCT, na.rm=TRUE)
+sd.F <- sd(Dados.F$MCT, na.rm=TRUE)
+se.F <- sd.F/sqrt(n.F)
+cat("Erro-padrao da media de MCT Feminino = ", 
+    round(se.F,1), "\n", sep="")
+me.F <- qt(p=1-alfa/2, df=n.F-1)*se.F
+cat("Margem de erro da media de MCT Feminino = ", 
+    round(me.F,1), "\n", sep="")
+ic.F <- m.F+c(-1,1)*me.F
+cat("IC95(media de MCT Feminino) = [", 
+    round(ic.F,1), "]\n")
+gl.F <- n.F-1
+qt1.F <- round(qt(p=alfa/2, df=gl.F),2)
+qt2.F <- round(qt(p=1-alfa/2, df=gl.F),2)
+DescTools::PlotProbDist(breaks=c(-5, qt1.F, 0, qt2.F, 5), 
+                        function(x) dt(x, df=gl.F), 
+                        blab=c(qt1.F, "", qt2.F), 
+                        xlim=c(-5,5), 
+                        alab=c(alfa/2,"","", alfa/2),
+                        col=c("black", "black"),
+                        main=paste0("MCT Feminino: t(",gl.F,")"), 
+                        density=c(20, 0, 0, 20))
+## MCT Masculino
+n.M <- sum(!is.na(Dados.M$MCT))
+m.M <- mean(Dados.M$MCT, na.rm=TRUE)
+sd.M <- sd(Dados.M$MCT, na.rm=TRUE)
+se.M <- sd.M/sqrt(n.M)
+cat("Erro-padrao da media de MCT Masculino = ", 
+    round(se.M,1), "\n", sep="")
+me.M <- qt(p=1-alfa/2, df=n.M-1)*se.M
+cat("Margem de erro da media de MCT Masculino = ", 
+    round(me.M,1), "\n", sep="")
+ic.M <- m.M+c(-1,1)*me.M
+cat("IC95(media de MCT Masculino) = [", 
+    round(ic.M,1), "]\n")
+gl.M <- n.M-1
+qt1.M <- round(qt(p=alfa/2, df=gl.M),2)
+qt2.M <- round(qt(p=1-alfa/2, df=gl.M),2)
+DescTools::PlotProbDist(breaks=c(-5, qt1.M, 0, qt2.M, 5), 
+                        function(x) dt(x, df=gl.M), 
+                        blab=c(qt1.M, "", qt2.M), 
+                        xlim=c(-5,5), 
+                        alab=c(alfa/2,"","", alfa/2),
+                        col=c("black", "black"),
+                        main=paste0("MCT Masculino: t(",gl.M,")"), 
+                        density=c(20, 0, 0, 20))
+```
+
+# Fórmula do intervalo de confiança da média 
+
+$$\Large IC^{95\%}(\mu) = \left[\bar{x} \pm t^{0.975}_{n-1}\frac{s}{\sqrt{n}}\right]$$
+
+* $\mu$: média populacional
+* $n$: tamanho da amostra
+* $\bar{x}$: média amostral
+* $s$: desvio-padrão amostral
+
+Quantil da distribuição t: $t^{0.975}_{n-1} =$ `qt(p=.975, df=n-1)`: 
+
+* $n = 2$: `qt(p=.975, df=1)` = `r round(qt(p=.975, df=1),2)`
+* $n = 3$: `qt(p=.975, df=2)` = `r round(qt(p=.975, df=2),2)`
+* $n = 12$: `qt(p=.975, df=11)` = `r round(qt(p=.975, df=11),2)`
+* $n = 20$: `qt(p=.975, df=19)` = `r round(qt(p=.975, df=19),2)`
+* $n = 30$: `qt(p=.975, df=29)` = `r round(qt(p=.975, df=29),2)`
+* $n = 500$: `qt(p=.975, df=499)` = `r round(qt(p=.975, df=499),2)`
+
+# `DescTools::MeanCI`: estimação de intervalo de confiança 
+
+```{r}
+# IC95% por DescTools::MeanCI
+round(DescTools::MeanCI(Dados.F$MCT, na.rm=TRUE),1)
+round(DescTools::MeanCI(Dados.M$MCT, na.rm=TRUE),1)
+
+# Os mesmos IC95% por t.test
+round(t.test(Dados.F$MCT)$conf.int[1:2],1)
+round(t.test(Dados.M$MCT)$conf.int[1:2],1)
+
+# IC95% por DescTools::MeanCI com desvio-padrao conhecido
+round(DescTools::MeanCI(Dados.F$MCT, sd=10, na.rm=TRUE), 1)
+round(DescTools::MeanCI(Dados.M$MCT, sd=14, na.rm=TRUE), 1)
+
+# IC95% unilateral por DescTools::MeanCI
+# round(DescTools::MeanCI(Dados.F$MCT, sides="left", na.rm=TRUE),1)
+# round(DescTools::MeanCI(Dados.M$MCT, sides="left", na.rm=TRUE),1)
+# round(DescTools::MeanCI(Dados.F$MCT, sides="right", na.rm=TRUE),1)
+# round(DescTools::MeanCI(Dados.M$MCT, sides="right", na.rm=TRUE),1)
+
+# IC95% estratificado por Sexo
+tapply(Dados$MCT, 
+       Dados$Sexo, 
+       FUN=DescTools::MeanCI, 
+       na.rm=TRUE)
+
+# IC95% por bootstrapping para sexo feminino
+round(DescTools::MeanCI(Dados.F$MCT, 
+                        method="boot", 
+                        type="perc", 
+                        R=1e4, 
+                        na.rm=TRUE), 1)
+
+# IC95% de MCT, Estatura e IMC para sexo feminino
+round(do.call("rbind", lapply(Dados.F[, c("MCT","Estatura","IMC")], 
+                              FUN=DescTools::MeanCI, 
+                              na.rm=TRUE)), 1)
+t(round(sapply(Dados.F[,c("MCT","Estatura","IMC")], 
+               FUN=MeanCI, 
+               na.rm=TRUE), 1))
+```
+
+# Gráfico de intervalo de confiança de 95% de média: delineamento entre participantes
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE, error=FALSE}
+# summarySE provides the standard deviation, standard error of the mean, and a (default 95%) confidence interval
+
+s <- Rmisc::summarySE(Dados, 
+                      measurevar="MCT", 
+                      groupvars=c("Sexo"),
+                      na.rm=TRUE)
+
+# Intervalo de confianca de 95%: Standard error of the mean (se)
+ggplot2::ggplot(s, 
+                ggplot2::aes(x=Sexo, 
+                             y=MCT)) + 
+  ggplot2::geom_errorbar(ggplot2::aes(ymin=MCT-ci, 
+                             ymax=MCT+ci), 
+                width=.3) +
+  ggplot2::geom_point(size=3,
+             shape=21) +
+  ggplot2::xlab("Sexo") +
+  ggplot2::ylab("MCT (kg)") +
+  ggplot2::ggtitle("Intervalo de confiança de 95% de MCT") +
+  ggplot2::ylim(50,80) +  
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.justification=c(1,0),
+        legend.position=c(1,0))
+
+s <- Rmisc::summarySE(Dados, 
+                      measurevar="MCT", 
+                      groupvars=c("Sexo","Sedentarismo"),
+                      na.rm=TRUE)
+
+# Intervalo de confianca de 95%: Standard error of the mean (se)
+pd <- ggplot2::position_dodge(0.5) # move them .05 to the left and right
+ggplot2::ggplot(s, 
+                ggplot2::aes(x=Sexo, 
+                             y=MCT, 
+                             colour=Sedentarismo)) + 
+  ggplot2::geom_errorbar(ggplot2::aes(ymin=MCT-ci, 
+                             ymax=MCT+ci), 
+                width=.3, 
+                position=pd) +
+  ggplot2::geom_line(position=pd) +
+  ggplot2::geom_point(position=pd, 
+             size=3,
+             shape=21) +
+  ggplot2::xlab("Sexo") +
+  ggplot2::ylab("MCT (kg)") +
+  ggplot2::ggtitle("Intervalo de confiança de 95% de MCT") +
+  ggplot2::ylim(50,80) +  
+  ggplot2::theme_bw() +
+  ggplot2::theme(legend.justification=c(1,0),
+        legend.position=c(1,0))
+
+# 95% Error bar: se
+ggplot2::ggplot(s, 
+                ggplot2::aes(x=Sexo, 
+                             y=MCT, 
+                             # group=Sedentarismo,
+                             colour=Sedentarismo)) + 
+  ggplot2::geom_bar(position=ggplot2::position_dodge(1), 
+           stat="identity",
+           width=.8,
+           fill="white") +
+  ggplot2::geom_errorbar(ggplot2::aes(ymin=MCT-ci, 
+                             ymax=MCT+ci), 
+                width=.3, 
+                position=pd) +
+  ggplot2::geom_line(position=pd) +
+  ggplot2::geom_point(position=pd, 
+             size=3,
+             shape=21) +
+  ggplot2::xlab("Sexo") +
+  ggplot2::ylab("MCT (kg)") +
+  ggplot2::ggtitle("Intervalo de confiança de 95% de MCT") +
+  ggplot2::scale_y_continuous(breaks=0:100*10) +
+  ggplot2::coord_cartesian(ylim=c(50,80)) +
+  ggplot2::theme_bw()
+```
+
+# Gráfico de intervalo de confiança de 95% de média: delineamento intraparticipantes
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE, error=FALSE}
+alfa <- 0.05
+# Within-subject CI
+dfw <- read.table(header=TRUE, 
+                  text='
+ subject pretest posttest
+       1    59.4     64.5
+       2    46.4     52.4
+       3    46.0     49.7
+       4    49.0     48.7
+       5    32.5     37.4
+       6    45.2     49.5
+       7    60.3     59.9
+       8    54.3     54.1
+       9    45.4     49.6
+      10    38.9     48.5
+ ')
+
+# Treat subject ID as a factor
+dfw$subject <- factor(dfw$subject)
+
+# Convert to long format
+dfw_long <- reshape2::melt(dfw,
+                           id.vars="subject",
+                           measure.vars=c("pretest","posttest"),
+                           variable.name="condition")
+
+print(dfw_long)
+
+dfwc <- summarySEwithin2(dfw_long, 
+                               measurevar="value", 
+                               withinvars="condition",
+                               idvar="subject", 
+                               na.rm=TRUE, 
+                               conf.interval=1-alfa/2)
+print(dfwc)
+
+# Make the graph with the 95% confidence interval (Bonferroni)
+ggplot2::ggplot(dfwc, 
+                ggplot2::aes(x=condition, 
+                             y=value)) +
+         ggplot2::geom_line() +
+         ggplot2::geom_errorbar(width=.1, 
+                       ggplot2::aes(ymin=value-ci, 
+                                    ymax=value+ci)) +
+         ggplot2::geom_point(shape=21, 
+                    size=3, 
+                    fill="white") +
+         ggplot2::ylim(40,60) +
+         ggplot2::ylab("Value") +
+         ggplot2::ggtitle("Within-subject CI95 Bonferroni") +
+         ggplot2::theme_bw()
+
+# Instead of summarySEwithin, use summarySE, which treats condition as though it were a between-subjects variable
+dfwc_between <- Rmisc::summarySE(data=dfw_long, 
+                                 measurevar="value", 
+                                 groupvars="condition", 
+                                 na.rm=FALSE, 
+                                 conf.interval=1-alfa/2)
+print(dfwc_between)
+
+# Show the between-S CI's in red, and the within-S CI's in black
+ggplot2::ggplot(dfwc_between, 
+                ggplot2::aes(x=condition, 
+                             y=value)) +
+  ggplot2::geom_line() +
+  ggplot2::geom_errorbar(width=.1, 
+                ggplot2::aes(ymin=value-ci, 
+                             ymax=value+ci), 
+                colour="darkgray",
+                data=dfwc_between) +
+  ggplot2::geom_errorbar(width=.1, 
+                ggplot2::aes(ymin=value-ci, 
+                             ymax=value+ci), 
+                colour="black",
+                data=dfwc) +
+  ggplot2::geom_point(shape=21, 
+             size=3, 
+             fill="white") +
+  ggplot2::ylim(40, 60) +
+  ggplot2::ylab("Value") +
+  ggplot2::ggtitle("Within vs. Between-subject CI95 Bonferroni") +
+  ggplot2::theme_bw()
+
+# Use a consistent y range
+ymax <- max(dfw_long$value)
+ymin <- min(dfw_long$value)
+
+# Plot the individuals
+ggplot2::ggplot(dfw_long, 
+                ggplot2::aes(x=condition, 
+                             y=value, 
+                             colour=subject, 
+                             group=subject)) +
+  ggplot2::geom_line() + 
+  ggplot2::geom_point(shape=21, 
+             fill="white") + 
+  ggplot2::ylim(ymin,ymax) +
+  ggplot2::ylab("Value") +
+  ggplot2::ggtitle("Subject profile") +
+  ggplot2::theme_bw()
+
+# Two within-subjects variables
+data <- read.table(header=TRUE, 
+                   text='
+ Subject RoundMono SquareMono RoundColor SquareColor
+       1        41         40         41          37
+       2        57         56         56          53
+       3        52         53         53          50
+       4        49         47         47          47
+       5        47         48         48          47
+       6        37         34         35          36
+       7        47         50         47          46
+       8        41         40         38          40
+       9        48         47         49          45
+      10        37         35         36          35
+      11        32         31         31          33
+      12        47         42         42          42
+')
+
+# Convert it to long format
+data_long <- reshape2::melt(data=data, 
+                            id.var="Subject",
+                            measure.vars=c("RoundMono", 
+                                           "SquareMono", 
+                                           "RoundColor", 
+                                           "SquareColor"),
+                            variable.name="Condition")
+names(data_long)[names(data_long)=="value"] <- "Time"
+
+# Split Condition column into Shape and ColorScheme
+data_long$Shape <- NA
+data_long$Shape[grepl("^Round",  data_long$Condition)] <- "Round"
+data_long$Shape[grepl("^Square", data_long$Condition)] <- "Square"
+data_long$Shape <- factor(data_long$Shape)
+
+data_long$ColorScheme <- NA
+data_long$ColorScheme[grepl("Mono$",  data_long$Condition)] <- "Monochromatic"
+data_long$ColorScheme[grepl("Color$", data_long$Condition)] <- "Colored"
+data_long$ColorScheme <- factor(data_long$ColorScheme, levels=c("Monochromatic","Colored"))
+
+# Remove the Condition column now
+data_long$Condition <- NULL
+
+# Look at first few rows 
+print(head(data_long))
+
+datac <- summarySEwithin2(data_long, 
+                                measurevar="Time", 
+                                withinvars=c("Shape",
+                                             "ColorScheme"), 
+                                idvar="Subject",
+                                na.rm=TRUE)
+print(datac)
+
+# Within-subject Error Bar 95%
+ggplot2::ggplot(datac, 
+                ggplot2::aes(x=Shape, 
+                             y=Time, 
+                             fill=ColorScheme)) +
+  ggplot2::geom_bar(position=position_dodge(.9), 
+           colour="black", 
+           stat="identity") +
+  ggplot2::geom_errorbar(position=position_dodge(.9), 
+                width=.25, 
+                ggplot2::aes(ymin=Time-ci, 
+                             ymax=Time+ci)) +
+  ggplot2::coord_cartesian(ylim=c(40,46)) +
+  ggplot2::scale_fill_manual(values=c("#CCCCCC",
+                             "#FFFFFF")) +
+  ggplot2::scale_y_continuous(breaks=seq(1:100)) +
+  ggplot2::theme_bw() +
+  ggplot2::ggtitle("Within-subject CI95")
+
+# Within-subject CI95
+ggplot2::ggplot(datac, 
+                ggplot2::aes(x=Shape, 
+                             y=Time,
+                             colour=ColorScheme)) +
+  ggplot2::geom_errorbar(position=position_dodge(.9), 
+                width=.25, 
+                ggplot2::aes(ymin=Time-ci, 
+                             ymax=Time+ci)) +
+  ggplot2::geom_line(position=position_dodge(.9)) +
+  ggplot2::geom_point(shape=21, 
+             size=3, 
+             fill="white",
+             position=position_dodge(.9)) +
+  ggplot2::coord_cartesian(ylim=c(41,46)) +
+  ggplot2::scale_fill_manual(values=c("#CCCCCC",
+                             "#FFFFFF")) +
+  ggplot2::scale_y_continuous(breaks=seq(1:100)) +
+  ggplot2::theme_bw() +
+  ggplot2::ggtitle("Within-subject CI95")
+```
+
+# `HH::CIplot`: simulação de intervalo de confiança
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+HH::CIplot(n.intervals=1e2,
+           n.per.row=40,
+           pop.mean=175,
+           pop.sd=10,
+           conf.level=1-alfa)
+```
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+HH::CIplot(n.intervals=1e4,
+           n.per.row=40,
+           pop.mean=175,
+           pop.sd=10,
+           conf.level=1-alfa)
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE}
+set.seed(9342)
+
+mp <- 175 # media populacional
+dpp <- 8 # desvio-padrao populacional
+cat ("Média populacional = ",mp,"\n",sep="")
+cat ("desvio-padrão populacional = ",dpp,"\n",sep="")
+
+n <- 30 # tamanho da amostra
+cat("n =", n, "\n")
+alfa <- 0.05 # nivel de significancia
+
+plot(x = c(mp-dpp, mp+dpp), y = c(1, 100), type = "n", 
+     xlab = paste("Estatura masculina (média = ",mp," cm)",sep=""), 
+     ylab = "",
+     axes=FALSE)
+abline(v = mp, col = "red") # linha vertical da media populacional
+
+# sampling
+counter <- 0 # set counter to 0
+B <- 1e5
+for (i in 1:B)
+{
+  x <- rnorm(n, mp, dpp) # amostra aleatoria normal de tamanho n
+  s <- sd(x) 
+  L <- mean(x) - qt(1-alfa/2,n-1)*s/sqrt(n) # lower limit
+  U <- mean(x) + qt(1-alfa/2,n-1)*s/sqrt(n) # upper limit
+  if (L < mp && mp < U) # verifica se a media pop esta contida em IC95
+  {
+    color <- "#222222" # cinza
+    counter <- counter + 1 # Se sim, soma 1 no contador
+    espessura <- 0.5
+  } else
+  {
+    color <- "#1965B0" # azul cobalto
+    espessura <- 2
+  }
+  if (i <= 100) # plota os primeiros IC95%
+    segments(L, i, U, i, col=color, lwd=espessura)
+}
+pIC95 <- counter/B # % de IC95 que contem a media populacional.
+cat("\nProporcao dos ",
+    format(B, scientific = FALSE),
+    " IC95(media pop) que contem a media poppulacional ",
+    mp, " = ",
+    round(pIC95,2), sep="")
+
+```
+
+```{r eval=FALSE, echo=TRUE, warning=FALSE}
+set.seed(9342)
+
+mp <- 175 # media populacional
+dpp <- 8 # desvio-padrao populacional
+cat ("Média populacional=",mp,"\n",sep="")
+cat ("desvio-padrão populacional=",dpp,"\n",sep="")
+
+n <- 30 # tamanho da amostra
+cat("n =", n, "\n")
+alfa <- 0.05 # nivel de significancia
+
+plot(x = c(mp-dpp, mp+dpp), y = c(1, 100), type = "n", 
+     xlab = paste("Estatura masculina (média=",mp," cm)",sep=""), 
+     ylab = "",
+     axes=FALSE)
+abline(v = mp, col = "red") # linha vertical da media populacional
+
+# sampling
+counter <- 0 # set counter to 0
+B <- 1e5
+for (i in 1:B)
+{
+  x <- rnorm(n, mp, dpp) # amostra aleatoria normal de tamanho n
+  s <- sd(x) 
+  L <- mean(x) - qt(1-alfa/2,n-1)*s/sqrt(n) # lower limit
+  U <- mean(x) + qt(1-alfa/2,n-1)*s/sqrt(n) # upper limit
+  if (L < mp && mp < U) # verifica se a media pop esta contida em IC95
+  {
+    color <- "#222222" # cinza
+    counter <- counter + 1 # Se sim, soma 1 no contador
+    espessura <- 0.5
+  } else
+  {
+    color <- "#1965B0" # azul cobalto
+    espessura <- 2
+  }
+  if (i <= 100) # plota os primeiros IC95%
+    segments(L, i, U, i, col=color, lwd=espessura)
+}
+pIC95 <- counter/B # % de IC95 que contem a media populacional.
+cat("\nProporcao dos ",
+    format(B, scientific = FALSE),
+    " IC95(media pop)\n",
+    "que contem a media pop ",
+    mp, " = ",
+    round(pIC95,2), sep="")
+
+```
+
+# Simulação de intervalo de confiança em Rpsychologist
+
+* [Interpreting Confidence Intervals: an interactive visualization](http://rpsychologist.com/d3/CI/){target="_blank"}
+
+# `DescTools::MedianCI`: IC de mediana
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+DescTools::MedianCI(Dados.F$MCT, na.rm=TRUE)
+DescTools::MedianCI(Dados.M$MCT, na.rm=TRUE)
+```
+
+# `DescTools::VarCI`: IC de desvio-padrão
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+sqrt(DescTools::VarCI(Dados.F$MCT, na.rm=TRUE))
+sqrt(DescTools::VarCI(Dados.M$MCT, na.rm=TRUE))
+```
+
+# Distribuição normal (gaussiana)
+
+* Distribuição de probabilidade de variável contínua ilimitada bilateralmente $X$
+* $X \sim normal(\mu,\sigma)$: variável aleatória $X$ representa valores contínuos reais
+* $X\in\mathbb{R}$
+* Média de $X$: $\mu$
+* Desvio-padrão de $X$: $\sigma$
+* O desvio-padrão, $\sigma$, é a distância entre a média, $\mu$, e o ponto de inflexão da curva da normal
+* A curva da normal é unimodal
+* A curva da normal é simétrica 
+
+```{r fig.align="center", out.width = '80%', out.height = '70%', echo=FALSE}
+knitr::include_graphics("normais.png")
+```
+
+```{r fig.align="center", out.width = '80%', out.height = '70%', echo=FALSE}
+knitr::include_graphics("normalpadrao.png")
+```
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+q1 <- round(qnorm(p=alfa/2, mean=120, sd=10),2)
+q2 <- round(qnorm(p=1-alfa/2, mean=120, sd=10),2)
+DescTools::PlotProbDist(breaks=c(80,q1,q2,160), 
+                        function(x) dnorm(x, mean=120, sd=10), 
+                        blab=c(q1,q2), 
+                        alab=c("",1-alfa,""),
+                        xlim=c(80,160),
+                        main="normal(120,10)",
+                        col=c("black", "black"), 
+                        density=c(0,20,0))
+```
+                        
+# Variável com distribuição normal
+
+* Variável bruta ou com transformação potência de Tukey (e.g., logaritmo, raiz quadrada)
+
+* Somatométrica
+  * Massa corporal total 
+  * Comprimento total/ estatura
+  * Comprimento de garra, presa, unha, pelo
+  * Medidas fisiológicas: pressão sanguínea de humanos adultos
+* Psicológica
+  * Escore de teste cognitivo: QI
+* Física
+  * A soma de pequenos erros independentes de mensuração 
+
+```{r fig.align="center", out.width = '60%', out.height = '40%', echo=FALSE, fig.cap="Figure 1. Line graphs show smoothed weighted frequency distribution, median, and 90th percentile of systolic pressures for populations 18 to 29 years and 60 to 74 years of age in the United States, 1960 to 1991. (Source: Centers for Disease Control and Prevention, National Center for Health Statistics.); https://www.ahajournals.org/doi/10.1161/01.HYP.26.1.60"}
+knitr::include_graphics("PA.png")
+```
+
+```{r fig.align="center", out.width = '70%', out.height = '50%', echo=FALSE}
+knitr::include_graphics("Lee2015.png")
+```
+
+```{r fig.align="center", out.width = '90%', out.height = '90%', echo=FALSE}
+knitr::include_graphics("Lee2015distrib.png")
+```
+
+# Distribuição normal padrão
+
+```{r fig.align="center", out.width = '80%', out.height = '70%', echo=FALSE}
+knitr::include_graphics("normalstandard.png")
+```
+
+```{r fig.align="center", out.width = '80%', out.height = '70%', echo=FALSE}
+knitr::include_graphics("normalstandard1.png")
+```
+
+# Exemplo de distribuição de normal: 1
+
+## Pressão arterial sistólica de jovens saudáveis 
+
+A pressão arterial sistólica (PAS) medida em milímetro de mercúrio (mmHg) em jovens gozando de boa saúde tem distribuição $normal(120,10)$.
+
+> Siqueira & Tibúrcio, 2011, p. 2010-1
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+source("exemplo05_normal.R")
+```
+
+```{r eval=TRUE, echo=TRUE}
+cat(readLines("exemplo05_normal.txt"), sep="\n")
+```
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE, out.width="70%", fig.align="left"}
+knitr::include_graphics("exemplo05_normal.png")
+```
+
+```{r eval=TRUE, echo=TRUE}
+cat(readLines("exemplo05_normal.R"), sep="\n")
+```
+
+# Distribuição normal: Questão 1
+
+Qual é a probabilidade que nenhum paciente tenha atendimento completo durante uma madrugada no pronto-atendimento dessa pequena cidade?
+
+R.: $P(X > 140) = 0.023$ 
+
+```{r eval=TRUE, echo=TRUE}
+print(p <- pnorm(q=140, mean=120, sd=10, lower.tail=FALSE))
+# OU
+1-pnorm(q=140, mean=120, sd=10)
+DescTools::PlotProbDist(breaks=c(80,140,160), 
+                        function(x) dnorm(x, mean=120, sd=10), 
+                        blab=c(140), 
+                        alab=c("",round(p,3)),
+                        xlim=c(80,160),
+                        main="normal(120,10)",
+                        col=c("black", "black"), 
+                        density=c(0,20))
+```
+
+# Distribuição normal: Questão 2
+
+Qual é a probabilidade dos valores de PAS de jovens sadios estarem entre 100 e 140 mmHg?
+
+R.: $P(100 < X < 140) = 0.9545$ 
+
+```{r eval=TRUE, echo=TRUE}
+print(p <- pnorm(q=140, mean=120, sd=10)-pnorm(q=100, mean=120, sd=10))
+DescTools::PlotProbDist(breaks=c(80,100,140,160), 
+                        function(x) dnorm(x, mean=120, sd=10), 
+                        blab=c(100,140), 
+                        alab=c("",round(p,4),""),
+                        xlim=c(80,160),
+                        main="normal(120,10)",
+                        col=c("black", "black"), 
+                        density=c(0,20,0))
+```
+
+# Distribuição normal: Questão 3
+
+Quais são os limites de um intervalo simétrico em relação à média que engloba 95% dos valores de PAS de jovens sadios?
+
+R.: $P(100.4 < X < 139.6) = 0.95$ 
+
+```{r eval=TRUE, echo=TRUE}
+qnorm(p=0.025, mean=120, sd=10)
+qnorm(p=0.975, mean=120, sd=10)
+q1 <- round(qnorm(p=alfa/2, mean=120, sd=10),2)
+q2 <- round(qnorm(p=1-alfa/2, mean=120, sd=10),2)
+DescTools::PlotProbDist(breaks=c(80,q1,q2,160), 
+                        function(x) dnorm(x, mean=120, sd=10), 
+                        blab=c(q1,q2), 
+                        alab=c("",1-alfa,""),
+                        xlim=c(80,160),
+                        main="normal(120,10)",
+                        col=c("black", "black"), 
+                        density=c(0,20,0))
+```
+
+# Intervalo de confiança da média: condições de validade
+
+O intervalo de confiança tem validade se:
+
+* Delineamento entre participantes: observações independentes
+* Variável intervalar
+* Distribuição normal da variável
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+DescTools::MeanCI(Dados.F$MCT, na.rm=TRUE)
+DescTools::MeanCI(Dados.M$MCT, na.rm=TRUE)
+
+print(psych::describeBy(Dados$MCT,group=Dados$Sexo,mat=2))
+
+m.F <- mean(Dados.F$MCT, na.rm=TRUE)
+s.F <- sd(Dados.F$MCT, na.rm=TRUE)
+plot(density(Dados.F$MCT, na.rm=TRUE),
+     ylim=c(0, 0.06),
+     main="Feminino",
+     xlab="MCT (kg)",
+     ylab="Densidade")
+rug(jitter(Dados.F$MCT))
+x.F <- seq(m.F-4*s.F, m.F+4*s.F, length.out=1e3)
+y.F <- dnorm(x.F, m.F, s.F)
+lines(x.F, y.F,lty=2)
+legend("topright", legend=c("estimada", "normal"),
+       lty=c(1,2), bty="n")
+
+m.M <- mean(Dados.M$MCT, na.rm=TRUE)
+s.M <- sd(Dados.M$MCT, na.rm=TRUE)
+plot(density(Dados.M$MCT, na.rm=TRUE),
+     ylim=c(0, 0.04),
+     main="Masculino",
+     xlab="MCT (kg)",
+     ylab="Densidade")
+rug(jitter(Dados.M$MCT))
+x.M <- seq(m.M-4*s.M, m.M+4*s.M, length.out=1e3)
+y.M <- dnorm(x.M, m.M, s.M)
+lines(x.M, y.M,lty=2)
+legend("topright", legend=c("estimada", "normal"),
+       lty=c(1,2), bty="n")
+
+result <- MVN::mvn(data=subset(Dados, 
+                               select=c(Sexo, MCT)), 
+                   subset="Sexo", 
+                   mvnTest="hz", 
+                   univariateTest="SW")
+result$univariateNormality
+
+``` 
+
+# Validade do intervalo de confiança
+
+Uma das suposições dos seguintes intervalos de confiança da média populacional (por fórmula) é a distribuição normal de MCT. 
+A hipótese nula de distribuição normal de MCT foi rejeitada com $\alpha=0.05$ para estudantes das condições Masculino e Feminino. 
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+# IC95% por DescTools::MeanCI
+round(DescTools::MeanCI(Dados.F$MCT, na.rm=TRUE),1)
+round(DescTools::MeanCI(Dados.M$MCT, na.rm=TRUE),1)
+```
+
+A suposição de normalidade é uma condição suficiente para a validade do intervalo de confiança (por fórmula). Ela não é uma condição necessária para sua validade.
+
+Os intervalos de confiança da média populacional por fórmula é válida, mesmo com distribuição de MCT não normal, se o tamanho da amostra por condição de sexo é maior que 30 (Teorema Central do Limite) ou usando o método de estimação chamado de _bootstrapping_. TCL e _bootstrapping_ não necessitam da suposição de normalidade para a validade do intervalo de confiança.
+
+# Teorema Central do Limite
+
+O Teorema Central do Limite (TCL) para a média amostral assume:
+
+* Delineamento entre participantes: observações independentes
+* Variável intervalar
+* Distribuição qualquer da variável
+* Amostra com pelo menos 30 observações
+
+TCL: Independentemente do formato da distribuição da variável na população, a distribuição das médias amostrais tem distribuição assintoticamente normal com média igual à média populacional e erro-padrão da média igual ao desvio-padrão populacional dividido pela raiz quadrada do tamanho da amostra.
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="70%", fig.align="left"}
+knitr::include_graphics("TCL0.png")
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="70%", fig.align="left"}
+knitr::include_graphics("TCL1.png")
+```
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="70%", fig.align="left"}
+knitr::include_graphics("TCLnormal.png")
+```
+
+> Wonnacott & Wonnacott (1969)
+
+[Wikipedia: Central Limit Theorem (CLT) ](https://en.wikipedia.org/wiki/Central_limit_theorem){target="_blank"}
+
+* Referências
+  * Krzywinski, M & Altman, N (2013) Importance of being uncertain. _Nature Methods_ 10(9): 809-10. 
+  * Wonnacott, TH & Wonnacott, RJ (1969) _Introductory Statistics_. NJ: Wiley.   * Wonnacott, TH & Wonnacott, RJ (1981) Estatística aplicada à Economia e à Administração. RJ: LTC.
+  * Wonnacott, TH & Wonnacott, RJ (1990) _Introductory Statistics for Business and Economics_. NJ: Wiley.
+  
+# Reamostragem estatística
+
+* [Wikipedia: Resampling (statistics)](https://en.wikipedia.org/wiki/Resampling_(statistics)){target="_blank"}
+
+## Bootstrapping
+
+Suposições para validade do intervalo de confiança por bootstrapping:
+
+* Variável intervalar
+* Observações independentes
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="70%", fig.align="left"}
+knitr::include_graphics("boot.png")
+```
+
+* Referências
+  * Carpenter, J & Bithell, John (2000) Bootstrap confidence intervals: when, which, what? A practical guide for medical statisticians. _Statistics in Medicine_ 19(9): 1141-64. https://doi.org/10.1002/(SICI)1097-0258(20000515)19:9%3C1141::AID-SIM479%3E3.0.CO;2-F
+  * Johnson, RW (2001) An introduction to the bootstrap. _Teaching Statistics_ 23(2): 49-54. https://onlinelibrary.wiley.com/doi/10.1111/1467-9639.00050  
+  
+* [Bootstrap.gif](https://upload.wikimedia.org/wikipedia/commons/9/9d/Bootstrap.gif){target="_blank"}
+
+* [Vídeo: Bootstrapping](https://www.youtube.com/watch?v=G8sUVMoAj7s){target="_blank"}
+* [Demo: Bootstrapping](https://wise.cgu.edu/portfolio2/bootstrapping/){target="_blank"}
+
+```{r eval=TRUE, echo=TRUE, warning=FALSE}
+# IC95% por bootstrapping da média para sexo feminino
+round(DescTools::MeanCI(Dados.F$MCT, 
+                        method="boot", 
+                        type="bca", 
+                        R=1e5, 
+                        na.rm=TRUE), 1) 
+# IC95% por bootstrapping da média para sexo masculino
+round(DescTools::MeanCI(Dados.M$MCT, 
+                        method="boot", 
+                        type="bca", 
+                        R=1e5, 
+                        na.rm=TRUE), 1) 
+# IC95% por bootstrapping da mediana para sexo feminino
+round(DescTools::MedianCI(Dados.F$MCT, 
+                        method="boot", 
+                        R=1e5, 
+                        na.rm=TRUE), 1) 
+# IC95% por bootstrapping da mediana para sexo masculino
+round(DescTools::MedianCI(Dados.M$MCT, 
+                        method="boot", 
+                        R=1e5, 
+                        na.rm=TRUE), 1) 
+# IC95% por bootstrapping do desvio-padrao para sexo feminino
+round(sqrt(DescTools::VarCI(Dados.F$MCT, 
+                      method="perc", 
+                      R=1e5, 
+                      na.rm=TRUE)),1)
+# IC95% por bootstrapping do desvio-padrao para sexo masculino
+round(sqrt(DescTools::VarCI(Dados.M$MCT, 
+                      method="perc", 
+                      R=1e5, 
+                      na.rm=TRUE)),1)
+```
+
+# Intervalo de credibilidade (bayesiano)
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="70%", fig.align="left"}
+knitr::include_graphics("bayes.png")
+```
+
+Suposições para validade do intervalo de credibilidade:
+
+* Delineamento entre participantes: observações independentes
+* Variável intervalar
+* Distribuição normal da variável
+* O parâmetro média tem distribuição normal
+
+Na inferência frequentista/ clássica/ de Neyman-Pearson, o intervalo de confiança de proporção da média é um intervalo que contêm este parâmetro com 95% de confiança (https://rpsychologist.com/d3/ci/).
+
+“Um intervalo de confiança frequentista de 95%  significa que, com um grande número de amostras repetidas, 95% de tais intervalos de confiança calculados incluem o valor verdadeiro do parâmetro. 
+
+Em termos frequentistas, o parâmetro é fixo (não pode ser considerado como tendo uma distribuição de valores possíveis) e o intervalo de confiança é probabilístico (pois depende da amostra aleatória).” https://en.wikipedia.org/wiki/Credible_interval 
+
+Na inferência bayesiana, o intervalo de credibilidade de 95% da média é um intervalo que contêm este parâmetro com 95% de probabilidade (https://rpsychologist.com/d3/bayes/). 
+O preço do intervalo de credibilidade bayesiano é que sua interpretação depende da distribuição prévia (_prior_) que é subjetiva.
+
+“Um intervalo de credibilidade de 95% é um intervalo dentro do qual um valor de parâmetro com distribuição de probabilidade está com 95% de probabilidade.” https://en.wikipedia.org/wiki/Credible_interval 
+
+Intervalo de credibilidade de 95% da média populacional:
+
+$$\Large IC_{\text{bayes}}^{0.95}(\mu)=\left[\frac{n_0\,\mu_0+n\,\bar{x}}{n_0+n} \pm t^{0.975}_{n-1}\,\frac{s}{\sqrt{n_0+n}}\right]$$
+
+Sendo que: 
+
+* $\mu \sim normal\left(\mu_0,\sigma_0\right)$
+* $n_0 = \frac{s}{\sigma_0}$
+
+Exemplo: MCT Feminino
+
+$$\Large IC^{0.95}_{\text{bayes}}(\mu)=\left[\frac{1.82\times55+230\times57.6}{1.82+230} \pm 1.97\,\frac{9.1}{\sqrt{1.82+230}}\right]$$
+
+Sendo que: 
+
+* $t^{0.975}_{229}=$ `r qt(0.975,232-1)`
+* $\mu \sim normal\left(55,5\right)$
+* $n_0 = \frac{9.1}{5} = 1.82$
+
+$$\Large IC^{0.95}_{\text{bayes}}(\mu)=\left[56.4,58.8\right]$$
+
+$$\Large IC^{0.95}_{\text{freq}}(\mu)=\left[56.5,58.8\right]$$
+
+$$\Large IC^{0.95}_{\text{boot}}(\mu)=\left[56.6, 58.9\right]$$
+
+Se o tamanho da amostra é grande, i.e., $n>30$, os três intervalos são aproxidamentamente iguais.
+
+A distribuição não-informativa da média populacional $\mu$ ocorre quando o desvio-padrão $\sigma_0$ é grande, acarretatando valor baixo de $n_0$.
+
+Se $n\gg n_{0}$, o intervalo de confiança é aproximadamente igual ao intervalo de credibilidade.
+
+"Para nós, a mensagem principal do nosso artigo é a seguinte.
+Os intervalos de confiança frequentistas podem ser interpretados como uma aproximação razoável de um intervalo de credibilidade bayesiano  (com a priori não informativa). Isso é reconfortante para aqueles que lutam por a interpretação formalmente correta dos intervalos de confiança frequentistas." 
+
+> Albers et al., 2018, p. 6
+
+```{r eval=TRUE, echo=FALSE, warning=FALSE, out.width="70%", fig.align="left"}
+knitr::include_graphics("classicbayes.png")
+```
+
+> Wonnacott & Wonnacott, 1969
+
+"Point 11: Bayes Factors Often Agree With p Values
+[...] Results between Bayes factors and classical tests often agree with each other."
+
+> Tendeiro & Kiers, 2019, p. 789
+
+* Referências
+  * Wonnacott, TH & Wonnacott, RJ (1969) _Introductory Statistics_. NJ: Wiley.
+  * Wonnacott, TH & Wonnacott, RJ (1981) _Estatística aplicada à Economia e à Administração_. RJ: LTC.
+  * Wonnacott, TH & Wonnacott, RJ (1990) _Introductory Statistics for Business and Economics_. NJ: Wiley.
+  * Albers, CJ et al. (2018) Credible confidence: A pragmatic view on the frequentist vs Bayesian debate. _Collabra: Psychology_, 4(1): 31. DOI:  https://doi.org/10.1525/collabra.149; Scripts R: https://osf.io/dgfht/.
+  * Tendeiro, JN & Kiers, HAL (2019) A review of issues about null hypothesis Bayesian testing. _Psychological Methods_ 24(6): 774–95. https://doi.org/10.1037/met0000221.
+  * R-Bloggers: Confidence vs. Credibility Intervals: https://www.r-bloggers.com/2014/11/confidence-vs-credibility-intervals/ 
+  * https://en.wikipedia.org/wiki/Credible_interval
+  * https://rpsychologist.com/d3/ci/
+  * https://rpsychologist.com/d3/bayes/
+
+# Script R 
+
+```{r eval=TRUE, echo=TRUE}
+cat(readLines("Modulo2.R"), sep="\n")
+```
+
+
+
