@@ -1,0 +1,2494 @@
+--- 
+title: "DES4033: Análise Multivariada em Biologia"
+subtitle: "Capítulo 5: Inferência sobre vetor de média" 
+author: |
+  | [José Siqueira](https://sites.google.com/usp.br/profjosesiqueira){target="_blank"}
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    css: style.css 
+    footer: "DES4033_AnaliseMultivariada_5.Rmd"
+    font_adjustment: 1
+    df_print: tibble
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_title: Sumário
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  slidy_presentation:
+    css: style.css
+    footer: "DES4033_AnaliseMultivariada_5.Rmd"
+    font_adjustment: -1
+    df_print: tibble
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_title: Sumário
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+---
+
+```{r set-options, echo=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 1px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+ }
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+ }
+.bgobs {
+  background-color: #a0d8d8;
+ }
+.bgcodigo {
+  background-color: #eeeeee;
+ }
+.bgsaida {
+  background-color: #ecf7db;
+ }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:", "Usuarios", "Jose", "scilab2023", "bin", "Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r}
+options(warn=-1)
+suppressMessages(library(aplpack, warn.conflicts=FALSE))
+suppressMessages(library(calculus, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(cellWise, warn.conflicts=FALSE))
+suppressMessages(library(cluster, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(diptest, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts=FALSE))
+suppressMessages(library(ellipse, warn.conflicts=FALSE))
+suppressMessages(library(far, warn.conflicts=FALSE))
+suppressMessages(library(fmsb, warn.conflicts=FALSE))
+suppressMessages(library(GGally, warn.conflicts=FALSE))
+suppressMessages(library(ggfortify, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(HSAUR2, warn.conflicts=FALSE))
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(lawstat, warn.conflicts=FALSE))
+suppressMessages(library(lfda, warn.conflicts=FALSE))
+suppressMessages(library(MASS, warn.conflicts=FALSE))
+suppressMessages(library(MatchIt, warn.conflicts=FALSE)) # distancia robusta
+suppressMessages(library(matlib, warn.conflicts=FALSE))
+suppressMessages(library(matrixcalc, warn.conflicts=FALSE))
+suppressMessages(library(MatrixModels, warn.conflicts=FALSE))
+suppressMessages(library(matrixStats, warn.conflicts=FALSE))
+suppressMessages(library(MomTrunc, warn.conflicts=FALSE))
+# An Introduction to Applied Multivariate Analysis with R'
+# (Brian S. Everitt and Torsten Hothorn, Springer, 2011)
+suppressMessages(library(MVA, warn.conflicts=FALSE))
+suppressMessages(library(MVar.pt, warn.conflicts=FALSE))
+suppressMessages(library(MVLM, warn.conflicts=FALSE))
+suppressMessages(library(MVN, warn.conflicts=FALSE))
+suppressMessages(library(MVTests, warn.conflicts=FALSE)) # T^2 robusta
+suppressMessages(library(mvtnorm, warn.conflicts=FALSE))
+suppressMessages(library(plotly, warn.conflicts=FALSE))
+suppressMessages(library(pracma, warn.conflicts=FALSE))
+suppressMessages(library(rcompanion, warn.conflicts=FALSE))
+suppressMessages(library(reticulate, warn.conflicts=FALSE))
+suppressMessages(library(rgl, warn.conflicts=FALSE))
+suppressMessages(library(scatterplot3d, warn.conflicts=FALSE))
+suppressMessages(library(mvdalab, warn.conflicts=FALSE))
+suppressMessages(library(qcc, warn.conflicts=FALSE))
+suppressMessages(library(mvdalab, warn.conflicts=FALSE))
+suppressMessages(library(missMethods, warn.conflicts=FALSE))
+suppressMessages(library(norm, warn.conflicts=FALSE))
+source("summarySEwithin2.R")
+```
+
+<!-- # Adicionar -->
+
+<!-- * `missMDA` -->
+
+<!-- <pre> -->
+
+<!-- ## Teste ominibus T2 de Hotelling  -->
+<!-- fit.lm <- lm(cbind(PC1,PC2)~Breed, data = Dados.org) -->
+<!-- print(anova.fit <- car::Anova(fit.lm)) -->
+<!-- print(effectsize::eta_squared(anova.fit, -->
+<!--                               partial = TRUE, -->
+<!--                               ci = 1 - alpha, -->
+<!--                               alternative = "two")) -->
+
+<!-- ## Teste post hoc T2 de Hotelling -->
+<!-- alphaBonf <- alpha/length(unique(Dados.org$Breed)) -->
+<!-- fit.lm <- lm(cbind(PC1,PC2)~Breed,  -->
+<!--              data = subset(Dados.org, Breed!="Hereford")) -->
+<!-- print(anova.fit <- car::Anova(fit.lm)) -->
+<!-- T2H.fit <- mvdalab::MVComp(subset(Dados.org, Breed=="Angus",  -->
+<!--                                      select=c(PC1,PC2)), -->
+<!--                               subset(Dados.org, Breed=="Simental",  -->
+<!--                                      select=c(PC1,PC2)),  -->
+<!--                               level = 1-alphaBonf) -->
+<!-- print(T2H.fit) -->
+<!-- plot(T2H.fit, Diff2Plot = c(1, 2), include.zero = TRUE) -->
+
+<!-- fit.lm <- lm(cbind(PC1,PC2)~Breed,  -->
+<!--              data = subset(Dados.org, Breed!="Angus")) -->
+<!-- print(anova.fit <- car::Anova(fit.lm)) -->
+<!-- T2H.fit <- mvdalab::MVComp(subset(Dados.org, Breed=="Hereford",  -->
+<!--                                   select=c(PC1,PC2)), -->
+<!--                            subset(Dados.org, Breed=="Simental",  -->
+<!--                                   select=c(PC1,PC2)),  -->
+<!--                            level = 1-alphaBonf) -->
+<!-- print(T2H.fit) -->
+<!-- plot(T2H.fit, Diff2Plot = c(1, 2), include.zero = TRUE) -->
+
+<!-- fit.lm <- lm(cbind(PC1,PC2)~Breed,  -->
+<!--              data = subset(Dados.org, Breed!="Simental")) -->
+<!-- print(anova.fit <- car::Anova(fit.lm))  -->
+<!-- T2H.fit <- mvdalab::MVComp(subset(Dados.org, Breed=="Hereford",  -->
+<!--                                   select=c(PC1,PC2)), -->
+<!--                            subset(Dados.org, Breed=="Angus",  -->
+<!--                                   select=c(PC1,PC2)),  -->
+<!--                            level = 1-alphaBonf) -->
+<!-- print(T2H.fit) -->
+<!-- plot(T2H.fit, Diff2Plot = c(1, 2), include.zero = TRUE) -->
+
+<!-- ## 'mcd' for minimum covariance determinant estimator -->
+<!-- print(rrcov::T2.test(Masc,  -->
+<!--                mu = H0.M,  -->
+<!--                conf.level = 1-alfa, -->
+<!--                method="mcd")) -->
+<!-- </pre> -->
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+* [Prof. José Siqueira: ResearchGate](https://www.researchgate.net/profile/Jose-Siqueira-18){target="_blank"}
+
+# Pensamento
+
+"Não é paradoxo dizer que nos nossos momentos de inspiração mais teórica podemos estar o mais próximo possível de nossas aplicações mais práticas."
+
+> WHITEHEAD, AN _apud_ BOYER, CB (1974) _História da matemática_. São Paulo: Blücher/EDUSP, p. 419.
+
+# Sumário
+
+1. Aspectos de análise multivariada
+1. Álgebra matricial e vetor estocástico
+1. Geometria amostral e amostragem aleatória
+1. Distribuição normal multivariada
+1. Inferência sobre vetor de média 
+1. Comparação de várias médias multivariadas
+1. Modelo de regressão linear multivariada
+1. Componentes principais
+1. Análise de fatores e inferência sobre matriz de covariância
+1. Análise de correlação canônica
+1. Discriminação e classificação
+1. Clusterização, métodos de distância e _ordination_
+  
+<!-- # Adicionar -->
+
+<!-- * Linear Algebra and Its Applications with R - Yoshida - 2021.pdf -->
+<!--   * 2.2.5 Conceptual Quizzes -->
+<!--   * 3.1 Introductory Example from Astronomy : library(conics) -->
+<!--   * 4.1 Introductory Example from Data Science: library(factoextra) -->
+<!--   * 6.2.2 Working Examples  -->
+
+# Introdução
+
+Análise estatística multivariada tem que produzir valor _p_ para o teste de hipótese nula _omnibus_.
+
+Este capítulo é o primeiro das seções metodológicas do livro. Agora usaremos os conceitos e resultados expostos nos Capítulos 1 a 4 para desenvolver técnicas de análise de dados. Grande parte de qualquer análise está relacionada com a inferência, ou seja, tirar conclusões válidas sobre uma população com base em informações de uma amostra.
+
+Neste ponto, concentraremos nas inferências sobre um vetor de média populacional e suas partes componentes. Embora introduzamos a inferência estatística por meio de discussões iniciais sobre testes de hipóteses, nosso objetivo final é apresentar uma análise estatística completa das médias componentes com base em intervalos deconfiança simultâneos. 
+
+Uma das mensagens centrais da análise multivariada é que \(p\) variáveis correlacionadas devem ser analisadas conjuntamente. Este princípio é exemplificado pelos métodos apresentados neste capítulo.
+
+# Plausibilidade de \( \mu_0 \) como um Valor para a Média de uma População Normal
+
+Vamos começar relembrando a teoria univariada para determinar se um valor específico \( \mu_0 \) é um valor plausível para a média populacional \( \mu \). Do ponto de vista de testes de hipóteses, esse problema pode ser formulado como um teste entre as hipóteses concorrentes:
+
+\( H_0: \mu = \mu_0 \) e \( H_1: \mu \neq \mu_0 \)
+
+Aqui, \( H_0 \) é a hipótese nula e \( H_1 \) é a hipótese alternativa (bidirecional). Se $\{\mathbf{X}_i\}_{i=1}^{n} \sim \mathcal{N}_p\text{IID}(\boldsymbol{\mu}, \mathbf{\Sigma})$, a estatística de teste apropriada é:
+
+\[ T = \dfrac{\bar{X} - \mu_0}{S/\sqrt{n}} \]
+
+em que \( \bar{X} = \frac{1}{n} \sum_{i=1}^{n} X_i \) e \( S^2 = \frac{1}{n-1} \sum_{i=1}^{n} (X_i - \bar{X})^2 \) são a média e a variância amostrais estocásticas, respectivamente.
+
+Essa estatística de teste é uma variável aleatória que segue uma distribuição t de Student central com \( n - 1 \) graus de liberdade. Rejeitamos \( H_0 \), ou seja, que \( \mu_0 \) é um valor plausível para \( \mu \), se o valor observado de \( |t| \) exceder um ponto percentual especificado de uma distribuição t de Student com \( n - 1 \) graus de liberdade.
+
+A rejeição de \( H_0 \) quando \( |t| \) é grande é equivalente a rejeitar \( H_0 \) se o quadrado de \( t \):
+
+\[ t^2 = \left( \frac{\bar{x} - \mu_0}{s/\sqrt{n}} \right)^2 =n(\bar{x}-\mu_0)(s^2)^{-1}(\bar{x}-\mu_0) \tag{5-1}\]
+
+for grande. O valor \( t^2 \) na equação acima representa o quadrado da distância entre a média da amostra \( \bar{x} \) e o valor de teste \( \mu_0 \). As unidades de distância são expressas em termos de \( s/\sqrt{n} \), ou seja, em desvio-padrão estimado de \( \bar{x} \). Uma vez que \( \bar{x} \) e \( s^2 \) são estimativas, o teste se torna:
+
+Rejeitar \( H_0 \) em favor de \( H_1 \) com um nível de significância \( \alpha \), se:
+
+\[ n(\bar{x}-\mu_0)(s_2)^{-1}(\bar{x}-\mu_0) > t_{n-1}^{2}(1 - \alpha/2) \tag{5-2}\]
+
+em que \( t_{n-1}(1 - \alpha/2) \) denota o quantil de \( 100\;(1-\alpha/2) \) da distribuição t de Student central com \( n - 1 \) graus de liberdade.
+
+Se \( H_0 \) não for rejeitada, concluímos que \( \mu_0 \) é um valor plausível para a média da população normal. Existem outros valores de \( \mu \) que também são consistentes com os dados? A resposta é sim! Na verdade, sempre existe um conjunto de valores plausíveis para uma média da população normal. A partir da conhecida correspondência entre as regiões de não rejeição [_sic_: estava aceitação] para testes de \( H_0: \mu = \mu_0 \) versus \( H_1: \mu \neq \mu_0 \) e intervalos de confiança para \( \mu \), temos:
+
+\[ \{ \text{Não rejeitar } H_0: \mu = \mu_0 \text{ ao nível } \alpha \} \text{ ou } |t| \le t_{n-1}(\alpha/2)) \]
+
+é equivalente a:
+
+\[ \mu_0 \text{ está no intervalo de confiança de } 100(1 - \alpha)\% \text{ para } \mu, \\\text{ ou seja, } \\\mu_0 \in\left[\bar{x} \pm t_{n-1}(\alpha/2)\dfrac{s}{\sqrt{n}}\right] \]
+
+ou
+
+\[ \bar{x} - t_{n-1}(1-\alpha/2)\dfrac{s}{\sqrt{n}}\le \mu_0
+ \le \bar{x} + t_{n-1}(1-\alpha/2)\dfrac{s}{\sqrt{n}}\tag{5-3}\]
+
+O intervalo de confiança consiste em todos os valores \( \mu_0 \) que não seriam rejeitados pelo teste de nível \( \alpha \) de \( H_0: \mu = \mu_0 \).
+
+Antes de selecionarmos a amostra, o intervalo de confiança de \( 100(1 - \alpha)\% \) em (5-3) é um intervalo aleatório, uma vez que os pontos finais dependem das variáveis aleatórias \( \bar{X} \) e \( S \). A probabilidade de que o intervalo contenha \( \mu \) é \( 1 - \alpha \); entre um grande número desses intervalos independentes, aproximadamente \( 100(1 - \alpha)\% \) deles conterão \( \mu \).
+
+Agora, considere o problema de determinar se um dado vetor \( \boldsymbol{\mu}_0 \) de dimensão \( p \times 1 \), em que \( p \) é o número de variáveis, é um valor plausível para a média de uma distribuição normal multivariada. Vamos proceder por analogia ao desenvolvimento univariado apresentado anteriormente.
+
+Uma generalização natural da distância ao quadrado em (5-1) é seu análogo multivariado:
+
+\[ T^2 = (\bar{\mathbf{X}} - \boldsymbol{\mu}_0)^{\prime} \left(\dfrac{1}{n}\mathbf{S}\right)^{-1} (\bar{\mathbf{X}} - \boldsymbol{\mu}_0) = n(\bar{\mathbf{X}} - \boldsymbol{\mu}_0)^{\prime} \mathbf{S}^{-1} (\bar{\mathbf{X}} - \boldsymbol{\mu}_0) \tag{5-4}\]
+
+em que $\boldsymbol{\mu}_{0}^{\prime}=[\mu_{01}\; \mu_{02}\; \ldots\; \mu_{0p}]$.
+
+A estatística \( T^2 \) é chamada de \( T^2 \) de Hotelling em homenagem a Harold Hotelling, um pioneiro na análise multivariada, que primeiro obteve sua distribuição amostral. Aqui, \( (1/n)\mathbf{S} \) é a matriz de covariância estimada de \( \bar{\mathbf{X}} \) (consulte o Resultado 3.1).
+
+Se a distância estatística observada \( T^2 \) for muito grande — ou seja, se \( \bar{\mathbf{X}} \) estiver "muito longe" de \( \boldsymbol{\mu}_0 \) — a hipótese \( H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0 \) é rejeitada. Acontece que tabelas especiais de quantis de \( T^2 \) não são necessárias para testes formais de hipóteses. Isso ocorre porque pode ser usada a distribuição \( F \) para realizar testes de hipótese nula envolvendo a estatística \( T^2 \). 
+
+Se $F\sim F_{p, n-p}$, então 
+
+$$T^2=(n-1)\dfrac{p}{n-p} F\sim T^2_{p,n-1}\tag{5-5}$$
+
+$$T^2_{p,n-1}(1-\alpha)=(n-1)\dfrac{p}{n-p} F_{p, n-p}(1-\alpha)$$
+
+em que $F_{p, n-p}$ é distribuição F de Fisher-Snedecor com $p$ e $n-p$ graus de liberdade do numerador e denominador, respectivamente.
+
+Se $n-p\gg30$, então
+
+$$T^2_{p,n-1}(1-\alpha) \approx \chi^2_p(1-\alpha)$$
+
+De forma mais geral, temos que:
+
+\[T^2_{g_1,g_2}(1-\alpha)=g_2\dfrac{g_1}{g_2-g_1+1} F_{g_1, g_2-g_1+1}(1-\alpha)\]
+
+* [Hotelling's T-squared distribution: Wikipedia](https://en.wikipedia.org/wiki/Hotelling's_T-squared_distribution)
+* [Hotelling-T^2-distribution: Encyclopedia of Mathematics](https://encyclopediaofmath.org/wiki/Hotelling-T%5E2-distribution)
+* [Simulation study of Hotelling T2 tests using elliptical data - Sindeby - 2021](https://uu.diva-portal.org/smash/get/diva2:1729458/FULLTEXT01.pdf)
+
+* [JW6_T2_aprox_X2_5.R](JW6_T2_aprox_X2_5.R){target="_blank"} 
+
+```{r}
+# https://stats.stackexchange.com/questions/285425/limit-of-hotelling-t2-distribution
+n_values <- 3:30  # Valores de n
+p_values <- 2:10  # Valores de p
+alpha <- 0.05     # Nível de significância
+
+# Inicializar uma matriz para armazenar os valores críticos
+critical_values <- matrix(NA, nrow = length(n_values), ncol = length(p_values))
+
+# Preencher a matriz com os valores críticos
+for (i in 1:length(n_values)) {
+  for (j in 1:length(p_values)) {
+    n <- n_values[i]
+    p <- p_values[j]
+    critical_values[i, j] <- ((p * (n - 1)) / (n - p)) * 
+      qf(1 - alpha, p, n - p)
+  }
+}
+
+# Definir os nomes das linhas e colunas da tabela
+rownames(critical_values) <- n_values
+colnames(critical_values) <- p_values
+
+# Exibir a tabela do quantil T^2(p,n-1,95%)
+print(critical_values, digits=2)
+
+# Inicializar uma matriz para armazenar as diferenças em porcentagem
+diff_percent <- matrix(NA, nrow = length(n_values), ncol = length(p_values))
+
+# Preencher a matriz com as diferenças
+for (i in 1:length(n_values)) {
+  for (j in 1:length(p_values)) {
+    n <- n_values[i]
+    p <- p_values[j]
+    diffperc <- (((p * (n - 1)) / (n - p)) * 
+      qf(1 - alpha, p, n - p) - 
+      qchisq(1 - alpha, p))/qchisq(1 - alpha, p)
+    diff_percent[i, j] <- diffperc
+  }
+}
+
+# Definir os nomes das linhas e colunas da tabela
+rownames(diff_percent) <- n_values
+colnames(diff_percent) <- p_values
+
+# Exibir a tabela da variação porcentual dos quantis X^2(p, 95%) e T^2(p,n-1,95%)
+print(diff_percent, digits=2)
+
+n_values <- c(seq(30,1000,50),1000)  # Valores de n
+p_values <- seq(2,10,1)  # Valores de p
+alpha <- 0.05     # Nível de significância
+
+# Inicializar uma matriz para armazenar os valores críticos
+critical_values <- matrix(NA, nrow = length(n_values), ncol = length(p_values))
+
+# Preencher a matriz com os valores críticos
+for (i in 1:length(n_values)) {
+  for (j in 1:length(p_values)) {
+    n <- n_values[i]
+    p <- p_values[j]
+    critical_values[i, j] <- ((p * (n - 1)) / (n - p)) * 
+      qf(1 - alpha, p, n - p)
+  }
+}
+
+# Definir os nomes das linhas e colunas da tabela
+rownames(critical_values) <- n_values
+colnames(critical_values) <- p_values
+
+# Exibir a tabela do quantil T^2(p,n-1,95%)
+print(critical_values, digits=4)
+
+# Inicializar uma matriz para armazenar as diferenças em porcentagem
+diff_percent <- matrix(NA, nrow = length(n_values), ncol = length(p_values))
+
+# Preencher a matriz com as diferenças
+for (i in 1:length(n_values)) {
+  for (j in 1:length(p_values)) {
+    n <- n_values[i]
+    p <- p_values[j]
+    diffperc <- (((p * (n - 1)) / (n - p)) * 
+                   qf(1 - alpha, p, n - p) - 
+                   qchisq(1 - alpha, p))/qchisq(1 - alpha, p)
+    diff_percent[i, j] <- diffperc
+  }
+}
+
+# Definir os nomes das linhas e colunas da tabela
+rownames(diff_percent) <- n_values
+colnames(diff_percent) <- p_values
+
+# Exibir a tabela da variação porcentual dos quantis X^2(p, 95%) e T^2(p,n-1,95%)
+print(diff_percent, digits=2)
+```
+
+<!-- * A Hotelling Test Based on MCD - Willems et al - 2002.pdf -->
+
+<!-- * Wu, Y et al. (2006) A Multivariate Two-Sample Mean Test for Small Sample Size and Missing Data. _Biometrics_ 62(3): 877-85. -->
+
+<!-- * Improvement on Chi-Squared Approximation by Monotone Transformation - Fujisawa - 1997. -->
+
+<!-- *  Enoki, H & Aoshima, M () Transformations with Improved Chi-Squared Approximations. -->
+
+<!-- * P.O. Adebayo and G.M. Oyeyemi (2018) An Alternative Solution to Hotelling T square under the Heteroscedasticity of the dispersion Matrix. _Research & Reviews: Journal of Statistics and Mathematical Sciences_ 4(3): 33-47 -->
+
+<!-- * An Asymptotic Two-Sided Test in a Family of Multivariate Distribution - Bazyari et al - 2020 -->
+
+<!-- * Multivariate multidistance tests for high-dimensional low sample size case-control studies - Marozzi - 2015: Table I. Cardiovascular and hemodynamic characteristics of the 20 subjects. -->
+
+<!-- * package `TVMM` -->
+
+<!-- * `DescTools::HotellingsT` -->
+
+Suponha que \( \{\mathbf{X}_i\}_{i=1}^{n} \sim \mathcal{N}_p\text{IID}(\boldsymbol{\mu}, \mathbf{\Sigma}) \). Então, com \( \mathbf{\bar{X}} = \frac{1}{n} \sum_{i=1}^{n} \mathbf{X}_i \) e \( \boldsymbol{S} = \frac{1}{n-1} \sum_{i=1}^{n} (\mathbf{X}_i - \mathbf{\bar{X}})(\mathbf{X}_i - \mathbf{\bar{X}})^{\prime} \),
+
+\[
+\alpha=P\left( T^2 > \dfrac{(n-1)p}{n-p} F_{p, n-p}(1-\alpha) \right)
+\tag{5-6}
+\]
+
+em que \( F_{p, n-p}(1-\alpha) \) é o percentil \( 100(1-\alpha) \)-ésimo da distribuição \( F \) com \( p \) e \( n - p \) graus de liberdade. 
+
+A afirmação (5-6) leva imediatamente a um teste da hipótese \( H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0 \) contra \( H_1: \boldsymbol{\mu} \neq \boldsymbol{\mu}_0 \). No nível de significância \( \alpha \), rejeitamos \( H_0 \) em favor de \( H_1 \) se o valor observado de \( T^2 \) for maior que um valor crítico, dado por:
+
+\[
+T^2 = n (\mathbf{\bar{x}} - \boldsymbol{\mu}_0)^{\prime} \boldsymbol{s}^{-1} (\mathbf{\bar{x}} - \boldsymbol{\mu}_0) > \dfrac{(n - 1)p}{n - p} F_{p, n-p}(1-\alpha)
+\]
+
+É raro, em situações multivariadas, ficar satisfeito com um teste de \( H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0 \) em que todos os componentes do vetor de média são especificados sob a hipótese nula. Normalmente, é preferível encontrar regiões de valores de $\boldsymbol{\mu}$ que sejam plausíveis à luz dos dados observados. Retornaremos a essa questão na Seção 5.4.
+
+Não há necessidade de usar o quantil da distribuição $T^2$ de Hotelling porque é facilmente calculável a partir do quantil da distribuição $F$ de Fisher:
+
+\[\begin{align}
+T^2 &= n (\mathbf{\bar{x}} - \boldsymbol{\mu}_0)^{\prime} \boldsymbol{s}^{-1} (\mathbf{\bar{x}} - \boldsymbol{\mu}_0) > \frac{(n - 1)p}{n - p} F_{p, n-p}(1-\alpha) \\
+\dfrac{n-p}{(n - 1)p}T^2 &= \dfrac{n-p}{(n - 1)p}n (\mathbf{\bar{x}} - \boldsymbol{\mu}_0)^{\prime} \boldsymbol{s}^{-1} (\mathbf{\bar{x}} - \boldsymbol{\mu}_0) > F_{p, n-p}(1-\alpha)
+\end{align}
+\]
+
+## Exemplo 5.1: Avaliando \( T^2 \)
+
+Suponha que a matriz de dados para uma amostra aleatória de tamanho \( n = 3 \) de uma população normal bivariada seja
+
+\[
+\boldsymbol{\mathcal{x}}=\left[ 
+\begin{array}{cc}
+6 & 9 \\
+10 & 6 \\
+8 & 3 
+\end{array} 
+\right]
+\]
+
+Avalie o \( T^2 \) observado para \( \boldsymbol{\mu}_0^{\prime} = [9\; 5] \). Qual é quantil crítico de 95% neste caso? 
+
+$$T^2=
+3\begin{bmatrix}
+8-9& 6-5
+\end{bmatrix}
+\begin{bmatrix}
+\frac{1}{3}& \frac{1}{9}\\
+\frac{1}{9}& \frac{4}{27}
+\end{bmatrix}
+\begin{bmatrix}
+8-9 \\ 6-5
+\end{bmatrix}=\dfrac{7}{9}$$
+
+Portanto, \( F \) pode ser obtido da seguinte forma: \( \dfrac{(3-1)2}{3-2} F = 4 F = 7/9 \). Portanto, $F\approx0.19$. O quantil crítico de $F_{2,1}(0.95)=199.5$. 
+
+* [JW6_Example5.1.R](JW6_Example5.1.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+p <- 2
+n <- 3
+alfa <- 0.05
+H0 <- c(9, 5)
+x <- matrix(c(6, 9,
+              10, 6,
+              8, 3),
+            nrow=3, byrow=TRUE)
+centroide <- colMeans(x)
+centroide
+s <- cov(x)
+s
+T2crit <- ((n-1)*p/(n-p))*qf(1-alfa, p, n-p)
+cat("\nT^2(", p, ", ", n-1, ", ", 1-alfa,") = ", T2crit, sep="")
+T2 <- as.numeric(n*t(centroide-H0)%*%solve(s)%*%(centroide-H0))
+cat("\nT^2 =", T2)
+F <- T2/((n-1)*p/(n-p))
+Fcrit <- qf(1-alfa, p, n-p)
+cat("\nF(", p, ", ", n-p, ", ", 1-alfa,") = ", Fcrit, sep="")
+pv <- 1-pf(F, p, n-p)
+cat("\nF(", p, ", ", n-p, ") = ", F, ", p = ", pv, "\n", sep="")
+a.hat_abs <- abs(solve(s)%*%(centroide-H0))
+colnames(a.hat_abs) <- "Importância"
+rownames(a.hat_abs) <- c("x1", "x2")
+print(proportions(a.hat_abs), digits=2)
+```
+
+Note que $F<F_{2, 1}(0.95)$. Desta forma, $H_0$ não é rejeitada.
+
+$$\Diamond$$
+
+O próximo exemplo ilustra um teste da hipótese \( H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0 \) usando dados coletados como parte de uma busca por novas técnicas de diagnóstico na Faculdade de Medicina da Universidade de Wisconsin.
+
+## Exemplo 5.2: Testando um vetor de média multivariado com \( T^2 \)
+
+A transpiração de 20 mulheres saudáveis foi analisada. Três componentes, \( X_1 = \) taxa de suor, \( X_2 = \) conteúdo de sódio, e \( X_3 = \) conteúdo de potássio, foram medidos, e os resultados, que chamamos de dados de suor, são apresentados na Tabela 5.1.
+
+Teste a hipótese \( H_0: \boldsymbol{\mu}^{\prime} = [4\; 50\; 10] \) contra \( H_1: \boldsymbol{\mu}^{\prime} \neq [4\; 50\; 10] \) no nível de significância \( \alpha = 0.1 \).
+
+* [JW6_Example5.2.R](JW6_Example5.2.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+x <- read.table("JW6Data/T5-1.DAT", quote="\"", comment.char="")
+names(x) <- paste0("x",1:3)
+print.data.frame(x)
+print(MVN::mvn(x))
+alfa <- 0.1
+p <- dim(x)[2]
+n <- dim(x)[1]
+H0 <- c(4, 50, 10)
+centroide <- colMeans(x)
+centroide
+s <- cov(x)
+s
+T2crit <- ((n-1)*p/(n-p))*qf(1-alfa, p, n-p)
+cat("\nT^2(", p, ", ", n-1, ", ", 1-alfa,") = ", T2crit, sep="")
+T2 <- as.numeric(n*t(centroide-H0)%*%solve(s)%*%(centroide-H0))
+cat("\nT^2 =", T2)
+F <- T2/((n-1)*p/(n-p))
+Fcrit <- qf(1-alfa, p, n-p)
+cat("\nF(", p, ", ", n-p, ", ", 1-alfa,") = ", Fcrit, sep="")
+pv <- 1-pf(F, p, n-p)
+cat("\nF(", p, ", ", n-p, ") = ", F, ", p = ", pv, "\n", sep="")
+
+T2One <- MVTests::OneSampleHT2(x,
+                               mu=H0,
+                               alpha=alfa)  
+summary(T2One)
+
+a.hat_abs <- abs(solve(s)%*%(centroide-H0))
+colnames(a.hat_abs) <- "Importância"
+rownames(a.hat_abs) <- c("sweat rate", "sodium", "potassium")
+print(proportions(a.hat_abs), digits=2)
+```
+
+Comparando o \( T^2 \) observado de 9.74 com o valor crítico 
+
+\[
+\frac{(n - 1)p}{n - p} F_{p, n-p}(1-\alpha) = \frac{19 \times 3}{20 - 3} \times 2.44 = 3.353 \times 2.44 = 8.18
+\]
+
+vemos que \( T^2 = 9.74 > 8.18 \), e consequentemente, rejeitamos \( H_0 \) no nível de significância de 10%.
+
+Observamos que \( H_0 \) será rejeitada se uma ou mais das médias, ou alguma combinação de médias, diferir muito dos valores hipotetizados $[4, 50, 10]$. Neste ponto, não temos ideia de quais desses valores hipotetizados podem não ser suportados pelos dados.
+
+Assumimos que os dados de suor são multivariados normais. (Veja o Exercício 5.4.)
+
+$$\Diamond$$
+
+Uma característica da estatística \( T^2 \) é que ela é invariante (inalterada) sob mudanças nas unidades de medida para \( \mathbf{X}_{p\times 1} \) da forma (transformação linear)
+
+$$ \mathbf{Y} = \mathbf{C} \mathbf{X} + \mathbf{d} \tag{5-9}$$
+
+Em que \( \mathbf{C} \) é não singular.
+
+Uma transformação linear das observações desse tipo ocorre quando uma constante \( b_i \) é subtraída da \( i \)-ésima variável para formar \( X_i - b_i \), e o resultado é multiplicado por uma constante \( a_i > 0 \) para obter \( a_i(X_i - b_i) \). A pré-multiplicação das quantidades centradas e escaladas \( a_i(X_i - b_i) \) por qualquer matriz não singular resultará na Equação (5-9).
+
+Como exemplo, as operações envolvidas na mudança de \( X_i \) para \( a_i(X_i - b_i) \) correspondem exatamente ao processo de conversão de temperatura de Fahrenheit para Celsius.
+
+Dadas as observações \( \mathbf{x}_1, \mathbf{x}_2, \ldots, \mathbf{x}_n \) e a transformação em (5-9), segue imediatamente do Resultado 3.6 que:
+
+\[\begin{align}
+\bar{\mathbf{y}} 
+&= \mathbf{C} \bar{\mathbf{x}} + \mathbf{d}\\
+\mathbf{s}_\mathbf{y} &= \dfrac{1}{n} \sum_{i=1}^{n} (\mathbf{y}_i - \bar{\mathbf{y}}) (\mathbf{y}_i - \bar{\mathbf{y}})^{\prime} 
+= \mathbf{C} \mathbf{s}_\mathbf{x} \mathbf{C}^{\prime}
+\end{align}
+\]
+
+Além disso, por (2-24) e (2-45),
+
+\[
+\boldsymbol{\mu}_\mathbf{Y} = \mathbb{E}(\mathbf{Y}) = \mathbb{E}(\mathbf{C} \mathbf{X} + \mathbf{d}) = \mathbb{E}(\mathbf{C} \mathbf{X}) + \mathbb{E}(\mathbf{d}) = \mathbf{C} \boldsymbol{\mu}_\mathbf{X} + \mathbf{d}
+\]
+
+Portanto, \( T^2 \) calculado com os \( \mathbf{y} \)'s e um valor hipotetizado \( \boldsymbol{\mu}_{\mathbf{y},0} = \mathbf{C} \boldsymbol{\mu}_0 + \mathbf{d} \) é
+
+\[\begin{align}
+T^2 &= n(\bar{\mathbf{y}} - \boldsymbol{\mu}_{\mathbf{y},0})^{\prime} \mathbf{s}_{\mathbf{y}}^{-1} (\bar{\mathbf{y}} - \boldsymbol{\mu}_{\mathbf{y},0}) \\
+&= n(\mathbf{C} (\bar{\mathbf{x}} - \boldsymbol{\mu}_0))^{\prime} (\mathbf{C} \mathbf{s}_{\mathbf{x}} \mathbf{C}^{\prime})^{-1} (\mathbf{C} (\bar{\mathbf{x}} - \boldsymbol{\mu}_0)) \\
+&= n(\bar{\mathbf{x}} - \boldsymbol{\mu}_0)^{\prime} \mathbf{C}^{\prime} (\mathbf{C} \mathbf{s}_{\mathbf{x}} \mathbf{C}^{\prime})^{-1} \mathbf{C} (\bar{\mathbf{x}} - \boldsymbol{\mu}_0) \\
+T^2&= n(\bar{\mathbf{x}} - \boldsymbol{\mu}_0)^{\prime} \mathbf{s}_{\mathbf{x}}^{-1} (\bar{\mathbf{x}} - \boldsymbol{\mu}_0)
+\end{align}
+\]
+
+A última expressão é reconhecida como o valor de \( T^2 \) calculado com os \( \mathbf{x} \)'s. 
+
+# \( T^2 \) de Hotelling e Testes de Razão de Verossimilhança
+
+Introduzimos a estatística \( T^2 \) por analogia com a distância quadrada univariada \( t^2 \). Existe um princípio geral para a construção de procedimentos de teste chamado método da razão de verossimilhança (LR: _Likelihood Ratio test_), e a estatística \( T^2 \) pode ser derivada como o teste de razão de verossimilhança de \( H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0 \). A teoria geral dos testes de razão de verossimilhança está além do escopo deste livro. (Veja [3] para um tratamento do tópico.) Testes de razão de verossimilhança têm várias propriedades ótimas para amostras razoavelmente grandes, e eles são particularmente convenientes para hipóteses formuladas em termos de parâmetros normais multivariados.
+
+Teste LR é UMP (_Uniformly Most Powerful_).  De acordo com o Lema de Neyman-Pearson, o teste de razão de verossimilhança é um teste UMP para testar hipótese nula simples. Em outras palavras, quando estamos considerando hipóteses simples para tanto a hipótese nula \(H_0\) quanto a alternativa \(H_1\), o teste LR é o teste mais poderoso entre todos os testes possíveis de um dado tamanho do teste \( \alpha \). (ver [Uniformly most powerful test: ](Wikipedia){target="_blank"})
+
+Sabemos de (4-18) que o máximo da verossimilhança normal multivariada, à medida que \( \boldsymbol{\mu} \) e \( \Sigma \) variam sobre seus possíveis valores, é dado por
+
+O valor máximo da função de verossimilhança quando o vetor de média e a matriz de covariância populacionais são desconhecidos é $\mathcal{L}(\hat{\boldsymbol{\mu}},\hat{\mathbf{\Sigma}})$:
+
+$$\mathcal{L}(\hat{\boldsymbol{\mu}},\hat{\mathbf{\Sigma}})=
+|2\pi \hat{\mathbf{\Sigma}}|^{-n/2}\exp\left(-\dfrac{np}{2}\right) \tag{5-10}$$
+
+Em que $\hat{\boldsymbol{\mu}}=\frac{1}{n}\sum_{i=1}^{n}\mathbf{X}_i$ e $\hat{\mathbf{\Sigma}}=\frac{1}{n}\sum_{i=1}^{n}{(\mathbf{x}_i-\bar{\mathbf{x}})(\mathbf{x}_i-\bar{\mathbf{x}})}^{\prime}$
+
+Portanto, este valor sem restrição torna-se automaticamente um valor de referência se quisermos testar a plausibilidade de um ou dos dois parâmetros.
+
+Se quisermos testar a plausibilidade de $\boldsymbol{\mu}_0$, i.e., um vetor de média conjecturado e, portanto, um vetor numérico.
+
+O valor máximo da função de verossimilhança com a restrição do vetor de média conjecturado para teste estatístico e a matriz de covariância populacional desconhecida, mas agora função da média conjecturada, é $\mathcal{L}(\hat{\boldsymbol{\mu}},\hat{\mathbf{\Sigma}}_0)$:
+
+$$\mathcal{L}(\hat{\boldsymbol{\mu}},\hat{\mathbf{\Sigma}}_0)=
+|2\pi \hat{\mathbf{\Sigma}}_0|^{-n/2}\exp\left(-\dfrac{np}{2}\right) \tag{5-11}$$
+
+Em que $\hat{\mathbf{\Sigma}}_0=\frac{1}{n}\sum_{i=1}^{n}{(\mathbf{x}_i-\boldsymbol{\mu}_0)(\mathbf{x}_i-\boldsymbol{\mu}_0)}^{\prime}$
+
+Para determinar se \( \boldsymbol{\mu}_0 \) é um valor plausível de \( \boldsymbol{\mu} \), o máximo de \( \mathcal{L}(\boldsymbol{\mu}_0, \mathbf{\Sigma}) \) é comparado com o máximo irrestrito de \( \mathcal{L}(\boldsymbol{\mu},\mathbf{\Sigma}) \). A razão resultante é chamada de estatística de razão de verossimilhança.
+
+Usando as Equações (5-10) e (5-11), obtemos
+
+\[
+\Lambda = \dfrac{\mathcal{L}(\hat{\boldsymbol{\mu}},\hat{\mathbf{\Sigma}}_0)}{\mathcal{L}(\hat{\boldsymbol{\mu}},\hat{\mathbf{\Sigma}})} = \left(\dfrac{|\hat{\mathbf{\Sigma}}|}{|\hat{\mathbf{\Sigma}}_0|}\right)^{\frac{n}{2}} \tag{5-12}
+\]
+
+A estatística equivalente \( \Lambda^{2/n} = \dfrac{|\hat{\mathbf{\Sigma}}|}{|\hat{\mathbf{\Sigma}}_0|} \) é chamada de lambda de Wilks. Se o valor observado dessa razão de verossimilhança for muito pequeno, a hipótese \( H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0 \) é improvável de ser verdadeira e, portanto, é rejeitada. 
+
+Note-se que a estatística do teste de razão de verossimilhança é uma potência da razão das variâncias generalizadas. Felizmente, devido à seguinte relação entre \( T^2 \) e \( \Lambda \), não precisamos da distribuição deste último para realizar o teste.
+
+__Resultado 5.1__: Seja \( \{\mathbf{X}_i\}_{i=1}^{n} \sim \mathcal{N}_p\text{IID}(\boldsymbol{\mu}, \mathbf{\Sigma}) \). Então, o teste em (5-7) baseado em \( T^2 \) é equivalente ao teste de razão de verossimilhança de \( H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0 \) contra \( H_1 \) porque:
+
+$$\Lambda^{2/n}=\left(1+\dfrac{T^2}{n-1}\right)^{-1}\tag{5-14}$$
+
+Aqui \( H_0 \) é rejeitada para valor pequeno de \( \Lambda^{2/n} \) ou, equivalentemente,  valor grande de \( T^2 \). Os valores críticos de \( T^2 \) são determinados por (5-6).
+
+$$\Diamond$$
+
+A relação (5-14) mostra que \( T^2 \) pode ser calculado a partir de dois determinantes, evitando assim o cálculo de \( \mathbf{s}^{-1} \). Resolvendo (5-14) para \( T^2 \), temos
+
+\( T^2 = (n-1)\left(\dfrac{|\hat{\mathbf{\Sigma}}_0|}{|\hat{\mathbf{\Sigma}}|}-1\right) \tag{5-15}\)
+
+Teste de razão de verossimilhança é comum em análise multivariada. Suas propriedades ótimas para grandes amostras são válidas em contextos muito gerais, como indicaremos em breve. Eles são bem adequados para as situações de teste consideradas neste texto. Métodos de razão de verossimilhança produzem estatísticas de teste que se reduzem às estatísticas \( t \) e \( F \) familiares em situações univariadas, mas podem ser unificados por estatística de teste com distribuição exata $T^2$ ou assintótica $\chi^2$.
+
+# Região de Confiança e Comparações Simultâneas dos Componentes do Vetor de Média
+
+Para obter nosso principal método para fazer inferências a partir de uma amostra, precisamos estender o conceito de um intervalo de confiança univariado para uma _região de confiança_ multivariada. Seja \( \boldsymbol{\theta} \) um vetor de parâmetros populacionais desconhecidos e \( \boldsymbol{\Theta} \) o conjunto de todos os possíveis valores de \( \boldsymbol{\theta} \). Uma região de confiança é uma região de prováveis valores de \( \boldsymbol{\theta} \). Essa região é determinada pelos dados e, por enquanto, a denotaremos por \( R(\boldsymbol{\mathcal{X}}) \), em que \( \boldsymbol{\mathcal{X}} = [\mathbf{X}_1 \; \mathbf{X}_2 \; \cdots \; \mathbf{X}_n]^{\prime} \) é a matriz de dados estocástica.
+
+A região \( R(\boldsymbol{\mathcal{X}}) \) é dita ser uma região de confiança de \( 100(1 - \alpha)\% \) se, antes da amostra ser selecionada,
+
+\[
+P[\boldsymbol{\theta}\in R(\boldsymbol{\mathcal{X}})] = 1 - \alpha \quad (5-17)
+\]
+
+Essa probabilidade é calculada sob o verdadeiro, mas desconhecido, valor de \( \boldsymbol{\theta} \).
+
+A região de confiança para a média \( \boldsymbol{\mu} \) de uma população normal _p_-dimensional está disponível a partir de (5-6). Antes da amostra ser selecionada, temos
+
+\[
+P\left(T^2=n (\bar{\mathbf{X}} - \boldsymbol{\mu})^{\prime} \mathbf{S}^{-1} (\bar{\mathbf{X}} - \boldsymbol{\mu}) \le \dfrac{(n - 1)p}{n - p} F_{p,n-p}(1-\alpha) \right) = 1 - \alpha
+\]
+
+Independentemente dos valores desconhecidos de \( \boldsymbol{\mu} \) e \( \mathbf{\Sigma} \). Em outras palavras, \( \bar{\mathbf{X}} \) estará dentro de
+
+\[
+\sqrt{\dfrac{(n - 1)p}{n - p} F_{p,n-p}(1-\alpha)}
+\]
+
+de \( \boldsymbol{\mu} \), com probabilidade \( 1 - \alpha \), desde que a distância seja definida em termos de \( n \mathbf{S}^{-1} \). Para uma amostra específica, \( \mathbf{x} \) e \( \mathbf{s} \) podem ser calculados, e a desigualdade 
+
+\[
+n (\bar{\mathbf{x}} - \boldsymbol{\mu})^{\prime} \mathbf{s}^{-1} (\bar{\mathbf{x}} - \boldsymbol{\mu}) \le \dfrac{(n - 1)p}{n - p} F_{p,n-p}(1-\alpha) \tag{5-18}
+\]
+
+definirá uma região de confiança de $100(1-\alpha)\%$ para \( \boldsymbol{\mu} \). Neste caso, a região é um hiperelipsoide centrado em \( \bar{\mathbf{x}} \). 
+
+Para determinar se algum \( \boldsymbol{\mu}_0 \) está dentro da região de confiança (é um valor plausível para \( \boldsymbol{\mu} \)), precisamos calcular a distância quadrada generalizada 
+
+\[
+n (\bar{\mathbf{x}} - \boldsymbol{\mu}_0)^{\prime} \mathbf{s}^{-1} (\bar{\mathbf{x}} - \boldsymbol{\mu}_0)
+\]
+
+e compará-la com 
+
+\[
+T^2_{p,n-1}(1-\alpha)=\dfrac{(n - 1)p}{n - p}F_{p,n-p}(1-\alpha)
+\]
+
+Se a distância quadrada for maior do que \(T^2_{p,n-1}(1-\alpha)\), \( \boldsymbol{\mu}_0 \) não está na região de confiança. Como isso é análogo ao teste de \( H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0 \) contra \( H_1: \boldsymbol{\mu} \neq \boldsymbol{\mu}_0 \) [veja (5-7)], vemos que a região de confiança de (5-18) consiste em todos os vetores \( \boldsymbol{\mu}_0 \) para os quais o teste \( T^2 \) não rejeitaria \( H_0 \) em favor de \( H_1 \) no nível de significância \( \alpha \).
+
+Para \( p \ge 4 \), não podemos representar graficamente a região de confiança conjunta para \( \boldsymbol{\mu} \). No entanto, podemos calcular os eixos do hiperelipsoide de confiança e seus comprimentos relativos. Estes são determinados pelos autovalores \( \lambda_i \) e autovetores \( \mathbf{e}_i \) de \( \mathbf{s} \). Como em (4-7), as direções e comprimentos dos eixos de
+
+\[
+n (\bar{\mathbf{x}} - \boldsymbol{\mu})^{\prime} \mathbf{s}^{-1} (\bar{\mathbf{x}} - \boldsymbol{\mu}) \le c^2 = \dfrac{(n - 1)p}{n - p} F_{p,n-p}(1-\alpha) 
+\]
+
+são determinados por 
+
+\[
+c\sqrt{\frac{\lambda_i}{n}} = \sqrt{\lambda_i}\sqrt{\dfrac{ (n - 1) }{n(n - p)}F_{p,n-p}(1-\alpha)}
+\]
+
+unidades ao longo dos autovetores \( \mathbf{e}_i \). Começando no centro \( \mathbf{x} \), os eixos do elipsoide de confiança são
+
+\[
+\pm\sqrt{\lambda_i}\sqrt{\dfrac{(n - 1)p }{n(n - p)} F_{p,n-p}(1-\alpha)}\;\mathbf{e}_i\\
+\mathbf{s} \mathbf{e}_i = \lambda_i \mathbf{e}_i\\
+i = 1,2,\ldots,p \tag{5-19}
+\]
+
+Se $n-p\gg30$, então:
+
+\[
+\sqrt{\lambda_i}\sqrt{\dfrac{(n - 1)p }{n(n - p)} F_{p,n-p}(1-\alpha)}\;\mathbf{e}_i\approx 
+\sqrt{\lambda_i}\sqrt{\dfrac{\chi^2(1-\alpha)}{n}}\;\mathbf{e}_i\xrightarrow[n\to\infty]{}0
+\]
+
+As razões dos \( \lambda_i \) ajudarão a identificar as quantidades relativas de alongamento ao longo de pares de eixos.
+
+## Exemplo 5.3: Construindo uma região elíptica de confiança para \( \boldsymbol{\mu} \)
+
+Dados sobre radiação de fornos de micro-ondas foram introduzidos nos Exemplos 4.10 e 4.17. Seja
+
+\( x_1 = \sqrt[4]{\text{radiação medida com a porta fechada}}\)   
+\( x_2 = \sqrt[4]{\text{radiação medida com a porta aberta}}\) 
+
+```{r echo=FALSE, out.width="80%", fig.cap="Figura 5.1: Uma elipse de confiança de 95% para &mu; com base em dados de radiação de micro-ondas."}
+knitr::include_graphics("./image/Fig.5.1.png")
+```
+
+* [JW6_Example5.3.R](JW6_Example5.3.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+x1 <- read.table("JW6Data/T4-1.DAT", quote="\"", comment.char="")
+names(x1) <- paste0("x1",1:1)
+x1rq <- x1$x1^(1/4) # radiação medida com a porta fechada
+x2 <- read.table("JW6Data/T4-5.DAT", quote="\"", comment.char="")
+names(x2) <- paste0("x2",1:1)
+
+x2rq <- x2$x2^(1/4) # radiação medida com a porta aberta
+x <- data.frame(x1rq, x2rq)
+print(head(x))
+print(tail(x))
+alfa <- 0.05
+centroide <- colMeans(x)
+centroide
+s <- cov(x)
+s
+H0 <- c(0.562, 0.589)
+p <- dim(x)[2]
+n <- dim(x)[1]
+T2crit <- ((n-1)*p/(n-p))*qf(1-alfa, p, n-p)
+cat("\nT^2(", p, ", ", n-1, ", ", 1-alfa,") = ", T2crit, sep="")
+T2 <- as.numeric(n*t(colMeans(x)-H0)%*%solve(s)%*%(colMeans(x)-H0))
+cat("\nT^2 =", T2)
+F <- T2/((n-1)*p/(n-p))
+Fcrit <- qf(1-alfa, p, n-p)
+cat("\nF(", p, ", ", n-p, ", ", 1-alfa,") = ", Fcrit, sep="")
+pv <- 1-pf(F, p, n-p)
+cat("\nF(", p, ", ", n-p, ") = ", F, ", p = ", pv, "\n", sep="")
+T2One <- MVTests::OneSampleHT2(x,
+                               mu=H0,
+                               alpha=alfa) 
+summary(T2One)
+a.hat_abs <- abs(solve(s)%*%(centroide-H0))
+colnames(a.hat_abs) <- "Importância"
+rownames(a.hat_abs) <- c("x1rq", "x2rq")
+print(proportions(a.hat_abs), digits=2)
+
+eigen_result <- eigen(s)
+eigvl <- eigen_result$values
+eigvl
+cat("\razão da raiz quadrada dos autovalores = ", 
+    sqrt(eigvl[1]/eigvl[2]))
+
+a <- sqrt(T2crit*eigen_result$values[1]/n) # (5-19)
+b <- sqrt(T2crit*eigen_result$values[2]/n) # (5-19)
+theta <- atan2(eigen_result$vectors[2, 1], eigen_result$vectors[1, 1])
+
+# Grade de pontos para a elipse
+theta_seq <- seq(0, 2 * pi, length.out = 100)
+ellipse_x <- centroide[1] + a * cos(theta_seq) * cos(theta) - 
+  b * sin(theta_seq) * sin(theta)
+ellipse_y <- centroide[2] + a * cos(theta_seq) * sin(theta) + 
+  b * sin(theta_seq) * cos(theta)
+
+plot(ellipse_x, ellipse_y, type = "l", asp = 1, 
+     xlab=expression(x[1]^(1/4)), 
+     ylab=expression(x[2]^(1/4)),
+     main="Região elíptica de confiança de 95%",
+     col="black")
+points(centroide[1], centroide[2], col = "black", pch = 19)
+points(H0[1], H0[2], pch=3, col="black")
+text(H0[1], H0[2], pos=1, expression(H[0]))
+
+c <- sqrt(T2crit/n)
+car::ellipse(center=centroide,
+             shape=s,
+             radius=c,
+             fill=TRUE,
+             fill.alpha=0.1,
+             grid=FALSE,
+             col="black",
+             add=FALSE,
+             xlab=expression(x[1]^(1/4)), 
+             ylab=expression(x[2]^(1/4)), 
+             main="Região elíptica de confiança de 95%")
+points(H0[1], H0[2], pch=3, col="black")
+text(H0[1], H0[2], pos=1, expression(H[0]))
+
+mvdalab::MVcis(x,
+               level=1-alfa,
+               Vars2Plot=c(1, 2), 
+               include.zero=FALSE)
+```
+
+# Intervalos de Confiança Simultâneos
+
+Enquanto a região de confiança \( n(\mathbf{x} - \boldsymbol{\mu})^{\prime}\mathbf{s}^{-1}(\mathbf{x} - \boldsymbol{\mu}) \leq c^2 \), para \( c \) uma constante, avalia corretamente o conhecimento conjunto sobre valores plausíveis de \( \boldsymbol{\mu} \), qualquer resumo de conclusões normalmente inclui intervalos de confiança sobre as componentes do vetor de média. Ao fazer isso, adotamos a postura de que todos os intervalos de confiança separados devem ser válidos _simultaneamente_ com uma probabilidade especificada alta. É a garantia de uma probabilidade especificada contra _qualquer_ intervalo de confiança ser incorreto que motiva o termo _intervalos de confiança simultâneos_. Começamos considerando intervalos de confiança simultâneos que estão intimamente relacionadas à região de confiança conjunta baseada na estatística \( T^2 \).
+
+Seja \( \mathbf{X} \sim \mathcal{N}_p(\boldsymbol{\mu}, \mathbf{\Sigma}) \) e forme a combinação linear 
+
+$$Z = \sum_{i=1}^{p}{a_iX_i} = \mathbf{a}^{\prime}\mathbf{X}$$
+
+A partir de (2-43), temos 
+
+$$\begin{align}
+\mu_Z &= \mathbb{E}(Z) = \mathbf{a}^{\prime}\boldsymbol{\mu} \\
+\sigma_Z^2 &= \mathbb{V}(Z) = \mathbf{a}^{\prime}\mathbf{\Sigma}\mathbf{a}
+\end{align}$$
+
+Além disso, pelo Resultado 4.2, \( Z ~\sim \mathcal{N}(\mathbf{a}^{\prime}\boldsymbol{\mu}, \mathbf{a}^{\prime}\mathbf{\Sigma}\mathbf{a}) \). Se  \( \{\mathbf{X}_i\}_{i=1}^{n} \sim \mathcal{N}_p\text{IID}\left(\boldsymbol{\mu}, \mathbf{\Sigma}\right) \), uma amostra correspondente de \( Z \) pode ser criada tomando combinações lineares. Assim,
+
+$$Z_j = \sum_{i=1}^{p}{a_iX_ji} = \mathbf{a}^{\prime}\mathbf{X}_j \\
+j = 1, 2, \ldots, n$$
+
+A média amostral e a variância dos valores observados \( z_1, z_2, \ldots, z_n \) são, por (3-36), 
+
+$$\bar{z} = \mathbf{a}^{\prime}\bar{\mathbf{x}}$$
+
+e
+
+\[
+s^2_Z = \mathbf{a}^{\prime}\mathbf{s}\mathbf{a}
+\]
+
+em que \( \bar{\mathbf{x}} \) e \( \mathbf{s} \) são o vetor de média e a matriz de covariância amostais dos \( \mathbf{x}_i \), respectivamente.
+
+Intervalos de confiança simultâneos podem ser desenvolvidos a partir de uma consideração dos intervalos de confiança para \( \mathbf{a}^{\prime}\boldsymbol{\mu} \) para várias escolhas de \( \mathbf{a} \). O argumento prossegue da seguinte forma. 
+
+Para \(  \mathbf{a} \) fixo e \( \sigma^2_Z \) desconhecido, um intervalo de confiança de \( 100(1 - \alpha)\% \) para \( \mu_Z = \mathbf{a}^{\prime}\boldsymbol{\mu} \) é baseado na razão t de Student.
+
+\[
+t=\dfrac{\bar{z}-\mu_z}{s_z/\sqrt{n}}=\dfrac{\sqrt{n}(\mathbf{a}^{\prime}
+-\mathbf{a}^{\prime}\boldsymbol{\mu})}{\sqrt{\mathbf{a}^{\prime}\mathbf{s}\mathbf{a}}}\tag{5-20}
+\]
+
+e leva ao intervalo de confiança
+
+\[
+\text{IC}^{1-\alpha}(\mu_Z) = \left[\bar{z} \pm t_{n-1}(1-\alpha/2) \dfrac{s_Z}{\sqrt{n}}\right]
+\]
+
+ou
+
+\[
+\text{IC}^{1-\alpha}(\mathbf{a}^{\prime}\boldsymbol{\mu})=\mathbf{a}^{\prime}\bar{\mathbf{x}} \pm t_{n-1}(1-\alpha/2) 
+\dfrac{\sqrt{\mathbf{a}^{\prime}\mathbf{s}\mathbf{a}}}{\sqrt{n}} \tag{5-21}
+\]
+
+A desigualdade (5-21) pode ser interpretada como uma afirmação sobre os componentes do vetor de média \( \boldsymbol{\mu} \). Por exemplo, com \( \mathbf{a}^{\prime} = [1\;0\;\cdots\;0] \), \( \mathbf{a}^{\prime}\boldsymbol{\mu} = \mu_1 \), e (5-21) se torna o intervalo de confiança usual para uma média de população normal. (Note, neste caso, que \( \mathbf{a}^{\prime}\mathbf{s}\mathbf{a} = s_{11} \)). Claramente, poderíamos fazer várias afirmações de confiança sobre os componentes de \( \boldsymbol{\mu} \), cada uma com nível de confiança associado \( 1 - \alpha \), escolhendo diferentes vetores de coeficientes \( \mathbf{a} \). No entanto, a confiança associada a todos os intervalos de confiança tomadas em conjunto não é \( 1 - \alpha \).
+
+Intuitivamente, seria desejável associar um coeficiente de confiança "coletivo" de \( 1 - \alpha \) aos intervalos de confiança que podem ser gerados por todas as escolhas de \( \mathbf{a} \). No entanto, um preço deve ser pago pela conveniência de um grande coeficiente de confiança simultâneo: intervalos que são mais largos (menos precisos) do que o intervalo de \( (5-21) \) para uma escolha específica de \( \mathbf{a} \).
+
+Dado um conjunto de dados \( \mathbf{x}_1, \mathbf{x}_2, \ldots, \mathbf{x}_n \) e um \( \mathbf{a} \) particular, o intervalo de confiança em \( (5-21) \) é o conjunto de valores \( \mathbf{a}^{\prime}\boldsymbol{\mu} \) para os quais
+
+\[
+|t| = \sqrt{n} \dfrac{|\mathbf{a}^{\prime}\bar{\mathbf{x}} - \mathbf{a}^{\prime}\boldsymbol{\mu}|}{\sqrt{\mathbf{a}^{\prime}\mathbf{s}\mathbf{a}}}\le t_{n-1}(1-\alpha/2)
+\]
+
+ou, equivalentemente,
+
+\[
+t^2 = n\frac{(\mathbf{a}^{\prime}\bar{\mathbf{x}} - \mathbf{a}^{\prime}\boldsymbol{\mu})^2}{\mathbf{a}^{\prime}\mathbf{s}\mathbf{a}} = n\dfrac{(\mathbf{a}^{\prime}(\bar{\mathbf{x}} - \boldsymbol{\mu}))^2}{\mathbf{a}^{\prime}\mathbf{s}\mathbf{a}} \le t_{n-1}^2(1-\alpha/2)\\
+t_{n-1}^2(1-\alpha/2)=F_{1,n-1}(1-\alpha)=T^2_{1,n-1}(1-\alpha)\tag{5-22}
+\]
+
+* [JW6_t2_equal_F_5.R](JW6_t2_equal_F_5.R){target="_blank"}
+
+```{r}
+alfa <- 0.05
+n <- 10
+p <- 1
+gl1 <- p
+gl2 <- n-1
+t2 <- qt(1-alfa/2, gl2)^2
+t2
+F <- qf(1-alfa, p, gl2)
+F
+all.equal(t2, F)
+identical(t2, F)
+```
+
+Uma região de confiança simultânea é dada pelo conjunto de valores de \( \mathbf{a} \) tal que \( t^2 \) é relativamente pequeno para _todas_ as escolhas de \( \mathbf{a} \). Parece razoável esperar que a constante \( t_{n-1}^2(1-\alpha/2) \) em (5-22) seja substituída por um valor maior, \( c^2 \), quando os intervalos de confiança são desenvolvidos para muitas escolhas de \( \mathbf{a} \).
+
+Considerando os valores de \( \mathbf{a} \) para os quais \( t^2 \le c^2 \), somos naturalmente levados à determinação de
+
+\[
+\max_\mathbf{a}{t^2} = \max_\mathbf{a} \frac{n(\mathbf{a}^{\prime}(\bar{\mathbf{x}} - \boldsymbol{\mu}))^2}{\mathbf{a}^{\prime}\mathbf{s}\mathbf{a}}
+\]
+
+Usando o lema de maximização (2-50) com \( \mathbf{x} = \mathbf{a} \), \( \mathbf{d} = (\bar{\mathbf{x}} - \boldsymbol{\mu}) \), e \( \mathbf{B} = \mathbf{s} \), obtemos
+
+\[
+\max_\mathbf{a} \frac{n(\mathbf{a}^{\prime}(\bar{\mathbf{x}} - \boldsymbol{\mu}))^2}{\mathbf{a}^{\prime}\mathbf{s}\mathbf{a}}
+= n(\bar{\mathbf{x}} - \boldsymbol{\mu})^{\prime}\mathbf{s}^{-1}(\bar{\mathbf{x}} - \boldsymbol{\mu}) = T^2 \tag{5-23}
+\]
+
+com o máximo ocorrendo para \( \mathbf{a}^* = \mathbf{s}^{-1}(\bar{\mathbf{x}} - \boldsymbol{\mu}) \):
+
+\[
+\underset{\mathbf{a}}{\operatorname{argmax}}  \frac{n(\mathbf{a}^{\prime}(\bar{\mathbf{x}} - \boldsymbol{\mu}))^2}{\mathbf{a}^{\prime}\mathbf{s}\mathbf{a}}
+= \mathbf{s}^{-1}(\bar{\mathbf{x}} - \boldsymbol{\mu})
+\]
+
+__Resultado 5.3__. Regiões de confiança $T^2$ ou de Scheffé
+
+* Demonstração também em Reis (2001, p. 125-8)
+
+Seja \( \{\mathbf{X}_i\}_{i=1}^{n} \sim \mathcal{N}_p\text{IID}\left(\boldsymbol{\mu}, \mathbf{\Sigma}\right) \). Então, simultaneamente para _todas_ as $m<\infty$ combinações lineares das médias, \( \mathbf{a}_i \), os intervalos
+
+\[\begin{align}
+\text{IC}^{1-\alpha}(\mathbf{a}_i^{\prime}\boldsymbol{\mu})&=
+\left[\mathbf{a}_i^{\prime}\bar{\mathbf{x}} 
+\pm  q\sqrt{\dfrac{\mathbf{a}_i^{\prime}\mathbf{s}\mathbf{a}_i}{n}}\right]\\
+q &= \sqrt{T^2_{p, n-1}(1-\alpha)}=\sqrt{\frac{(n - 1)p}{n - p} F_{p, n-p}(1-\alpha)}\\
+i&=1,2,\ldots,m
+\end{align}
+\]
+
+contêm _todas_ as $m$ combinações lineares das médias, $\mathbf{a}_i^{\prime}\boldsymbol{\mu}$, com probabilidade $1-\alpha$.
+
+$$\Diamond$$
+
+É conveniente referir-se aos intervalos simultâneos do Resultado 5.3 como intervalos \( T^2 \), uma vez que a probabilidade de cobertura é determinada pela distribuição de \( T^2 \).
+As escolhas sucessivas \( \mathbf{a}^{\prime} = [1\; 0\; \cdots\; 0] \), \( \mathbf{a}^{\prime} = [0\; 1\; \cdots\; 0] \), e assim por diante até \( \mathbf{a}^{\prime} = [0\; 0\; \cdots\; 1] \) para os intervalos \( T^2 \) nos permitem concluir que:
+
+\[
+\text{IC}^{1-\alpha}(\mu_i) =
+\left[\bar{x}_i 
+\pm \sqrt{\dfrac{(n - 1)p}{n - p} F_{p, n-p}(1-\alpha)} \sqrt{\dfrac{s_{ii}}{n}}\right] \\
+i=1,2,\ldots,p \tag{5-24}
+\]
+
+todos são válidos simultaneamente com nível de confiança \( 1 - \alpha \). Observe que, sem modificar o nível de confiança \( 1 - \alpha \), podemos fazer intervalos de confiança das diferenças \( \mu_i - \mu_k \) correspondentes a \( \mathbf{a}^{\prime} = [0, \ldots, 0, a_i, 0, \ldots, 0, a_k, 0, \ldots, 0] \), em que \( a_i = 1 \) e \( a_k = -1 \). Neste caso, \( \mathbf{a}^{\prime}\mathbf{s}\mathbf{a} = s_{ii} - 2s_{ik} + s_{kk} \), e temos o intervalo de confiança
+
+\[
+\text{IC}^{1-\alpha}(\mu_i-\mu_k) =
+\left[\bar{x}_i - \bar{x}_k 
+\pm \sqrt{\dfrac{(n - 1)p}{n - p}F_{p, n-p}(1-\alpha)} 
+\sqrt{\dfrac{s_{ii} - 2s_{ik} + s_{kk}}{n}}\right] \tag{5-25}
+\]
+
+Os intervalos de confiança \( T^2 \) simultâneos são ideais para "exploração de dados". O nível de confiança \( 1 - \alpha \) permanece inalterado para qualquer escolha de \( \mathbf{a} \), então combinações lineares dos componentes que merecem inspeção com base em um exame dos dados podem ser estimadas.
+
+Além disso, de acordo com os resultados no Suplemento 5A, podemos incluir os intervalos de confiança de \( (\mu_i, \mu_k) \) pertencendo às elipses centradas na média amostral
+
+\[
+n
+\begin{bmatrix}
+\bar{x}_i -\mu_i & \bar{x}_k -\mu_k 
+\end{bmatrix}
+\begin{bmatrix}
+s_{ii} & s_{ik} \\
+s_{ik} & s_{kk}
+\end{bmatrix}^{-1}
+\begin{bmatrix}
+\bar{x}_i -\mu_i \\ \bar{x}_k -\mu_k 
+\end{bmatrix}
+\le \dfrac{p(n - 1)}{n - p} F_{p, n-p}(1-\alpha) \tag{5-26}
+\]
+
+e ainda manter o nível de confiança \( (1 - \alpha) \) para todo o conjunto de intervalos de confiança.
+
+Os intervalos de confiança \( T^2 \) simultâneos para os componentes individuais de um vetor de média são apenas as projeções da região elíptica de confiança nos eixos dos componentes. Essa conexão entre as projeções do hiperelipsoide e os intervalos de confiança simultâneos dados por \( (5-24) \) é ilustrada no próximo exemplo.
+
+## Exemplo 5.4: Intervalos de confiança simultâneos como projeções da região elíptica de confiança
+
+No Exemplo 5.3, obtivemos a elipse de confiança de 95% para as médias das raízes quartas das medições de radiação de micro-ondas com a porta fechada e aberta. Os intervalos \( T^2 \) simultâneos de 95% para as duas componentes do vetor de média são, a partir de \( (5-24) \):
+
+\[\begin{align}
+\text{IC}^{1-\alpha}(\mu_1) &=
+\left[\bar{x}_1 \pm \sqrt{\dfrac{(n - 1)p}{n - p} F_{p, n-p}(1-\alpha)} \sqrt{\dfrac{s_{11}}{n}}\right] \\
+\text{IC}^{95\%}(\mu_1)&=
+\left[0.564 \pm \sqrt{\dfrac{(41)2}{40} F_{2, 40}(0.95)} \sqrt{\dfrac{0.0144}{42}}\right] \\
+\text{IC}^{95\%}(\mu_1) &= [0.516, 0.612]
+\end{align}\]
+
+e
+
+\[\begin{align}
+\text{IC}^{1-\alpha}(\mu_2) &=
+\left[\bar{x}_2 \pm \sqrt{\dfrac{(n - 1)p}{n - p} F_{p, n-p}(1-\alpha)} \sqrt{\dfrac{s_{22}}{n}}\right] \\
+\text{IC}^{95\%}(\mu_2)&=
+\left[\bar{x}_2 \pm \sqrt{\dfrac{(41)2}{40} F_{2, 40}(0.95)} \sqrt{\dfrac{0.0146}{42}}\right] \\
+\text{IC}^{95\%}(\mu_2) &= [0.555, 0.651]
+\end{align}
+\]
+
+Na Figura 5.2, redesenhamos a elipse de confiança de 95% do Exemplo 5.3. Os intervalos simultâneos de 95% são mostrados como projeções desta elipse nos eixos das médias.
+
+```{r echo=FALSE, out.width="80%", fig.cap="Figura 5.2 - Intervalos T^2 simultâneos para as médias dos componentes como projeções do elipsoide de confiança - dados de radiação de micro-ondas."}
+knitr::include_graphics("./image/Fig.5.2.png")
+```
+
+* [JW6_Example5.4.R](JW6_Example5.4.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+x1 <- read.table("JW6Data/T4-1.DAT", quote="\"", comment.char="")
+names(x1) <- paste0("x1",1:1)
+x1rq <- x1$x1^(1/4) # radiação medida com a porta fechada
+x2 <- read.table("JW6Data/T4-5.DAT", quote="\"", comment.char="")
+names(x2) <- paste0("x2",1:1)
+
+x2rq <- x2$x2^(1/4) # radiação medida com a porta aberta
+x <- data.frame(x1rq, x2rq)
+print(head(x))
+print(tail(x))
+alfa <- 0.05
+centroide <- colMeans(x)
+centroide
+s <- cov(x)
+s
+H0 <- c(0.562, 0.589)
+p <- dim(x)[2]
+n <- dim(x)[1]
+T2crit <- ((n-1)*p/(n-p))*qf(1-alfa, p, n-p)
+cat("\nT^2(", p, ", ", n-1, ", ", 1-alfa,") = ", T2crit, sep="")
+T2 <- as.numeric(n*t(colMeans(x)-H0)%*%solve(s)%*%(colMeans(x)-H0))
+cat("\nT^2 =", T2)
+F <- T2/((n-1)*p/(n-p))
+Fcrit <- qf(1-alfa, p, n-p)
+cat("\nF(", p, ", ", n-p, ", ", 1-alfa,") = ", Fcrit, sep="")
+pv <- 1-pf(F, p, n-p)
+cat("\nF(", p, ", ", n-p, ") = ", F, ", p = ", pv, "\n", sep="")
+T2One <- MVTests::OneSampleHT2(x,
+                               mu=H0,
+                               alpha=alfa) 
+summary(T2One)
+a.hat_abs <- abs(solve(s)%*%(centroide-H0))
+colnames(a.hat_abs) <- "Importância"
+rownames(a.hat_abs) <- c("x1rq", "x2rq")
+print(proportions(a.hat_abs), digits=2)
+
+eigen_result <- eigen(s)
+eigvl <- eigen_result$values
+eigvl
+cat("\razão da raiz quadrada dos autovalores = ", 
+    sqrt(eigvl[1]/eigvl[2]))
+
+a <- sqrt(T2crit*eigen_result$values[1]/n) # (5-19)
+b <- sqrt(T2crit*eigen_result$values[2]/n) # (5-19)
+theta <- atan2(eigen_result$vectors[2, 1], eigen_result$vectors[1, 1])
+
+# Grade de pontos para a elipse
+theta_seq <- seq(0, 2 * pi, length.out = 100)
+ellipse_x <- centroide[1] + a * cos(theta_seq) * cos(theta) - 
+  b * sin(theta_seq) * sin(theta)
+ellipse_y <- centroide[2] + a * cos(theta_seq) * sin(theta) + 
+  b * sin(theta_seq) * cos(theta)
+
+plot(ellipse_x, ellipse_y, type = "l", asp = 1, 
+     xlab=expression(x[1]^(1/4)), 
+     ylab=expression(x[2]^(1/4)),
+     main="Região elíptica de confiança de 95%",
+     col="black")
+points(centroide[1], centroide[2], col = "black", pch = 19)
+points(H0[1], H0[2], pch=3, col="black")
+text(H0[1], H0[2], pos=1, expression(H[0]))
+# Scheffé CI95%
+abline(v=c(T2One$CI[1,1], T2One$CI[1,2]), 
+       h=c(T2One$CI[2,1], T2One$CI[2,2]), 
+       lty=2)
+
+c <- sqrt(T2crit/n)
+car::ellipse(center=centroide,
+             shape=s,
+             radius=c,
+             fill=TRUE,
+             fill.alpha=0.1,
+             grid=FALSE,
+             col="black",
+             add=FALSE,
+             xlab=expression(x[1]^(1/4)), 
+             ylab=expression(x[2]^(1/4)), 
+             main="Região elíptica de confiança de 95%")
+points(H0[1], H0[2], pch=3, col="black")
+text(H0[1], H0[2], pos=1, expression(H[0]))
+# Scheffé CI95%
+abline(v=c(T2One$CI[1,1], T2One$CI[1,2]), 
+       h=c(T2One$CI[2,1], T2One$CI[2,2]), 
+       lty=2)
+
+mvdalab::MVcis(x,
+               level=1-alfa,
+               Vars2Plot=c(1, 2), 
+               include.zero=FALSE)
+```
+
+## Exemplo 5.5: Construindo os intervalos de confiança simultâneos e elipses
+
+As pontuações obtidas por \( n = 87 \) estudantes universitários no subteste $X_1$ do Programa de Exame de Nível Universitário (CLEP) e nos subtestes $X_2$ e $X_3$ do Teste de Qualificação Universitária (CQT) são dadas na Tabela 5.2 na página 228 para \( X_1 =  \) ciências sociais e história, \( X_2 =  \) verbal, e \( X_3 = \) ciência. Esses dados nos dão a oportunidade de calcular os intervalos de confiança simultâneos de 95% para \( \mu_1 \), \( \mu_2 \) e \( \mu_3 \).
+
+Temos as seguintes estatísticas de amostra:
+
+- Média de \( X_1 \) (ciências sociais e história): 526.29
+- Média de \( X_2 \) (verbal): 54.69
+- Média de \( X_3 \) (ciência): 126.05
+
+E obtemos os seguintes intervalos de confiança simultâneos de Scheffé de 95% [veja \( (5-24) \)]:
+
+$$\begin{align}
+\text{IC}^{95\%}(\mu_1) &= [503.06, 550.12]\\
+\text{IC}^{95\%}(\mu_2) &= [51.22, 58.16]\\
+\text{IC}^{95\%}(\mu_3) &= [23.65, 26.61]
+\end{align}$$
+
+Note que \( F_{3,84}(0.95)=2.7 \).
+
+Os intervalos de confiança $T^2$ simultâneos (ou de Scheffé) acima são mais amplos do que os intervalos univariados porque todos os três devem ser válidos com 95% de confiança. Eles também podem ser mais amplos do que o necessário, porque, com a mesma confiança, podemos fazer afirmações sobre diferenças.
+
+Por exemplo, com \( \mathbf{a^{\prime}} = [0\; 1\; -1] \), o intervalo para \( \mu_2 - \mu_3 \) tem os pontos finais definidos por:
+
+\[\begin{align}
+\text{IC}^{1-\alpha}(\mu_2-\mu_3) &=
+\left[\bar{x}_2 - \bar{x}_3 
+\pm \sqrt{\dfrac{(n - 1)p}{n - p}F_{p, n-p}(1-\alpha)} 
+\sqrt{\dfrac{s_{22} - 2s_{23} + s_{33}}{n}}\right] \\
+\text{IC}^{95\%}(\mu_2-\mu_3) &=
+\left[54.69 - 25.13 
+\pm \sqrt{\dfrac{(86)3}{84}F_{3, 84}(0.95)} 
+\sqrt{\dfrac{26.05 + 23.11 - 2(23.39)}{87}}\right] \\
+\text{IC}^{95\%}(\mu_2-\mu_3) &=[26.44, 32.68]
+\end{align}
+\]
+
+Esta elipse é mostrada na Figura 5.3, juntamente com as elipses de confiança de 95% para os outros dois pares de médias. As projeções dessas elipses nos eixos também são indicadas, e essas projeções são os intervalos $T^2$ ou de Scheffé.
+
+```{r echo=FALSE, out.width="100%", fig.cap="Figura 5.3 Elipses de confiança de 95% para pares de médias e os intervalos T^2 simultâneos — dados de teste universitário."}
+knitr::include_graphics("./image/Fig.5.3.png")
+```
+
+* [JW6_Example5.5.R](JW6_Example5.5.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+x <- read.table("JW6Data/T5-2.DAT", quote="\"", comment.char="")
+names(x) <- paste0("x1",1:3)
+print(head(x))
+print(tail(x))
+alfa <- 0.05
+centroide <- colMeans(x)
+centroide
+s <- cov(x)
+s
+H0 <- c(520, 54, 26.5)
+
+p <- dim(x)[2]
+n <- dim(x)[1]
+T2crit <- (((n-1)*p)/(n-p))*qf(1-alfa, p, n-p)
+cat("\nT^2(", p, ", ", n-1, ", ", 1-alfa,") = ", T2crit, sep="")
+T2 <- as.numeric(n*t(colMeans(x)-H0)%*%solve(s)%*%(colMeans(x)-H0))
+cat("\nT^2 =", T2)
+F <- ((n-p)/((n-1)*p))*T2 
+Fcrit <- qf(1-alfa, p, n-p)
+cat("\nF(", p, ", ", n-p, ", ", 1-alfa,") = ", Fcrit, sep="")
+pv <- 1-pf(F, p, n-p)
+cat("\nF(", p, ", ", n-p, ") = ", F, ", p = ", pv, "\n", sep="")
+T2One <- MVTests::OneSampleHT2(x,
+                               mu=H0,
+                               alpha=alfa) 
+summary(T2One)
+a.hat_abs <- abs(solve(s)%*%centroide)
+colnames(a.hat_abs) <- "Importância"
+rownames(a.hat_abs) <- c("hystory", "verbal", "science")
+print(proportions(a.hat_abs), digits=2)
+
+# http://www.sthda.com/english/wiki/a-complete-guide-to-3d-visualization-device-system-in-r-r-software-and-data-visualization
+rgl::aspect3d(1,1,1)
+c <- sqrt(T2crit/n)
+rgl::plot3d(rgl::ellipse3d(x=s, 
+                           centre=centroide,
+                           level=1-alfa,
+                           t=c),
+            aspect=TRUE,
+            xlab="x1",
+            ylab="x2",
+            zlab="x3",
+            col="lightgray", 
+            box=FALSE,
+            alpha=0.3, 
+            add=FALSE)
+rgl::points3d(centroide, size = 5, 
+              color = "black")
+rgl::text3d(centroide, texts = "centroid", 
+            adj = c(0,0,0))
+rgl::points3d(H0, size = 5, 
+              color = "blue")
+rgl::text3d(H0, texts = "H0", 
+            adj = c(0,0,0))
+rgl::rglwidget()
+
+centroide12 <- colMeans(x[,c(1,2)])
+s12 <- cov(x[,c(1,2)])
+car::ellipse(center=centroide12,
+             shape=s12,
+             radius=c,
+             fill=TRUE,
+             fill.alpha=0.1,
+             grid=FALSE,
+             col="black",
+             add=FALSE,
+             xlab=expression(mu[hystory]), 
+             ylab=expression(mu[verbal]),
+             main="Região elíptica de confiança de 95%\n hystory vs. verbal")
+abline(v=H0[1],h=H0[2],lty=2)
+points(H0[1], H0[2], pch=9, col="black")
+text(H0[1], H0[2], pos=3, expression(H[0]))
+T2One <- MVTests::OneSampleHT2(x[,c(1,2)],
+                               mu=H0[c(1,2)],
+                               alpha=alfa)  
+summary(T2One)
+a.hat_abs <- abs(solve(s12)%*%centroide12)
+colnames(a.hat_abs) <- "Importância"
+rownames(a.hat_abs) <- c("hystory", "verbal")
+print(proportions(a.hat_abs), digits=2)
+
+mvdalab::MVcis(x[,c(1,2)],
+               level=1-alfa,
+               Vars2Plot=c(1, 2), 
+               include.zero=FALSE)
+
+centroide13 <- colMeans(x[,c(1,3)])
+s13 <- cov(x[,c(1,3)])
+car::ellipse(center=centroide13,
+             shape=s13,
+             radius=c,
+             fill=TRUE,
+             fill.alpha=0.1,
+             grid=FALSE,
+             col="black",
+             add=FALSE,
+             xlab=expression(mu[hystory]), 
+             ylab=expression(mu[science]),
+             main="Região elíptica de confiança de 95%\n hystory vs. science")
+abline(v=H0[1],h=H0[3],lty=2)
+points(H0[1], H0[3], pch=9, col="black")
+text(H0[1], H0[3], pos=3, expression(H[0]))
+T2One <- MVTests::OneSampleHT2(x[,c(1,3)],
+                               mu=H0[c(1,3)],
+                               alpha=alfa) 
+summary(T2One)
+a.hat_abs <- abs(solve(s13)%*%centroide13)
+colnames(a.hat_abs) <- "Importância"
+rownames(a.hat_abs) <- c("hystory", "science")
+print(proportions(a.hat_abs), digits=2)
+
+mvdalab::MVcis(x[,c(1,3)],
+               level=1-alfa,
+               Vars2Plot=c(1, 2), 
+               include.zero=FALSE)
+
+centroide23 <- colMeans(x[,c(2,3)])
+s23 <- cov(x[,c(2,3)])
+car::ellipse(center=centroide23,
+             shape=s23,
+             radius=c,
+             fill=TRUE,
+             fill.alpha=0.1,
+             grid=FALSE,
+             col="black",
+             add=FALSE,
+             xlab=expression(mu[hystory]), 
+             ylab=expression(mu[science]),
+             main="Região elíptica de confiança de 95%\n verbal vs. science")
+abline(v=H0[2],h=H0[3],lty=2)
+points(H0[2], H0[3], pch=9, col="black")
+text(H0[2], H0[3], pos=3, expression(H[0]))
+T2One <- MVTests::OneSampleHT2(x[,c(2,3)],
+                               mu=H0[c(2,3)],
+                               alpha=alfa) 
+summary(T2One)
+a.hat_abs <- abs(solve(s23)%*%centroide23)
+colnames(a.hat_abs) <- "Importância"
+rownames(a.hat_abs) <- c("verbal", "science")
+print(proportions(a.hat_abs), digits=2)
+
+mvdalab::MVcis(x[,c(2,3)],
+               level=1-alfa,
+               Vars2Plot=c(1, 2), 
+               include.zero=FALSE)
+```
+
+$$\Diamond$$
+
+Embora, antes da amostragem, o _i_-ésimo intervalo tenha probabilidade \(1- \alpha\) de cobrir \(\mu_i\), não sabemos o que afirmar, em geral, sobre a probabilidade de todos os intervalos conterem seus respectivos \(\mu_i\). Como já apontamos, essa probabilidade não é \(1 - \alpha\).
+
+Para esclarecer um pouco o problema, considere o caso especial em que as observações têm uma distribuição normal conjunta e 
+
+\[
+\begin{bmatrix}
+\sigma^2_1 & 0 & \cdots & 0 \\
+0 & \sigma^2_2 & \cdots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & \cdots & \sigma^2_p
+\end{bmatrix}
+\]
+
+Como as observações da primeira variável são independentes daquelas da segunda variável, e assim por diante, a regra do produto para eventos independentes pode ser aplicada. Antes da amostra ser selecionada,
+
+\[
+P[\text{todos os intervalos t em (5-27) contêm os } \mu_i] = \underbrace{(1- \alpha)(1- \alpha)\cdots(1- \alpha)}_{p} = (1- \alpha)^p
+\]
+
+Se \(1 - \alpha = 0.95\) e \(p = 6\), essa probabilidade é \(0.95^6 \approx 0.74\).
+
+Para garantir uma probabilidade de \(1 - \alpha\) de que todas as afirmações sobre as médias dos componentes sejam válidas simultaneamente, os intervalos individuais devem ser mais amplos do que os intervalos \(t\) separados; o quanto mais amplos depende tanto de \(p\) quanto de \(n\), bem como de \(1 - \alpha\).
+
+Para \(1 - \alpha = 0.95\), \(n = 15\) e \(p = 4\), os multiplicadores de \(\sqrt{s^2_{ii}/n}\) em (5-24) e (5-27) são
+
+\[
+\sqrt{\dfrac{p(n - 1)}{n - p} F_{p, n-p}(1-\alpha)} = \sqrt{\dfrac{4(14)}{11} 3.36}=4.14 
+\]
+e 
+\[
+t_{n-1}(1-\alpha/2) = t_{14}(0.975) = 2.145
+\]
+respectivamente. Consequentemente, neste caso, os intervalos simultâneos são \(100(4.14 - 2.145)/2.145 = 93\%\) mais amplos do que aqueles derivados do método \(t\) um de cada vez.
+
+A Tabela 5.3 fornece alguns multiplicadores de distância crítica para intervalos \(t\) um de cada vez, calculados de acordo com (5-21), bem como os intervalos \(t\) correspondentes simultâneos. Em geral, a largura dos intervalos \(T^2\), em relação aos intervalos \(t\), aumenta para um \(n\) fixo à medida que \(p\) aumenta e diminui para um \(p\) fixo à medida que \(n\) aumenta.
+
+A Tabela 5.3 mostra os multiplicadores de distância crítica para intervalos \( t \) calculados individualmente e intervalos \( T^2 \) simultâneos para valores selecionados de \( n \) e \( p \) com um nível de confiança de \( 1 - \alpha = 0.95 \).
+
+\[
+\begin{array}{lcccc}
+n & t_{n-1}(0.025) & \dfrac{4(n - 1)}{n - 4} F_{4, n-4}(0.95) & \dfrac{10(n - 1)}{n - 10} F_{10, n-10}(0.95) \\
+\hline
+15  & 2.145 & 4.14 & 11.52 \\
+25  & 2.064 & 3.60 & 6.39 \\
+50  & 2.010 & 3.31 & 5.05 \\
+100 & 1.970 & 3.19 & 4.61 \\
+\infty & 1.960 & 3.08 & 4.28 \\
+\end{array}
+\]
+
+Notamos que os multiplicadores para os intervalos \( T^2 \) são geralmente maiores do que para os intervalos \( t \), refletindo a necessidade de maior "largura" para manter o mesmo nível de confiança ao fazer várias comparações simultâneas.
+
+A tabela 5.3 compara os intervalos de confiança calculados usando o método um-de-cada-vez \( t \) com os intervalos de confiança simultâneos \( T^2 \). A comparação pode parecer injusta porque os intervalos \( T^2 \) têm um nível de confiança associado de 0.95 para todas as componentes, enquanto o nível de confiança global para um conjunto de intervalos \( t \) individuais pode ser significativamente menor que 0.95, como já vimos.
+
+Em outras palavras, os intervalos \( t \) individuais podem ser muito curtos para manter um nível de confiança geral quando estamos fazendo intervalos de confiança sobre várias médias ao mesmo tempo. No entanto, esses intervalos \( t \) ainda podem ser considerados as melhores informações possíveis sobre uma média específica, se essa for a única inferência a ser feita.
+
+Além disso, há argumentos de que os intervalos \( t \) individuais podem representar mais precisamente as informações sobre as médias se forem calculados apenas quando o teste \( T^2 \) rejeita a hipótese nula.
+
+Os intervalos \( T^2 \) podem ser demasiado amplos se aplicados apenas às médias das componentes individuais. Para ilustrar esse ponto, considera-se a elipse de confiança e os intervalos simultâneos em uma figura hipotética (Figura 5.2 no texto original). Se cada componente da média estiver dentro de seu respectivo intervalo \( T^2 \), o vetor de médias estará dentro do retângulo formado por esses intervalos. Este retângulo contém a elipse de confiança e mais, tornando-o uma estimativa mais "larga" do que necessária. Isso nos leva a considerar outras abordagens para fazer comparações múltiplas, como o método de Bonferroni.
+
+# Método de Bonferroni de comparações múltiplas
+
+* [Bonferroni correction: Wikipedia](https://en.wikipedia.org/wiki/Bonferroni_correction){target="_blank"}
+
+O método de Bonferroni de comparações múltiplas oferece uma alternativa aos intervalos de confiança simultâneos \( T^2 \) quando a atenção está voltada para um pequeno número de intervalos de confiança individuais. Este método pode fornecer intervalos de confiança que são mais curtos (mais precisos) do que os intervalos \( T^2 \).
+
+O método de Bonferroni é baseado em uma desigualdade de probabilidade que leva o mesmo nome. Suponha que, antes da coleta de dados, deseja-se fazer intervalos de confiança sobre \( m \) combinações lineares diferentes \( \mathbf{a}^{\prime}_1 \boldsymbol{\mu}, \mathbf{a}^{\prime}_2 \boldsymbol{\mu}, \ldots, \mathbf{a}^{\prime}_m \boldsymbol{\mu} \). Seja \( \text{IC}^{1-\alpha_i}(\mathbf{a}^{\prime}_i \boldsymbol{\mu}) \) o intervalo de confiança estocástico sobre \( \mathbf{a}^{\prime}_i \boldsymbol{\mu} \) com \( P\left[\mathbf{a}^{\prime}_i \boldsymbol{\mu}\in \text{IC}^{1-\alpha_i}(\mathbf{a}^{\prime}_i \boldsymbol{\mu})\right] = 1 - \alpha_i \), em que \( i = 1, 2, \ldots, m \).
+
+A probabilidade de todas as afirmações \( C_i \) serem verdadeiras é dada por:
+
+\[
+P\left[\left\{\mu_i\in \text{IC}^{1-\alpha_i}(\mu_i)\right\}_{i=1}^{m}\right] = 1 - P\left[\exists! \;\mu_i\notin \text{IC}^{1-\alpha_i}(\mu_i)\right]
+\]
+
+Usando a desigualdade de Bonferroni, esta última probabilidade pode ser limitada superiormente como:
+
+\[
+P\left[\left\{\mu_i\in \text{IC}^{1-\alpha_i}(\mu_i)\right\}_{i=1}^{m}\right]\ge 1 - \sum_{i=1}^{m} P(\mu_i\notin \text{IC}^{1-\alpha_i}(\mu_i)) = 1 - \sum_{i=1}^{m} (1 - P(\mu_i\in \text{IC}^{1-\alpha_i}(\mu_i)))
+\]
+
+Portanto:
+
+\[
+P\left[\left\{\mu_i\in \text{IC}^{1-\alpha_i}(\mu_i)\right\}_{i=1}^{m}\right]\ge 1-\sum_{i=1}^{m}{\alpha_i}=1-\alpha \tag{5-28}
+\]
+
+A desigualdade em (5-28), um caso especial da desigualdade de Bonferroni, permite que um pesquisador controle a probabilidade de erro do tipo I total \( \alpha_1 + \alpha_2 + \cdots + \alpha_m \), independentemente da estrutura de correlação por trás dos intervalos de confiança. Há também a flexibilidade de controlar a probabilidade de erro do tipo I para um grupo de intervalos de confiança importantes e equilibrá-la com outra escolha para os intervalos de confiança menos importantes.
+
+Vamos desenvolver estimativas de intervalo simultâneas para o conjunto restrito composto pelos componentes \( \mu_i \) de \( \mu \). Na falta de informações sobre a importância relativa desses componentes, consideramos os intervalos \( t \) individuais:
+
+$$\text{IC}^{95\%}(\mu_i)=\left[\bar{X}_i\pm t_{n-1}\left(1-\dfrac{\alpha_i}{2}\right)\sqrt{\dfrac{S_{ii}}{n}}\right]\\
+\alpha_i=\dfrac{\alpha}{m}\\
+i=1,2,\ldots,m$$
+
+$$P\left(\left\{\mu_i\in \text{IC}^{95\%}(\mu_i)\right\}_{i=1}^{m}\right)\ge1-\sum_{i=1}^{m}{\dfrac{\alpha}{m}}=1-\alpha$$
+
+Portanto, com um nível de confiança geral maior ou igual a \( 1 - \alpha \), podemos construir as seguintes \( m = p \) intervalos de confiança:
+
+$$\text{IC}^{95\%}(\mu_i)=\left[\bar{x}_i\pm t_{n-1}\left(1-\dfrac{\alpha}{2p}\right)\sqrt{\dfrac{s_{ii}}{n}}\right]\\
+i=1,2,\ldots,p$$
+
+Os intervalos de confiança em (5-29) podem ser comparadas com aquelas em (5-24). O quantil \( t_{n-1}(1-\alpha/2p) \) substitui \( \sqrt{(n- 1)pF_{p,n-p}(1-\alpha)/(n - p)} \), mas, fora isso, os intervalos têm a mesma estrutura.
+
+## Exemplo 5.6: Construindo intervalos de confiança simultâneos de Bonferroni e comparando-os com intervalos $T^2$
+
+Vamos retornar aos dados de radiação de forno de micro-ondas nos Exemplos 5.3 e 5.4. Obteremos os intervalos de confiança simultâneos de Bonferroni de 95% para as médias \( \mu_1 \) e \( \mu_2 \) das  raízes quartas das medidas com a porta fechada e aberta, usando \( \alpha = 0.05/2 \), para \( i = 1,2 \). Faremos uso dos resultados no Exemplo 5.3, observando que \( n = 42 \) e \( t_{41}(1-0.05/4) = t_{41}(1-0.0125) = 2.327 \), para obter
+
+\[\begin{align}
+\text{IC}^{97.5\%}(\mu_1)&=\bar{x}_1 \pm t_{41}(1-0.0125) \sqrt{\dfrac{0.0146}{42}} \\
+&= 0.564 \pm 2.327 \sqrt{\dfrac{0.0146}{42}} \\
+\text{IC}^{97.5\%}(\mu_1)&=[0.521, 0.607] 
+\end{align}
+\]
+
+e
+
+\[\begin{align}
+\text{IC}^{97.5\%}(\mu_2)&=\bar{x}_2 \pm t_{41}(1-0.0125) \sqrt{\dfrac{0.0146}{42}}\\
+&= 0.603 \pm 2.327 \sqrt{\dfrac{0.0146}{42}}\\
+\text{IC}^{97.5\%}(\mu_2)&=[0.560, 0.646] \\
+\end{align}
+\]
+
+A Figura 5.4 mostra os intervalos de confiança simultâneos $T^2$ de 95% para \( \mu_1 \) e \( \mu_2 \) da Figura 5.2, juntamente com os intervalos de Bonferroni correspondentes. Para cada média de componente, o intervalo de Bonferroni fica dentro do intervalo $T^2$. Consequentemente, a região retangular (conjunta) formada pelos dois intervalos de Bonferroni está contida na região retangular formada pelos dois intervalos $T^2$. Se estamos interessados apenas nas médias  componentes, os intervalos de Bonferroni fornecem estimativas mais precisas do que os intervalos $T^2$. Por outro lado, a região de confiança de 95% para \( \mu \) fornece os valores plausíveis para os pares \( (\mu_1, \mu_2) \) quando a correlação entre as variáveis medidas é levada em consideração.
+
+```{r echo=FALSE, out.width="80%", fig.cap="Figura 5.4 - Os intervalos de confiança simultâneos T^2 de 95% e Bonferroni de 95% para as médias  componentes — dados de radiação de micro-ondas."}
+knitr::include_graphics("./image/Fig.5.4.png")
+```
+
+$$\Diamond$$
+
+Os intervalos de Bonferroni para combinações lineares \( \mathbf{a}_i^{\prime} \boldsymbol{\mu} \) e os intervalos \( T^2 \) análogos (lembre-se do Resultado 5.3) têm a mesma forma geral:
+
+\[
+\text{IC}^{1-\frac{\alpha}{2m}}(\mathbf{a}_i^{\prime} \boldsymbol{\mu})=\left[\mathbf{a}_i^{\prime} \mathbf{\bar{\mathbf{X}}} \pm \text{(valor crítico)}\sqrt{\dfrac{\mathbf{a}_i^{\prime}\mathbf{S}\mathbf{a}_i}{n}}\right]\\
+i=1,2,\ldots,m
+\]
+
+Consequentemente, em cada instância em que \( \alpha_i = \alpha/m \),
+
+\[\begin{align}
+\dfrac{\text{Amplitude do intervalo de $t$ Bonferroni}}{\text{Amplitude do intervalo de $T^2$}} &= \dfrac{t_{n-1}\left(1-\dfrac{\alpha}{2m}\right)}{\sqrt{\dfrac{p(n-1)}{n-p}F_{p,n-p}(1-\alpha)}}\\
+&=\dfrac{\sqrt{T^2_{1,n-1}(1-\alpha/m)}}{\sqrt{T^2_{p,n-1}(1-\alpha)}}
+\tag{5-30}
+\end{align}
+\]
+
+Isso não depende das quantidades aleatórias \( \mathbf{\bar{\mathbf{X}}} \) e \( \mathbf{S} \). Como já apontamos, para um pequeno número \( m \) de funções paramétricas especificadas \( \mathbf{a}^{\prime} \boldsymbol{\mu} \), os intervalos de Bonferroni sempre serão mais curtos. O quão mais curtos é indicado na Tabela 5.4 para \( n \) e \( p \) selecionados.
+
+A Tabela 5.4 mostra a razão entre o comprimento do intervalo de Bonferroni e o comprimento do intervalo \( T^2 \) para diferentes valores de \( n \) (tamanho da amostra) e \( p \) (número de variáveis). Os valores são calculados para um nível de confiança de \( 1 - \alpha = 0.95 \) e \( \alpha_i = 0.05/m \).
+
+|     $m=p$  | 2   |  4  | 10  |
+|------------:|-----:|-----:|-----:|
+|    \( n \) | |  | |
+|    15      | .88 | .69 | .29 |
+|    25      | .90 | .75 | .48 |
+|    50      | .91 | .78 | .58 |
+|   100      | .91 | .80 | .62 |
+| \( \infty \) | .91 | .81 | .66 |
+
+Vemos pela Tabela 5.4 que o método de Bonferroni fornece intervalos mais curtos quando \( m = p \). Por serem fáceis de aplicar e fornecerem os intervalos de confiança relativamente curtos necessários para inferência, frequentemente aplicaremos intervalos \( t \) simultâneos com base no método de Bonferroni.
+
+# Inferência com Amostra Grande sobre um vetor de média
+
+Quando o tamanho da amostra é grande, testes de hipóteses e regiões de confiança para \( \boldsymbol{\mu} \) podem ser construídos sem a suposição de uma população normal. Como ilustrado nos Exercícios 5.15, 5.16 e 5.17, para um grande \( n \), somos capazes de fazer inferências sobre a média da população, mesmo que a distribuição parental seja discreta. Na verdade, sérias discrepâncias de uma população normal podem ser superadas por grandes tamanhos de amostra. Tanto os testes de hipóteses quanto os intervalos de confiança simultâneos possuirão então (aproximadamente) seus níveis nominais.
+
+As vantagens associadas a grandes amostras podem ser parcialmente compensadas por uma perda de informações da amostra causada pelo uso apenas das estatísticas resumidas \( \bar{\mathbf{X}} \) e \( \mathbf{S} \). Por outro lado, uma vez que \( (\bar{\mathbf{X}}, \mathbf{S}) \) é um resumo suficiente para populações normais [veja (4-21)], quanto mais próxima a população subjacente for da normal multivariada, mais eficientemente a informação da amostra será utilizada nas inferências.
+
+Todas as inferências com tamanho de amostra grande sobre \( \boldsymbol{\mu} \) são baseadas em uma distribuição qui-quadrado. A partir de (4-28), sabemos que $n(\bar{\mathbf{X}} - \boldsymbol{\mu})^{\prime}\mathbf{S}^{-1}(\bar{\mathbf{X}} - \boldsymbol{\mu}) \underset{a}{\sim} \chi^2_p$, e assim,
+
+\[ P\left[n(\bar{\mathbf{X}} - \boldsymbol{\mu})^{\prime}\mathbf{S}^{-1}(\bar{\mathbf{X}} - \boldsymbol{\mu}) \leq \chi^2_p(1-\alpha)\right] = 1 - \alpha \tag{5-31} \]
+
+A Equação (5-31) leva imediatamente a teste de hipótese e regiões simultâneas de confiança com tamanho de amotra grande. Esses procedimentos são resumidos nos Resultados 5.4 e 5.5.
+
+**Resultado 5.4.** Seja $\{\mathbf{X}_i\}_{i=1}^{n} \sim \text{IID}(\boldsymbol{\mu}, \mathbf{\Sigma})$. Se \(n - p\gg30\), \(H_0: \boldsymbol{\mu} = \boldsymbol{\mu}_0\) é rejeitada em favor de \(H_1:  \boldsymbol{\mu} \neq \boldsymbol{\mu}_0 \), a um nível de significância de aproximadamente \( \alpha \), se
+
+\[
+n(\bar{\mathbf{x}} - \boldsymbol{\mu})^{\prime}\mathbf{s}^{-1}(\bar{\mathbf{x}} - \boldsymbol{\mu}) \leq \chi^2_p(1-\alpha)
+\]
+
+Aqui, \(\chi^2_p(1-\alpha)\) é o percentil de $(100(1-\alpha))$ de uma distribuição qui-quadrado com \(p\) graus de liberdade.
+
+Comparando o teste no Resultado 5.4 com o teste teórico normal correspondente em (5-7), vemos que as estatísticas de teste têm a mesma estrutura, mas os valores críticos são diferentes. Uma análise mais detalhada, no entanto, revela que ambos os testes produzem essencialmente o mesmo resultado em situações em que o teste \(\chi^2\) do Resultado 5.4 é apropriado. Isso decorre diretamente do fato de que \( (n - 1)pF_{p, n-p}(1-\alpha)/(n - p) \) e \(\chi^2_p(1-\alpha) \) são aproximadamente iguais para \( n \) grande em relação a \( p \), i.e., $n-p\gg30$. (Veja Tabelas 3 e 4 no apêndice.)
+
+**Resultado 5.5.** (Intervalos de confiança $\chi^2$ ou de Scheffé) 
+
+Seja $\{\mathbf{X}_i\}_{i=1}^{n} \sim \text{IID}(\boldsymbol{\mu}, \mathbf{\Sigma})$. Se \(n - p\gg30\),
+
+\[
+\text{IC}^{1-\alpha}\left(\mathbf{a}^{\prime}\boldsymbol{\mu}\right)=\left[\mathbf{a}^{\prime}\bar{\mathbf{X}}\pm \sqrt{\chi_p^2(1-\alpha)}\sqrt{\dfrac{\mathbf{a}^{\prime}\mathbf{S}\mathbf{a}}{n}}\right]
+\]
+
+contém \(\mathbf{a}^{\prime}\boldsymbol{\mu}\) para todo \(\mathbf{a}\), com probabilidade aproximadamente \(1 - \alpha\). Consequentemente, podemos construir intervalos de confiança simultâneos de \(100(1 - \alpha) \%\):
+
+\[
+\text{IC}^{1-\alpha}\left(\mu_i\right)=\left[\bar{x}_i \pm \sqrt{\chi_p^2(1-\alpha)}\sqrt{\dfrac{s_{ii}}{n}} \right]\\
+i = 1, 2, \ldots, p
+\]
+
+e, além disso, para todos os pares \((\mu_i, \mu_k)\), \(i, k = 1, 2, \ldots, p\), as regiões elípticas centradas na média amostral são
+
+\[
+n
+\begin{bmatrix}
+\bar{x}_i -\mu_i & \bar{x}_k -\mu_k 
+\end{bmatrix}
+\begin{bmatrix}
+s_{ii} & s_{ik} \\
+s_{ik} & s_{kk}
+\end{bmatrix}^{-1}
+\begin{bmatrix}
+\bar{x}_i -\mu_i \\ \bar{x}_k -\mu_k 
+\end{bmatrix}
+\le \chi_p^2(1-\alpha) \tag{5-26}
+\]
+
+**Prova.** A primeira parte segue do Resultado 5A.1, com \(c^2 = \chi^2_p(\alpha)\). O nível de probabilidade é uma consequência de (5-31). As afirmações para os \(\mu_i\) são obtidas pelas escolhas especiais \(\mathbf{a}^{\prime} = [0,\ldots, 0, a_i, 0,\ldots , 0]\), em que \(a_i = 1\), \(i = 1, 2, ... , p\). As regiões elípticas para pares de médias são derivadas do Resultado 5A.2 com \(c^2 = \chi^2_p(\alpha)\). O nível global de confiança de aproximadamente \(1 - \alpha\) para todas as regiões de confiança é, mais uma vez, um resultado da teoria de distribuição de tamanho de amostra grande resumida em (5-31).
+
+$$\Diamond$$
+
+A questão de qual é um tamanho de amostra grande não é fácil de responder. Em uma ou duas dimensões, tamanhos de amostras na faixa de 30 a 50 geralmente podem ser considerados grandes. À medida que o número de características aumenta, certamente são necessários tamanhos de amostra maiores para que as distribuições assintóticas forneçam boas aproximações às verdadeiras distribuições de várias estatísticas de teste. Na ausência de estudos definitivos, simplesmente afirmamos que \(n - p\) deve ser grande e percebemos que o caso real é mais complicado. Uma aplicação com \(p = 2\) e tamanho de amostra 50 é muito diferente de uma aplicação com \(p = 52\) e tamanho de amostra 100, embora ambos tenham \(n - p = 48\).
+
+É uma boa prática estatística submeter esses procedimentos de inferência de tamanho de amostra grande às mesmas verificações exigidas pelos métodos de teoria normal. Embora pequenos a moderados desvios da normalidade não causem dificuldades para \(n\) grande, desvios _extremos_ podem causar problemas. Especificamente, a probabilidade do erro do tipo I pode estar muito distante do nível nominal \( \alpha \). Com base em teste de normalidade multivariada e outros dispositivos investigativos, outliers e outras formas de desvios extremos são indicadas ações corretivas apropriadas, incluindo transformações não lineares. Métodos para testar vetor de média de distribuição multivariada simétrica que são relativamente insensíveis a desvios da normalidade são discutidos em [11]. Em alguns casos, os Resultados 5.4 e 5.5 são úteis apenas para amostras _muito_ grandes.
+
+O próximo exemplo nos permite ilustrar a construção de intervalos de confiança simultâneos de grandes amostras para todos os componentes do vetor de média.
+
+# Gráfico de Controle de Qualidade Multivariada
+
+Para melhorar a qualidade de produtos e serviços, os dados precisam ser examinados quanto às causas da variação. Quando um processo de fabricação está produzindo itens continuamente ou quando estamos monitorando as atividades de um serviço, os dados devem ser coletados para avaliar as capacidades e estabilidade do processo. Quando um processo é estável, a variação é produzida por causas comuns que estão sempre presentes, e nenhuma causa é uma fonte principal de variação.
+
+O objetivo de qualquer gráfico de controle é identificar ocorrências de causas especiais de variação que vêm de fora do processo usual. Essas causas de variação muitas vezes indicam a necessidade de um reparo oportuno, mas também podem sugerir melhorias no processo. Os gráficos de controle tornam a variação visível e permitem distinguir causas comuns de causas especiais de variação.
+
+Um gráfico de controle tipicamente consiste em dados plotados em ordem temporal e linhas horizontais, chamadas de limites de controle, que indicam a quantidade de variação devido a causas comuns. Um gráfico de controle útil é o gráfico $\bar{X}$. Para criar um gráfico $\bar{X}$:
+
+1. Plote as observações individuais ou médias de amostra em ordem cronológica
+2. Crie e plote a linha central \( \bar{\bar{x}} \), a média amostral de todas as observações.
+3. Calcule e plote os limites de controle dados por:
+
+* Limite de Controle Superior (UCL) = \( \bar{\bar{x}} + 3 \) (desvio-padrão)
+* Limite de Controle Inferior (LCL) = \( \bar{\bar{x}} - 3 \) (desvio-padrão)
+
+O desvio-padrão nos limites de controle é o desvio-padrão estimado das observações que estão sendo plotadas. Se as médias de subamostras de tamanho \( m \) são plotadas, então o desvio-padrão é o desvio-padrão da amostra dividido por \( \sqrt{m} \). Os limites de controle de mais e menos três desvios-padrão são escolhidos de modo que haja uma chance muito pequena, assumindo dados distribuídos normalmente, de sinalizar falsamente uma observação fora de controle - ou seja, uma observação sugerindo uma causa especial de variação.
+
+## Exemplo 5.8: Criando um gráfico de controle univariado
+
+O departamento de polícia de Madison, Wisconsin, monitora regularmente muitas de suas atividades como parte de um programa contínuo de melhoria de qualidade. A Tabela 5.8 apresenta os dados de cinco tipos diferentes de horas extras. Cada observação representa um total de 12 períodos de pagamento, ou cerca de meio ano.
+
+Examinamos a estabilidade das horas extras de aparições legais. Um cálculo por computador fornece \( \bar{x}_1 = 3558 \). Como valores individuais serão plotados, \( \bar{x}_1 \) é o mesmo que \( \bar{\bar{x}}_1 \). Além disso, o desvio-padrão da amostra é $\sqrt{s_{11}}=607$, e os limites de controle são:
+
+UCL (Limite de Controle Superior) = \( \bar{\bar{x}}_1 + 3\sqrt{s_{11}}  = 3558 + 3(607) = 5379\)
+
+LCL (Limite de Controle Inferior) = \( \bar{\bar{x}}_1 - 3\sqrt{s_{11}}  = 3558 - 3(607) = 1737\).
+
+* [JW6_Example5.8.R](JW6_Example5.8.R){target="_blank"}
+
+```{r}
+x <- read.table("JW6Data/T5-8.dat", quote="\"", comment.char="")
+names(x) <- paste0("x",1:5)
+print.data.frame(x)
+boxplot(x)
+alfa <- 0.01
+# Figura 5.5
+invisible(qcc::qcc(x$x1, 
+          type = "xbar.one",
+          confidence.level=1-alfa))
+```
+
+As horas extras para aparições legais são estáveis durante o período em que os dados foram coletados. A variação nas horas extras parece ser devida a causas comuns, portanto, nenhuma variação de causa especial é indicada.
+
+Com mais de uma característica importante, uma abordagem multivariada deve ser usada para monitorar a estabilidade do processo. Essa abordagem pode levar em conta as correlações entre as características e controlará a probabilidade geral de sinalizar falsamente uma causa especial de variação quando ela não está presente. Altas correlações entre as variáveis podem tornar impossível avaliar a taxa de erro geral que é implícita por um grande número de gráficos univariados.
+
+Os dois gráficos multivariados mais comuns são (i) o gráfico no formato de elipse e (ii) o gráfico \(T^2\).
+
+Dois casos que surgem na prática precisam ser tratados de maneira diferente:
+
+1. Monitorando a estabilidade de uma amostra dada de observações multivariadas
+1. Definindo uma região de controle para observações futuras
+
+Inicialmente, consideramos o uso de procedimentos de controle multivariado para uma amostra de observações multivariadas \(\mathbf{x}_1, \mathbf{x}_2,\ldots, \mathbf{x}_n\). Posteriormente, discutimos esses procedimentos quando as observações são médias de subgrupos.
+
+# Gráfico para Monitorar uma Amostra de Observações Multivariadas Individuais quanto à Estabilidade
+
+Assumimos que \( \{\mathbf{X}_i\}_{i=1}^{n} \sim \mathcal{N}_p\text{IID}(\boldsymbol{\mu}, \mathbf{\Sigma}) \). Pelo Resultado 4.8,
+
+\[
+\mathbf{X}_j - \bar{\mathbf{X}} = \left(1-\dfrac{1}{n}\right)\mathbf{X}_j-\dfrac{1}{n}\mathbf{X}_1-\cdots-\dfrac{1}{n}\mathbf{X}_{j-1}-\dfrac{1}{n}\mathbf{X}_{j+1}-\cdots-\dfrac{1}{n}\mathbf{X}_{n}
+\]
+
+tem
+
+\[
+\text{E}\left(\mathbf{X}_j - \bar{\mathbf{X}}\right) =\mathbf{0}
+\]
+
+e
+
+\[
+\text{Cov}\left(\mathbf{X}_j - \bar{\mathbf{X}}\right) =\dfrac{n-1}{n}\mathbf{\Sigma}
+\]
+
+Cada \(\mathbf{X}_j - \bar{\mathbf{X}} \) tem uma distribuição normal, mas \( \mathbf{X}_j - \bar{\mathbf{X}} \) não é independente da matriz de covariância da amostra $\mathbf{S}$. No entanto, para definir os limites de controle, aproximamos que
+
+\[
+(\mathbf{X}_j - \bar{\mathbf{X}})^{\prime}\mathbf{S}^{-1}(\mathbf{X}_j - \bar{\mathbf{X}})\sim \chi^2_p
+\]
+
+__Gráfico no Formato de Elipse__. O gráfico no formato de elipse para uma região de controle bivariada é o mais intuitivo dos gráficos, mas sua abordagem é limitada a duas variáveis. As duas características na \( i \)-ésima unidade são plotadas como um par \( (x_{i1}, x_{i2}) \). A elipse de qualidade de 95% consiste em todos os \( \mathbf{x} \) que satisfazem
+
+\[
+(\mathbf{x} - \bar{\mathbf{x}})^{\prime}\mathbf{s}^{-1}(\mathbf{x} - \bar{\mathbf{x}})\le \chi^2_2(0.95)
+\]
+
+## Exemplo 5.9: Um gráfico no formato de elipse para horas extras 
+
+Refiramo-nos ao Exemplo 5.8 e criamos uma elipse de qualidade para o par de características de horas extras (aparições legais, evento extraordinário). Um cálculo computacional fornece:
+
+\[
+\bar{x} = 
+\begin{bmatrix}
+3558 \\
+1478
+\end{bmatrix}
+\]
+
+e
+
+\[
+s = 
+\begin{bmatrix}
+367,884.7 & -72,093.8 \\
+-72,093.8 & 1,399,053.1
+\end{bmatrix}
+\]
+
+* [JW6_Example5.9.R](JW6_Example5.9.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+x <- read.table("JW6Data/T5-8.dat", quote="\"", comment.char="")
+names(x) <- paste0("x",1:5)
+alfa <- 0.01
+x12 <- x[,c(1,2)]
+centroide <- colMeans(x12)
+centroide
+s <- cov(x12)
+s
+n <- dim(x12)[1]
+p <- dim(x12)[2]
+X2crit <- qchisq(1-alfa,p)
+cat("\nX^2(", p, ", ", 1-alfa,") = ", X2crit, sep="")
+c <- sqrt(X2crit)
+car::ellipse(center=centroide,
+             shape=s,
+             radius=c,
+             fill=TRUE,
+             fill.alpha=0.1,
+             grid=FALSE,
+             col="black",
+             add=FALSE,
+             xlab = expression(x[1]), ylab = expression(x[2]), 
+             main="Região elíptica de confiança de qualidade de 99%")
+lines(x12$x1,x12$x2, type="p")
+invisible(T2 <- qcc::mqcc(x12, 
+                          type="T2"))
+invisible(qcc::ellipseChart(T2,
+                            show.id=TRUE))
+```
+
+Ilustramos o gráfico no formato de elipse de qualidade usando a elipse de 99%, que consiste em todos os \( x \) que satisfazem:
+
+\[
+(\mathbf{x} - \bar{\mathbf{x}})^{\prime}\mathbf{s}^{-1}(\mathbf{x} - \bar{\mathbf{x}})\le \chi^2_2(0.99)
+\]
+
+Aqui \( p = 2 \), então \( \chi_2^2{(0.99)} = 9.21 \), e a elipse se torna: 
+
+\[
+(\mathbf{x} - \bar{\mathbf{x}})^{\prime}\mathbf{s}^{-1}(\mathbf{x} - \bar{\mathbf{x}})\le9.21
+\]
+
+```{r echo=FALSE, out.width="80%", fig.cap="Figura 5.6 A elipse de controle de qualidade de 99% para horas extras de aparições legais e evento extraordinário."}
+knitr::include_graphics("./image/Fig.5.6.png")
+```
+
+Observe que um ponto, indicado por uma seta, está definitivamente fora da elipse. Quando um ponto está fora da região de controle, gráficos individuais $\bar{X}$ são construídos. O gráfico $\bar{X}$ para \( x_1 \) foi dado na Figura 5.5; aquele para \( x_2 \) é mostrado na Figura 5.7.
+
+```{r}
+# Figura 5.7
+alfa <- 0.01
+invisible(qcc::qcc(x$x2, 
+          type = "xbar.one",
+          confidence.level=1-alfa))
+```
+
+Quando o limite de controle inferior é menor que zero para dados que devem ser não negativos, ele geralmente é definido como zero. O limite $LCL = 0$ é mostrado pela linha tracejada na Figura 5.7.
+
+Houve uma causa especial para o único ponto de horas extras de evento extraordinário que está fora do limite de controle superior na Figura 5.7? Durante esse período, os Estados Unidos bombardearam uma capital estrangeira, e os estudantes de Madison estavam protestando. A maioria das horas extras extraordinárias foi usada nesse período de quatro semanas. Embora, por sua própria definição, horas extras extraordinárias ocorram apenas quando eventos especiais ocorrem e, portanto, sejam imprevisíveis, elas ainda têm uma certa estabilidade.
+
+__Gráfico \( T^2 \) [_sic_]__. Um gráfico \( d^2 \), mais conhecido como gráfico $T^2$, pode ser aplicado a um grande número de características. Ao contrário do formato da elipse, ele não se limita a duas variáveis. Além disso, os pontos são exibidos em ordem cronológica, em vez de como um gráfico de dispersão, o que torna padrões e tendências visíveis.
+
+Para o _i_-ésimo ponto, calculamos a estatística \( d^2 \) (distância de Mahalanobis):
+
+\[
+d^2_i = (\mathbf{x}_i - \bar{\mathbf{x}})^{\prime}\mathbf{s}^{-1}(\mathbf{x}_i - \bar{\mathbf{x}}) \\
+i=1,2,\ldots,n\tag{5-33}
+\]
+
+Em seguida, plotamos os valores de \( d^2 \) em um eixo de tempo. O limite de controle inferior é zero, e usamos o limite de controle superior
+
+\[
+UCL = \chi^2_p(.95)
+\]
+
+ou, às vezes, \(\chi^2_p(.99)\).
+
+Não há uma linha central no gráfico \( d^2 \).
+
+## Exemplo 5.10: Um gráfico \( d^2 \) para horas extras
+
+Usando os dados do departamento de polícia no Exemplo 5.8, construímos um gráfico \( d^2 \) baseado nas duas variáveis \( X_1 \) = horas de comparecimento legal e \( X_2 \) = horas de evento extraordinário. Gráficos \( d^2 \) com mais de duas variáveis são considerados no Exercício 5.26. Tomamos \( \alpha = 0.01 \) para ser consistente com o gráfico de formato de elipse no Exemplo 5.9.
+
+O gráfico \( d^2 \) na Figura 5.8 revela que o par (comparecimento legal, evento extraordinário) horas para o período 11 está fora de controle. Uma investigação mais aprofundada, como no Exemplo 5.9, confirma que isso se deve ao grande valor das horas extras de evento extraordinário durante aquele período.
+
+* [JW6_Example5.10.R](JW6_Example5.10.R){target="_blank"}
+
+```{r}
+alfa <- 0.01
+x12 <- x[,c(1,2)]
+centroide <- colMeans(x12)
+centroide
+s <- cov(x12)
+s
+d2 <- mahalanobis(x12, centroide, s)
+n <- dim(x12)[1]
+p <- dim(x12)[2]
+X2crit <- qchisq(1-alfa,p)
+cat("\nX^2(", p, ", ", 1-alfa,") = ", X2crit, sep="")
+plot(1:n, d2,
+     ylab=expression(d^2), 
+     xlab="Period", 
+     main=expression(paste("Figura 5.8: ", alpha, " = 0.01")),
+     type="p")
+lines(1:n, d2, type="l", lty=2)
+abline(h=X2crit, lty=3)
+
+invisible(T2 <- qcc::mqcc(x12, 
+                          type="T2"))
+
+pc12 <- mvdalab::pcaFit(x12)
+pc12
+mvdalab::T2(pc12, 
+            conf=c(.95, .99),
+            ncomp = p) #T2 plot
+```
+
+# Regiões de Controle para Futuras Observações Individuais
+
+O objetivo agora é usar os dados \( \mathbf{x}_1, \mathbf{x}_2, \ldots, \mathbf{x}_n \), coletados quando um processo está estável, para definir uma região de controle para uma futura observação \( \mathbf{x} \) ou futuras observações. A região na qual uma futura observação é esperada é chamada de região de previsão ou predição. Se o processo for estável, consideramos que as observações são distribuídas independentemente como \( \mathcal{N}_p(\boldsymbol{\mu}, \mathbf{\Sigma}) \). Como essas regiões são de importância mais geral do que apenas para monitorar a qualidade, fornecemos a teoria básica de distribuição como Resultado 5.6.
+
+__Resultado 5.6__. Seja \( \{\mathbf{X}_i\}_{i=1}^{n} \sim \mathcal{N}_p\text{IID}(\boldsymbol{\mu}, \mathbf{\Sigma}) \), e seja \( \mathbf{X} \) uma futura observação da mesma distribuição. Então,
+
+\[ T^2 = \dfrac{n}{n + 1} (\mathbf{X} - \mathbf{\bar{X}})^{\prime}\mathbf{S}^{-1}(\mathbf{X} - \mathbf{\bar{X}}) \sim\frac{(n-1)p}{n-p} F_{p, n-p} \]
+
+A região elíptica de predição de $100(1 - \alpha)\%$ _p_-dimensional é dada por todos os \( \mathbf{x} \) que satisfazem:
+
+\[ (\mathbf{x} - \mathbf{\bar{x}})^{\prime}\mathbf{s}^{-1}(\mathbf{x} - \mathbf{\bar{x}}) \leq \dfrac{(n^2 - 1)p}{n(n-p)} F_{p, n-p}(1-\alpha) \tag{5-34} \]
+
+$$\Diamond$$
+
+## Exemplo 5.12: Uma elipse de controle para futuras horas extras
+
+No Exemplo 5.9, verificamos a estabilidade das horas extras de aparições legais e eventos extraordinários. Vamos usar esses dados para determinar uma região de controle para futuros pares de valores.
+
+A partir do Exemplo 5.9 e da Figura 5.6, descobrimos que o par de valores para o período 11 estava fora de controle. Removemos esse ponto e determinamos a nova elipse de 99%. Todos os pontos estão então sob controle, então eles podem servir para determinar a região de previsão de 95% recém-definida para \( p = 2 \). Esta elipse de controle é mostrada na Figura 5.12 junto com as 15 observações estáveis iniciais.
+
+Qualquer observação futura que caia dentro da elipse é considerada estável ou sob controle. Uma observação fora da elipse representa uma possível observação fora de controle ou uma variação de causa especial.
+
+Para cada nova observação \( \mathbf{x} \), plote
+
+\[
+T^2 = \dfrac{n}{n+1} (\mathbf{x} - \mathbf{\bar{x}})^{\prime}\mathbf{s}^{-1} (\mathbf{x} - \mathbf{\bar{x}})
+\]
+
+em ordem temporal. 
+
+Defina LCL (Limite de Controle Inferior) = 0 e  
+
+\[
+UCL = \dfrac{(n-1)p}{n-p} F_{p, n-p}(1-\alpha)
+\]
+
+Pontos acima do limite de controle superior representam uma possível variação de causa especial e sugerem que o processo em questão deve ser examinado para determinar se uma ação corretiva imediata é justificada. 
+
+```{r echo=FALSE, out.width="80%", fig.cap="Figura 5.12 A elipse de controle de 95% para futuras horas extras de aparições legais e eventos extraordinários."}
+knitr::include_graphics("./image/Fig.5.12.png")
+```
+
+* [JW6_Example5.12.R](JW6_Example5.12.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+x <- read.table("JW6Data/T5-8.dat", quote="\"", comment.char="")
+names(x) <- paste0("x",1:5)
+print.data.frame(x)
+boxplot(x)
+alfa <- 0.05
+x12 <- x[,c(1,2)]
+x12 <- x12[-11,]
+centroide <- colMeans(x12)
+centroide
+s <- cov(x12)
+s
+n <- dim(x12)[1]
+p <- dim(x12)[2]
+T2crit <- (((n^2-1)*p)/((n-p)*n))*qf(1-alfa, p, n-p)
+c <- sqrt(T2crit)
+car::ellipse(center=centroide,
+             shape=s,
+             radius=c,
+             fill=TRUE,
+             fill.alpha=0.1,
+             grid=FALSE,
+             col="black",
+             add=FALSE,
+             xlab = expression(x[1]), ylab = expression(x[2]), 
+             main="Região elíptica de confiança de qualidade de 95%\npara valores futuros de x1 e x2")
+lines(x12$x1,x12$x2, type="p")
+x_novo <- c(3500, 1000)
+points(x_novo[1], x_novo[2], pch=4)
+text(x_novo[1]+250, x_novo[2], "novo")
+T2_novo <- as.numeric((n/(n+1))*t(x_novo-centroide)%*%solve(s)%*%(x_novo-centroide))
+UCL95 <- (((n-1)*p)/(n-p))*qf(1-alfa,p, n-p)
+print(T2_novo > UCL95)
+```
+
+# Gráfico de controle com base em médias de subamostra
+
+Supõe-se que cada vetor aleatório de observações do processo seja distribuído de forma independente como \( \mathcal{N}_p(\mathbf{0}, \mathbf{\Sigma}) \). O procedimento é diferente quando o procedimento de amostragem especifica que \( m > 1 \) unidades sejam selecionadas, ao mesmo tempo, do processo. Da primeira amostra, determinamos sua média amostral \( \bar{\mathbf{X}}_1 \) e a matriz de covariância \( \mathbf{S}_1 \). Quando a população é normal, essas duas quantidades aleatórias são independentes.
+
+Para uma média de subamostra geral \( \bar{\mathbf{X}}_j \), \( \bar{\mathbf{X}}_j - \bar{\bar{\mathbf{X}}} \) tem uma distribuição normal com média $\mathbf{0}$ e 
+
+\[
+\mathbb{C}(\bar{\mathbf{X}}_j - \bar{\bar{\mathbf{X}}}) = \dfrac{n-1}{nm}\mathbf{\Sigma}
+\]
+
+Como será descrito na Seção 6.4, as covariâncias amostrais das \( n \) subamostras podem ser combinadas para fornecer uma única estimativa (chamada \( \mathbf{S}_\text{pooled} \) no Capítulo 6) da covariância comum \( \mathbf{\Sigma} \). Esta estimativa agrupada é 
+
+\[
+\mathbf{S} = \dfrac{1}{n}\sum_{i=1}^{n}{\mathbf{S}_i}
+\]
+
+Aqui, \( (nm - n)\mathbf{S} \) é independente de cada \( \bar{\mathbf{X}}_j \) e, portanto, de sua média \( \bar{\bar{\mathbf{X}}} \). Além disso, \( (nm - n)\mathbf{S} \) é distribuído como uma matriz aleatória de Wishart com \( nm - n \) graus de liberdade. Observe que estamos estimando \( \mathbf{\Sigma} \) internamente a partir dos dados coletados em qualquer período dado. Esses estimadores são combinados para fornecer um único estimador com um grande número de graus de liberdade. Consequentemente, 
+
+\[
+T^2 = \dfrac{nm}{n-1}(\bar{\mathbf{X}}_j - \bar{\bar{\mathbf{X}}})^{\prime}\mathbf{S}^{-1}(\bar{\mathbf{X}}_j - \bar{\bar{\mathbf{X}}}) \sim\dfrac{n(m - 1)p}{n(m - 1) - p + 1} F_{p,n(m - 1) - p + 1} \tag{5-35}
+\]
+
+# Região de Controle para Observação Futura de Subamostra
+
+Uma vez que os dados são coletados a partir da operação estável de um processo, eles podem ser usados para definir limites de controle para futuras médias de subamostras observadas.
+
+Se \( \bar{\mathbf{X}} \) é uma média de subamostra futura, então \( \bar{\mathbf{X}} - \bar{\bar{\mathbf{X}}} \) tem uma distribuição normal multivariada com média $\mathbf{0}$ e
+
+\[
+\mathbb{C}(\bar{\mathbf{X}} - \bar{\bar{\mathbf{X}}}) = \dfrac{n+1}{nm}\mathbf{\Sigma}
+\]
+
+Consequentemente,
+
+\[
+T^2 = \dfrac{nm}{n+1}(\bar{\mathbf{X}} - \bar{\bar{\mathbf{X}}})^{\prime}\mathbf{S}^{-1}(\bar{\mathbf{X}} - \bar{\bar{\mathbf{X}}}) \sim\dfrac{n(m - 1)p}{n(m - 1) - p + 1} F_{p,n(m - 1) - p + 1} \tag{5-37}
+\]
+
+**Gráfico T2 para Futuras Médias de Subamostras.** Como antes, trazemos \( n/(n + 1) \) para o limite de controle e plotamos a quantidade:
+
+\[
+T^2 = m(\bar{\mathbf{X}} - \bar{\bar{\mathbf{X}}})^{\prime}\mathbf{S}^{-1}(\bar{\mathbf{X}} - \bar{\bar{\mathbf{X}}})
+\]
+
+para futuras médias da amostra em ordem cronológica. O limite de controle superior é então:
+
+\[
+\text{UCL} = \frac{(n + 1) (m - 1)p}{n(m - 1) - p + 1} F_{p,n(m-1)-p+1}(0.95)
+\]
+
+O UCL é frequentemente aproximado como \( \chi_p^2(0.95) \) quando \( n \) é grande.
+
+Pontos fora da elipse de previsão ou acima do UCL sugerem que os valores atuais das características de qualidade são diferentes de alguma forma daqueles do processo estável anterior. Isso pode ser bom ou ruim, mas quase certamente justifica uma busca cuidadosa pelas razões da mudança.
+
+# Inferência sobre Vetor de Média Quando Algumas Observações Estão Ausentes
+
+Frequentemente, alguns componentes de uma observação vetorial não estão disponíveis. Isso pode ocorrer devido a uma falha no equipamento de gravação ou devido à recusa de um respondente em responder a um item específico em um questionário de pesquisa. A melhor maneira de lidar com observações incompletas, ou valores ausentes, depende, em grande medida, do contexto experimental. Se o padrão de valores ausentes estiver fortemente ligado ao valor da resposta, como pessoas com rendas extremamente altas que se recusam a responder a uma pesquisa sobre salários, inferências subsequentes podem ser seriamente tendenciosas. Até o momento, nenhuma técnica estatística foi desenvolvida para esses casos. No entanto, somos capazes de tratar situações em que os dados estão ausentes aleatoriamente - isto é, casos em que o mecanismo de chance responsável pelos valores ausentes não é influenciado pelo valor das variáveis.
+
+Uma abordagem geral para calcular estimativas de máxima verossimilhança a partir de dados incompletos é dada por Dempster, Laird e Rubin [5]. Sua técnica, chamada algoritmo EM, consiste em um cálculo iterativo envolvendo duas etapas. Chamamos-lhes de etapas de predição e estimação:
+
+1. _Etapa de predição_. Dada uma estimativa \( \widetilde{\boldsymbol{\theta}} \) dos parâmetros desconhecidos, preveja a contribuição de qualquer observação ausente para as estatísticas suficientes (com dados completos).
+  
+2. _Etapa de Estimação_. Use as estatísticas suficientes previstas para calcular uma estimativa revisada dos parâmetros.
+
+O cálculo alterna entre uma etapa e outra, até que as estimativas revisadas não difiram apreciavelmente da estimativa obtida na iteração anterior.
+
+Quando as observações \(  \{\mathbf{X}_i\}_{i=1}^{n} \sim \mathcal{N}_p\text{IID}(\boldsymbol{\mu}, \mathbf{\Sigma})\), o algoritmo de predição-estimação é baseado nas estatísticas suficientes de dados completos [veja (4-21)]
+
+\[ 
+\mathbf{T}_1 = \sum_{i=1}^{n}{ \mathbf{X}_i} = n\bar{\mathbf{X}}
+\]
+
+e
+
+\[ 
+\mathbf{T}_2 = \sum_{i=1}^{n}{\mathbf{X}_i \mathbf{X}_i^{\prime}} = (n - 1) \mathbf{S} + n\bar{\mathbf{X}}\bar{\mathbf{X}}^{\prime} 
+\]
+
+Neste caso, o algoritmo procede da seguinte forma: Assumimos que a média da população e a variância - $\boldsymbol{\mu}$ e $\mathbf{\Sigma}$, respectivamente - são desconhecidas e devem ser estimadas.
+
+__Etapa de predição__. Para cada vetor \( \mathbf{x}_i \) com valores ausentes, seja \( \mathbf{x}^{(1)}_i \) denotar os componentes ausentes e \( \mathbf{x}^{(2)}_i \) denotar aqueles componentes que estão disponíveis. Assim, \( \mathbf{x}^{\prime}=\left[\mathbf{x}^{(1){\prime}}_i,  \mathbf{x}^{(2){\prime}}_i\right]\)
+
+Dadas as estimativas \(  \boldsymbol{\mu} \) e \( \mathbf{\Sigma} \) da etapa de estimação, use a média da distribuição normal condicional de \( \mathbf{x}^{(1)} \) dado \( \mathbf{x}^{(2)} \) para estimar os valores ausentes. Ou seja,
+
+\[
+\widetilde{\mathbf{x}}^{(1)}_i = E\left(\mathbf{X}^{(1)}_i \mid \mathbf{x}^{(2)}_i; \widetilde{\boldsymbol{\mu}}, \widetilde{\mathbf{\Sigma}}\right) = \widetilde{\boldsymbol{\mu}}^{(1)} + \widetilde{\mathbf{\Sigma}}_{12}\widetilde{\mathbf{\Sigma}}_{22}^{-1}\left(\mathbf{x}^{(2)}_i - \widetilde{\boldsymbol{\mu}}^{(2)}\right) \tag{5-38}
+\]
+
+estima a contribuição de \( \mathbf{x}^{(1)}_i \) para \( \mathbf{T}_1 \).
+
+Em seguida, a contribuição prevista de \( \mathbf{x}^{(1)}_i \) para \( \mathbf{T}_2 \) é
+
+\[
+\widetilde{\mathbf{x}^{(1)}_i\mathbf{x}^{(1){\prime}}_i}=E\left(\mathbf{X}^{(1)}_i\mathbf{X}^{(1){\prime}}_i \mid \mathbf{x}^{(2)}_i; \widetilde{\boldsymbol{\mu}}, \widetilde{\mathbf{\Sigma}}\right) = \widetilde{\mathbf{\Sigma}}_{11} - \widetilde{\mathbf{\Sigma}}_{12}\widetilde{\mathbf{\Sigma}}_{22}^{-1}\widetilde{\mathbf{\Sigma}}_{21} +  \mathbf{x}^{(1)}_i\mathbf{x}^{(1){\prime}}_i
+\tag{5-39}
+\]
+
+e
+
+\[
+\widetilde{\mathbf{x}^{(1)}_i\mathbf{x}^{(2){\prime}}_i}=E\left(\mathbf{X}^{(1)}_i\mathbf{X}^{(2){\prime}}_i \mid \mathbf{x}^{(2)}_i; \widetilde{\boldsymbol{\mu}}, \widetilde{\mathbf{\Sigma}}\right) =  \mathbf{x}^{(1)}_i\mathbf{x}^{(2){\prime}}_i
+\]
+
+As contribuições em (5-38) e (5-39) são somadas sobre todos \( \mathbf{x}_i \) com componentes ausentes. Os resultados são combinados com os dados da amostra para produzir \( \widetilde{\mathbf{T}}_1 \) e \( \widetilde{\mathbf{T}}_2 \).
+
+__Etapa de Estimação__. Calcule as estimativas revisadas de máxima verossimilhança (veja Resultado 4.11):
+
+\[
+\widetilde{\boldsymbol{\mu}} = \dfrac{1}{n} \widetilde{\mathbf{T}}_1
+\quad\quad\quad
+\widetilde{\mathbf{\Sigma}} = \dfrac{1}{n} \widetilde{\mathbf{T}}_2 - \widetilde{\boldsymbol{\mu}} \widetilde{\boldsymbol{\mu}}^{\prime}\tag{5-40}
+\]
+
+Ilustramos os aspectos computacionais do algoritmo de predição-estimação no Exemplo 5.13.
+
+## Exemplo 5.13: Ilustrando o algoritmo EM
+
+Estime a média da população normal \( \boldsymbol{\mu} \) e a covariância \( \mathbf{\Sigma} \) usando o conjunto de dados incompleto:
+
+\[
+\boldsymbol{\mathcal{x}}=
+\begin{bmatrix}
+- & 0 & 3 \\
+7 & 2 & 6 \\
+5 & 1 & 2 \\
+- & - & 5
+\end{bmatrix}
+\]
+
+Aqui \( n = 4 \), \( p = 3 \), e partes dos vetores de observação \( \mathbf{x}_1 \) e \( \mathbf{x}_4 \) estão ausentes.
+
+Obtemos as médias iniciais da amostra:
+
+\[
+\widetilde{\mu}_1 = \dfrac{7+5}{2} = 6, \quad \widetilde{\mu}_2 = \dfrac{0+2+1}{3} = 1, \quad \widetilde{\mu}_3 = \dfrac{3+6+2+5}{4} =4
+\]
+
+a partir das observações disponíveis. Substituindo essas médias por quaisquer valores ausentes, de forma que \( \widetilde{x}_{11} = 6 \), por exemplo, podemos obter estimativas iniciais de covariância. Vamos construir essas estimativas usando o divisor \( n \) porque o algoritmo eventualmente produz a estimativa de máxima verossimilhança \( \hat{\mathbf{\Sigma}} \). Assim:
+
+\[
+\widetilde{\sigma}_{11} = \dfrac{(6 - 6)^2 + (7 - 6)^2 + (5 - 6)^2+ (6 - 6)^2}{4} = \dfrac{1}{2}
+\]
+
+\[
+\widetilde{\sigma}_{22} =  \dfrac{1}{2}
+\]
+
+\[
+\widetilde{\sigma}_{33} =  \dfrac{5}{2}
+\]
+
+\[
+\widetilde{\sigma}_{12} = \dfrac{(6 - 6)(0 - 1) + (7 - 6)(2 - 1) + (5 - 6)(1 - 1)+ (6 - 6)(1 - 1)}{4} = \dfrac{1}{4}
+\]
+
+\[
+\widetilde{\sigma}_{23} =  \dfrac{3}{4}
+\]
+
+\[
+\widetilde{\sigma}_{13} =  1
+\]
+
+A etapa de predição consiste em usar as estimativas iniciais \( \widetilde{\boldsymbol{\mu}} \) e \( \widetilde{\mathbf{\Sigma}} \) para prever as contribuições dos valores ausentes para as estatísticas suficientes \( \mathbf{T}_1 \) e \( \mathbf{T}_2 \). [Veja (5-38) e (5-39)].
+
+O primeiro componente de \( \mathbf{x}_1 \) está ausente, então particionamos \( \widetilde{\boldsymbol{\mu}} \) e \( \widetilde{\mathbf{\Sigma}}\) como:
+
+\[
+\widetilde{\boldsymbol{\mu}} = 
+\begin{bmatrix} 
+\widetilde{\mu}_{1} \\ 
+\cdots\\
+\widetilde{\mu}_{2} \\
+\widetilde{\mu}_{3}
+\end{bmatrix}=
+\begin{bmatrix} 
+\widetilde{\mu}^{(1)}\\
+\cdots\\
+\widetilde{\boldsymbol{\mu}}^{(2)}
+\end{bmatrix}
+\]
+
+\[
+\widetilde{\mathbf{\Sigma}} = 
+\begin{bmatrix} 
+\widetilde{\sigma}_{11} & \vdots &\widetilde{\sigma}_{12} & \widetilde{\sigma}_{13} \\
+\cdots & \vdots &\cdots & \cdots \\ 
+\widetilde{\sigma}_{21} & \vdots &\widetilde{\sigma}_{22} & \widetilde{\sigma}_{23} \\ 
+\widetilde{\sigma}_{31} & \vdots &\widetilde{\sigma}_{32} & \widetilde{\sigma}_{33} \\ 
+\end{bmatrix}  =
+\begin{bmatrix} 
+\widetilde{\mathbf{\Sigma}}_{11} & \widetilde{\mathbf{\Sigma}}_{12} \\ 
+\widetilde{\mathbf{\Sigma}}_{21} & \widetilde{\mathbf{\Sigma}}_{22} 
+\end{bmatrix}
+\]
+
+Usando a equação (5-38), a predição para o componente ausente de \( \widetilde{x}_{11} \) é:
+
+\[
+\widetilde{x}_{11} = \widetilde{\mu}_{1} + \widetilde{\mathbf{\Sigma}}_{12}\widetilde{\mathbf{\Sigma}}_{22}^{-1}
+\begin{bmatrix}
+x_{12}-\widetilde{\mu}_{2}\\
+x_{13}-\widetilde{\mu}_{3}
+\end{bmatrix}=
+6+
+\begin{bmatrix}\frac{1}{4}&1\end{bmatrix}
+\begin{bmatrix}
+\frac{1}{2}&\frac{3}{4}\\
+\frac{3}{4}&\frac{5}{2}
+\end{bmatrix}^{-1}
+\begin{bmatrix}0-1\\3-4\end{bmatrix}=
+5.73
+\]
+
+\[
+\widetilde{x^2_{11}} = \widetilde{\sigma}_{1} - \widetilde{\mathbf{\Sigma}}_{12}\widetilde{\mathbf{\Sigma}}_{22}^{-1}
+\widetilde{\mathbf{\Sigma}}_{12}+\widetilde{x}^2_{11}=
+\frac{1}{2}-
+\begin{bmatrix}\frac{1}{4}&1\end{bmatrix}
+\begin{bmatrix}
+\frac{1}{2}&\frac{3}{4}\\
+\frac{3}{4}&\frac{5}{2}
+\end{bmatrix}^{-1}
+\begin{bmatrix}\frac{1}{4}\\1\end{bmatrix}+5.73^2=
+32.99
+\]
+
+As primeiras duas componentes de \( \mathbf{x}_4 \) está ausente, então particionamos \( \widetilde{\boldsymbol{\mu}} \) e \( \widetilde{\mathbf{\Sigma}}\) como:
+
+\[
+\widetilde{\boldsymbol{\mu}} = 
+\begin{bmatrix} 
+\widetilde{\mu}_{1} \\ 
+\widetilde{\mu}_{2} \\
+\cdots\\
+\widetilde{\mu}_{3}
+\end{bmatrix}=
+\begin{bmatrix} 
+\widetilde{\boldsymbol{\mu}}^{(1)} \\
+\cdots\\
+\widetilde{\mu}^{(2)}\\
+\end{bmatrix}
+\]
+
+\[
+\widetilde{\mathbf{\Sigma}} = 
+\begin{bmatrix} 
+\widetilde{\sigma}_{11}  &\widetilde{\sigma}_{12} & \vdots& \widetilde{\sigma}_{13} \\
+\widetilde{\sigma}_{21}  &\widetilde{\sigma}_{22} & \vdots& \widetilde{\sigma}_{23} \\ 
+\cdots &\cdots  & \vdots& \cdots \\ 
+\widetilde{\sigma}_{31}  &\widetilde{\sigma}_{32} & \vdots& \widetilde{\sigma}_{33} \\ 
+\end{bmatrix}  =
+\begin{bmatrix} 
+\widetilde{\mathbf{\Sigma}}_{11} & \widetilde{\mathbf{\Sigma}}_{12} \\ 
+\widetilde{\mathbf{\Sigma}}_{21} & \widetilde{\mathbf{\Sigma}}_{22} 
+\end{bmatrix}
+\]
+
+Usando a equação (5-38), a predição para o componente ausente de \( \widetilde{\begin{bmatrix}x_{41}\\x_{42} \end{bmatrix}}\) é:
+
+\[\begin{align}
+\widetilde{\begin{bmatrix}x_{41}\\x_{42} \end{bmatrix}} &=
+E\left(\begin{bmatrix}X_{41}\\
+X_{42}\end{bmatrix} \Biggm| x_{43}=5;\widetilde{\boldsymbol{\mu}}, \widetilde{\mathbf{\Sigma}}\right)\\
+&=\begin{bmatrix}\widetilde{\mu}_{1}\\
+\widetilde{\mu}_{2}\end{bmatrix} + \widetilde{\mathbf{\Sigma}}_{12}\widetilde{\mathbf{\Sigma}}_{22}^{-1}
+(x_{43}-\widetilde{\mu}_{3})\\
+&=
+\begin{bmatrix}6\\1\end{bmatrix}+
+\begin{bmatrix}1\\\frac{3}{4}\end{bmatrix}
+\left(\frac{5}{2}\right)^{-1}(5-4)\\
+\widetilde{\begin{bmatrix}x_{41}\\x_{42} \end{bmatrix}}&=
+\begin{bmatrix}6.4\\1.3\end{bmatrix}
+\end{align}
+\]
+
+\[\begin{align}
+\begin{bmatrix}\widetilde{x_{41}^2}&\widetilde{x_{41}x_{42}}\\
+\widetilde{x_{41}x_{42}} &\widetilde{x_{42}^2}\end{bmatrix} 
+&=
+E\left(
+\begin{bmatrix}
+X_{41}^2&X_{41}X_{42}\\
+X_{41}X_{42}&X_{42}^2
+\end{bmatrix}\Biggm|x_{43}=5;\widetilde{\boldsymbol{\mu}}, \widetilde{\mathbf{\Sigma}}\right)\\
+&=\begin{bmatrix}
+\frac{1}{2} & \frac{1}{4}\\
+\frac{1}{4} & \frac{1}{2}
+\end{bmatrix} -
+\begin{bmatrix}1\\\frac{3}{4}\end{bmatrix}
+\left(\frac{5}{2}\right)^{-1}\begin{bmatrix}1&\frac{3}{4}\end{bmatrix}+\begin{bmatrix}6.4\\1.3\end{bmatrix}\begin{bmatrix}6.4&1.3\end{bmatrix}\\
+\begin{bmatrix}\widetilde{x_{41}^2}&\widetilde{x_{41}x_{42}}\\
+\widetilde{x_{41}x_{42}} &\widetilde{x_{42}^2}\end{bmatrix}
+&=
+\begin{bmatrix}
+41.06 & 8.27\\
+8.27 & 1.97
+\end{bmatrix}
+\end{align}
+\]
+
+$$\begin{align}
+\widetilde{\begin{bmatrix}x_{41}\\x_{42} \end{bmatrix}x_{43}} 
+&=E\left(\begin{bmatrix}X_{41}\\X_{42}\end{bmatrix}\Biggm|x_{43}=5;\widetilde{\boldsymbol{\mu}}, \widetilde{\mathbf{\Sigma}}\right)\\
+&=\widetilde{\begin{bmatrix}x_{41}\\x_{42} \end{bmatrix}}x_{43}\\
+&=\begin{bmatrix}6.4\\1.3\end{bmatrix}5\\
+\widetilde{\begin{bmatrix}x_{41}\\x_{42} \end{bmatrix}x_{43}}&=\begin{bmatrix}32.0\\6.5\end{bmatrix}
+\end{align}$$
+
+Assim, as estatísticas suficientes completas previstas são:
+
+$$\begin{align}\widetilde{\mathbf{T}}_1&=
+\begin{bmatrix}
+\widetilde{x}_{11} + x_{21} + x_{31} + \widetilde{x}_{41}\\
+x_{12} + x_{22} + x_{32} + \widetilde{x}_{42}\\
+x_{13} + x_{23} + x_{33} + x_{43}
+\end{bmatrix}\\
+&=\begin{bmatrix}
+5.7+7+5+6.4\\
+0+2+1+1.3\\
+3+6+2+5
+\end{bmatrix}\\
+\widetilde{\mathbf{T}}_1&=\begin{bmatrix}
+24.13\\
+4.3\\
+16
+\end{bmatrix}
+\end{align}$$
+
+$$\begin{align}\widetilde{\mathbf{T}}_2&=
+\begin{bmatrix}
+\widetilde{x_{11}^2}+x_{21}^2+x_{31}^2+x_{41}^2 & & \\
+\widetilde{x_{11}x_{12}} + x_{21}x_{22} + x_{31}x_{32}+\widetilde{x_{41}x_{42}} & x_{12}^2+x_{22}^2+x_{32}^2+\widetilde{x_{42}^2} & \\
+\widetilde{x_{11}x_{13}} + x_{21}x_{23} + x_{31}x_{33}+\widetilde{x_{41}x_{43}} & x_{12}x_{13} + x_{22}x_{23} + x_{32}x_{33}+\widetilde{x_{42}x_{43}} & x_{13}^2+x_{23}^2+x_{33}^2+x_{43}^2 
+\end{bmatrix}\\
+&=\begin{bmatrix}
+32.99+7^2+5^2+41.06& &\\
+0+7\times2+5\times1+8.27& 0^2+2^2+1^2+1.97&\\
+17.18+7\times6+5\times2+32&0\times3+2\times6+1\times2+6.5&3^2+6^2+2^2+5^2
+\end{bmatrix}\\
+\widetilde{\mathbf{T}}_2&=
+\begin{bmatrix}
+148.05&27.27&101.18\\
+27.27&6.97&20.50\\
+101.18&20.50&74.00
+\end{bmatrix}
+\end{align}$$
+
+Isso completa uma etapa de predição.
+A próxima etapa de estimação, usando (5-40), fornece as estimativas revisadas:
+
+\[
+\widetilde{\boldsymbol{\mu}} = \dfrac{1}{n} \widetilde{\mathbf{T}}_1=\dfrac{1}{4}
+\begin{bmatrix}
+24.13\\
+4.3\\
+16
+\end{bmatrix}=
+\begin{bmatrix}
+6.03\\
+1.08\\
+4.00
+\end{bmatrix}
+\]
+
+\[\begin{align}
+\widetilde{\mathbf{\Sigma}} &= \dfrac{1}{n} \widetilde{\mathbf{T}}_2 - \widetilde{\boldsymbol{\mu}} \widetilde{\boldsymbol{\mu}}^{\prime}\\
+&=\dfrac{1}{4}\begin{bmatrix}
+148.05&27.27&101.18\\
+27.27&6.97&20.50\\
+101.18&20.50&74.00
+\end{bmatrix}-\begin{bmatrix}
+6.03\\
+1.08\\
+4.00
+\end{bmatrix}
+\begin{bmatrix}
+6.03&1.08&4.00
+\end{bmatrix}\\
+\widetilde{\mathbf{\Sigma}}&=\begin{bmatrix}
+0.61&0.33&1.17\\
+0.33&0.59&0.83\\
+1.17&0.83&2.50
+\end{bmatrix}
+\end{align}
+\]
+
+Observe que \( \widetilde{\sigma}_{11} = 0.61 \) e \( \widetilde{\sigma}_{22} = 0.59 \) são maiores do que as estimativas iniciais correspondentes obtidas ao substituir as observações faltantes nas primeira e segunda variáveis pelas médias amostrais dos valores restantes. A terceira estimativa de variância \( \widetilde{\sigma}_{33} \) permanece inalterada, porque não é afetada pelos componentes ausentes.
+A iteração entre as etapas de predição e estimação continua até que os elementos de \( \widetilde{\boldsymbol{\mu}} \) e \( \widetilde{\mathbf{\Sigma}} \) permaneçam essencialmente inalterados. Cálculos desse tipo são facilmente tratados com um computador.
+
+* [JW6_imputeEM_5.R](JW6_imputeEM_5.R){target="_blank"}
+
+```{r}
+x <- data.frame(x1 = c(NA, 7, 5, NA),
+                x2 = c(0, 2, 1, NA),
+                x3 = c(3, 6, 2, 5))
+print(x)
+ximput <- mvdalab::imputeEM(x)
+ximput2 <- ximput$Imputed.DataFrames[[2]]
+print(colMeans(x, na.rm=TRUE), digits=2)
+print(colMeans(ximput2), digits=2)
+print(cov(x, use="pairwise.complete.obs"), digits=2)
+print(cov(ximput2), digits=2)
+print(try(psych::corFiml(x,
+                         covar=TRUE)))
+
+ximput <- missMethods::impute_EM(x)
+print(colMeans(x, na.rm=TRUE), digits=2)
+print(colMeans(ximput), digits=2)
+print(cov(x, use="pairwise.complete.obs"), digits=2)
+print(cov(ximput), digits=2)
+```
+
+__Cuidado__. O algoritmo de predição-estimação que discutimos foi desenvolvido com base na ideia de que as observações de componentes estão faltando aleatoriamente. Se os valores ausentes estiverem relacionados aos níveis de resposta, o tratamento dos valores ausentes conforme sugerido pode introduzir sérios vieses nos procedimentos de estimação. Normalmente, os valores ausentes estão relacionados às respostas que estão sendo medidas. Portanto, devemos ser céticos em relação a qualquer esquema computacional que preencha valores como se tivessem sido perdidos aleatoriamente. Quando mais do que alguns valores estão faltando, é imperativo que o investigador procure as causas sistemáticas que os criaram.
+
+# Dificuldades Devido à Dependência Temporal em Observações Multivariadas
+
+Para os métodos descritos neste capítulo, assumimos que as observações multivariadas \(\mathbf{X}_1, \mathbf{X}_2,\ldots, \mathbf{X}_n\) constituem uma amostra aleatória; ou seja, elas são independentes umas das outras. Se as observações são coletadas ao longo do tempo, essa suposição pode não ser válida. A presença de até mesmo uma quantidade moderada de dependência temporal entre as observações pode causar sérias dificuldades para testes, regiões de confiança e intervalos de confiança simultâneos, que são todos construídos assumindo que a independência é válida.
+
+Vamos ilustrar a natureza da dificuldade quando a dependência temporal pode ser representada como um modelo autoregressivo multivariado de primeira ordem [AR(1)]. Suponha que o vetor aleatório \(p \times 1\), \(\mathbf{X}_t\), siga o modelo multivariado AR(1):
+
+\[\mathbf{X}_t - \boldsymbol{\mu} = \boldsymbol{\Phi}(\mathbf{X}_{t-1} - \boldsymbol{\mu}) + \boldsymbol{\epsilon}_t \tag{5-42}\]
+
+em que os \(\boldsymbol{\epsilon}_t\) são independentes e identicamente distribuídos com $\mathbb{E}(\boldsymbol{\epsilon}_t)=\mathbf{0}$ e \(\mathbb{C}(\boldsymbol{\epsilon}_t) = \mathbf{\Sigma}_\boldsymbol{\epsilon}\) e todos os autovalores da matriz de coeficientes \(\boldsymbol{\Phi}\) estão entre -1 e 1. Sob este modelo \(\mathbb{C}(\mathbf{X}_t, \mathbf{X}_{t-r}) = \boldsymbol{\Phi}^r \mathbf{\Sigma}_\mathbf{X}\) em que 
+
+$$\mathbf{\Sigma}_\mathbf{X}=\sum_{i=0}^{\infty}{\boldsymbol{\Phi}^i\mathbf{\Sigma}_\boldsymbol{\epsilon}\boldsymbol{\Phi}^{{\prime}i}}$$
+
+O modelo AR(1) (5-42) relaciona a observação no tempo \(t\) com a observação no tempo \(t - 1\) através da matriz de coeficientes \(\boldsymbol{\Phi}\). Além disso, o modelo autoregressivo diz que as observações são independentes, sob normalidade multivariada, se todas as entradas na matriz de coeficientes \(\boldsymbol{\Phi}\) são 0. O nome "modelo autoregressivo" vem do fato de que (5-42) parece uma versão multivariada de uma regressão com \(\mathbf{X}_t\) como a variável dependente e o valor anterior \(\mathbf{X}_{t-1}\) como a variável independente.
+
+Conforme mostrado em Johnson e Langeland [8],
+
+\[
+\bar{\mathbf{X}} \xrightarrow[\mathcal{P}]{} \boldsymbol{\mu}
+\]
+
+\[
+\mathbf{S} = \dfrac{1}{n-1} \sum_{i=1}^{n} (\mathbf{X}_i - \bar{\mathbf{X}})(\mathbf{X}_i - \bar{\mathbf{X}})^{\prime} \xrightarrow[\mathcal{P}]{} \mathbf{\Sigma_X}
+\]
+
+em que a seta acima indica convergência em probabilidade, e
+
+\[
+\text{Cov}\left(n^{-1/2}\sum_{t=1}^{n}{\mathbf{X}_t}\right) \xrightarrow[\mathcal{P}]{} (\mathbf{I} - \boldsymbol{\Phi})^{-1}\mathbf{\Sigma_X} + \mathbf{\Sigma_X}(\mathbf{I} - \boldsymbol{\Phi}^{\prime})^{-1} - \mathbf{\Sigma_X} \tag{5-43}
+\]
+
+Além disso, para um  \( n \) grande, \( \sqrt{n} (\bar{\mathbf{X}} - \boldsymbol{\mu}) \) é aproximadamente normal com média $\mathbf{0}$ e matriz de covariância dada por (5-43).
+
+Para simplificar os cálculos, suponha que o processo subjacente tenha \( \boldsymbol{\Phi} = \phi \mathbf{I} \) em que \( |\phi| < 1 \). Agora, considere a elipsóide de confiança nominal de 95% de  amostra grande para \( \boldsymbol{\mu} \).
+
+$$\left\{ \text{todo } \boldsymbol{\mu} \text{ tal que } n(\bar{\mathbf{X}} - \boldsymbol{\mu})^{\prime}\mathbf{S}^{-1}(\bar{\mathbf{X}} - \boldsymbol{\mu}) \leq \chi^2_p(0.95) \right\}$$
+
+Esta elipsóide tem probabilidade de cobertura de grande amostra de 0.95 se as observações forem independentes. Se as observações estiverem relacionadas pelo nosso modelo autorregressivo, no entanto, esta elipsóide tem probabilidade de cobertura de grande amostra
+
+\[ P\left[\chi_p^2 \le (1 - \phi)(1 + \phi)^{-1}\chi^2_p(0.95)\right] \]
+
+A Tabela 5.10 mostra como a probabilidade de cobertura está relacionada ao coeficiente \( \phi \) e ao número de variáveis \( p \).
+
+De acordo com a Tabela 5.10, a probabilidade de cobertura pode cair muito, para 0.632, mesmo para o caso bivariado.
+
+A suposição de independência é crucial, e os resultados baseados nesta suposição podem ser muito enganosos se as observações forem, de fato, dependentes.
+
+Tabela 5.10 Probabilidade de Cobertura da Elipsóide de Confiança Nominal de 95%
+
+\[
+\begin{array}{|c|c|c|c|c|}
+\hline
+p / \phi & -.25 & 0 & .25 & .5 \\
+\hline
+1 & .989 & .950 & .871 & .742 \\
+2 & .993 & .950 & .834 & .632 \\
+5 & .998 & .950 & .751 & .405 \\
+10 & .999 & .950 & .641 & .193 \\
+15 & 1.000 & .950 & .548 & .090 \\
+\hline
+\end{array}
+\]
+
+# Questões
+
+5.1, 5.2, 5.3, 5.7, 5.9, 5.12, 5.13, 5.15, 5.16, 5.17, 5.20, 5.25
+
+# Bibliografia
+
+* Livro adotado:
+  * JOHNSON, RA & W\text{IC}HERN, DW (2007) _Applied multivariate statistical analysis_. 6<sup>th</sup> ed. NJ: Prentice Hall.
+
+* ANDERSON, TW (2003) _An introduction to multivariate statistical analysis_. 3<sup>rd</sup> ed. NY: Wiley.
+* EVERITT, BS & HOTHORN, T (2011) _An introduction to applied multivariate analysis with R_. USA: Springer.
+* FLURY, B (1997) _A first course in multivariate statistics_. NY: Springer-Verlag.
+* HARDLE, W & SIMAR, L (2015) _Applied multivariate statistical analysis_. 4<sup>th</sup> ed. NY: Springer-Verlag.
+* JAMES, G; WITTEN, D; HASTIE, T; & TIBSHIRANI, R (2021) _An Introduction to statistical learning with applications in R_. 2<sup>nd</sup> ed. USA: Springer.
+* MARDIA, KV, KENT, JT & BIBBY, JM (2003) _Multivariate analysis_. UK: Academic.
+* MORRISON, DF (1990) _Multivariate statistical methods_. 3<sup>rd</sup> ed. NY: McGraw-Hill.
+* REIS, E (2001) _Estatística multivariada aplicada_. 2<sup>a</sup> ed. Lisboa: Sílabo.
+* REIS, SF (1988) Morfometria e Estatística Multivariada em Biologia Evolutiva. _Revista Brasileira de Zoologia_ 5(4): 571-80.
+* RENCHER, AC & CHRISTENSEN, WF (2012) _Methods of multivariate analysis_. 3<sup>rd</sup> ed. NJ: Wiley.
+* SAVILLE, DJ & WOOD, GR (1996) _Statistical methods:  a geometric primer_.USA: Lawrence Erlbaum. 
+* SOUZA, J (1997) _Estatística econômica e social_. RJ: Campus.
+* SRIVASTAVA, MS & CARTER, EM (1983) _An Introduction to applied multivariate Statistics_. North Holland.
+* SRIVASTAVA, MS (2006) _Methods of multivariate statistics_. NY: Wiley.
+* W\text{IC}KENS, TD (1995) _The geometry of multivariate Statistics_. USA: Lawrence Erlbaum.
+
+<br>
+
+# Bibliografia adicional
+
+* Soch, J et al. (2020) _The Book of Statistical Proofs_: https://statproofbook.github.io/
+
+* Batschelet, E (1978) _Introdução à matemática para biocientistas_. Tradução da 2ª ed. São Paulo: EDUSP e Rio de Janeiro: Interciência.
+* Batschelet, E (1979) _Introduction to mathematics for life scientists_. 3rd ed. NY: Springer.
+* Bickel, PJ & Doksum, KA (2001) _Mathematical Statistics: Basic Ideas and Selected Topics_, Volume I. USA: CRC.
+* Bilodeau, M & Brenner, D (1999) _Theory of Multivariate Statistics_. USA: Springer. T^2 de Hotelling
+* Denis, DJ (2021) _Applied Univariate, Bivariate, and Multivariate Statistics Using Python: A Beginners Guide to Advanced Data Analysis_. NJ: Wiley. 
+* Genz, A (1992) Numerical Computation of Multivariate Normal Probabilities. _Journal of Computational and Graphical Statistics_ 1(2): 141–149. https://doi.org/10.2307/1390838
+* Hardle, W & Hlavka, Z (2007) _Multivariate Statistics - Exercises and Solutions_. USA: Springer.
+* KASSAMBARA, A (2017) _Practical guide to cluster analysis in R: 
+Unsupervised machine learning_. STHDA: http://www.sthda.com.
+* Kollo. T &  von Rosen, D (2005) _Advanced Multivariate Statistics with Matrices_. USA: Springer. 
+* Kutner, MH et al. (2005) _Applied linear statistical model_. 5th ed. NY: McGraw-Hill/Irwin. 
+* MAIR, P (2018) _Modern psychometrics with R_. USA: Springer.
+* Manly, BFJ & Alberto, JAN (2017) _Multivariate Statistical Methods: A Primer using R_. 4<sup>th</sup> ed. USA: CRC.  
+* Matloff, N (2020) _Probability and Statistics for Data Science: Math + R _ Data_. USA: CRC.
+* Mirman, D (2014) _Growth Curve Analysis and Visualization Using R_. USA: CRC.
+* Pessoa, DGC (2008) Exemplos do livro de Johnson e Wichern.
+* Rawlings, JO et al. (1998) _Applied Regression Analysis: A Research Tool_. USA: Springer. T^2 de Hotelling
+* Schumacker, RE (2016) _Using R With Multivariate Statistics_. USA: SAGE.
+* Siqueira, JO (2012) _Fundamentos de métodos quantitativos_: aplicados em Administração, Economia, Contabilidade e Atuária usando WolframAlpha e SCILAB. São Paulo: Saraiva. Soluções dos exercícios em  https://www.researchgate.net/publication/326533772_Fundamentos_de_metodos_quantitativos_-_Solucoes.
+* Tay, A  (2018) _OLS using Matrix Algebra_. http://www.mysmu.edu/faculty/anthonytay/MFE/OLS_using_Matrix_Algebra.pdf 
+* Teichroew, D (1964) _An introduction to management science: deterministic models_. NJ: Wiley.
+* Timm, NH (2002) _Applied Multivariate Analysis_. USA: Springer. T^2 de Hotelling 
+* Zelterman, D (2015) _Applied Multivariate Statistics with R_. USA: Springer. 
+
+<!-- * https://esajournals.onlinelibrary.wiley.com/doi/10.1890/0012-9658%282000%29081%5B3178%3ACARTAP%5D2.0.CO%3B2 -->
+<!-- CLASSIF\text{IC}ATION AND REGRESSION TREES: A POWERFUL YET SIMPLE TECHNIQUE FOR ECOLOG\text{IC}AL DATA ANALYSIS -->
+<!-- Glenn De'ath,Katharina E. Fabricius -->
+<!-- Volume81, Issue11, November 2000, Pages 3178-3192 -->
+
+<!-- * Multivariate Regression Trees: A New Technique for Modeling Species-Environment Relationships -->
+<!-- Author(s): Glenn De'ath -->
+<!-- Source: Ecology, Vol. 83, No. 4 (Apr., 2002), pp. 1105-1117 -->
+<!-- http://www.jstor.org/stable/3071917 -->
+
+<!-- * Zhang Z. Decision tree modeling using R. -->
+<!--  Ann Transl Med 2016;4(15):275. doi: 10.21037/atm.2016.05.14 -->
+<!--  http://dx.doi.org/10.21037/atm.2016.05.14 -->
+
+<br>
+
+# Aplicativos 
+
+* OpenAI (2021) ChatGPT. https://openai.com/research/chatgpt
+* Wolfram Research (n.d.) Wolfram|Alpha. https://www.wolframalpha.com/
+* Scilab Enterprises (n.d.) Scilab - Open source software for numerical computation. https://www.scilab.org/
+
+# Análise estatística multivariada em R e Python na internet
+
+* Nguyen, M (2020) A Guide on Data Analysis. Bookdown. https://bookdown.org/mike/data_analysis/
+* Chaves Neto, A. CE-704 ANÁLISE MULTIVARIADA APL\text{IC}ADA À
+PESQUISA. https://docs.ufpr.br/~soniaisoldi/ce090/CE076AM_2010.pdf
+* ME 731 - Métodos em Análise Multivariada em R. https://www.ime.unicamp.br/~cnaber/Material_AM_2S_2020.htm
+* Nogueira, FE (2007) Modelos de regressão multivariada. Dissertação (Mestrado). https://teses.usp.br/teses/disponiveis/45/45133/tde-25062007-163150/publico/dissertacao_4.pdf
+* Análise Multivariada. https://www.professores.uff.br/samuelcampos/analise-multivariada/
+
+* Severn, K (2023) Multivariate Statistics.
+https://rich-d-wilkinson.github.io/MATH3030/
+* Powell, J (2019) Multivariate statistics in R. https://www.hiercourse.com/multivariate
+* Plotting PCA/clustering results using ggplot2 and ggfortify: https://rpubs.com/sinhrks/plot_pca
+* ggfortify : Extension to ggplot2 to handle some popular packages - R software and data visualization: http://www.sthda.com/english/wiki/ggfortify-extension-to-ggplot2-to-handle-some-popular-packages-r-software-and-data-visualization
+* A Little Book of Python for Multivariate Analysis: https://python-for-multivariate-analysis.readthedocs.io/index.html
+
+# Matriz e vetor no YouTube 
+
+* [Zach Star: The Applications of Matrices | What I wish my teachers told me way earlier](https://www.youtube.com/watch?v=rowWM-MijXU&t=695s){target="_blank"}
+
+* [Zach Star: O determinante | A essência da Álgebra Linear, capítulo 5](https://www.youtube.com/watch?v=Ip3X9LOh2dk&t=171s){target="_blank"}
+
+* [Zach Star: The applications of eigenvectors and eigenvalues | That thing you heard in Endgame has other uses](https://www.youtube.com/watch?v=i8FukKfMKCI&t=90s){target="_blank"}
+
+
+
+
+
+

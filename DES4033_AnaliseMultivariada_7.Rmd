@@ -1,0 +1,2381 @@
+--- 
+title: "DES4033: Análise Multivariada em Biologia"
+subtitle: "Capítulo 7: Modelo de Regressão Linear Multivariada" 
+author: |
+  | [José Siqueira](https://sites.google.com/usp.br/profjosesiqueira){target="_blank"}
+date: "`r format(Sys.time(), format='%d %B %Y %H:%Mh')`"
+output:
+  html_document:
+    css: style.css
+    footer: "DES4033_AnaliseMultivariada_7.Rmd"
+    font_adjustment: 1
+    df_print: tibble
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_title: Sumário
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+  slidy_presentation:
+    css: style.css
+    footer: "DES4033_AnaliseMultivariada_7.Rmd"
+    font_adjustment: -1
+    df_print: tibble
+    highlight: pygments
+    theme: cerulean
+    number_sections: no
+    toc: yes
+    toc_title: Sumário
+    toc_depth: 4
+    toc_float:
+      collapsed: yes
+      smooth_scroll: no
+---
+
+```{r set-options, echo=FALSE}
+options(width = 80)
+```
+
+```{css, echo=FALSE}
+.code {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid darkgray;
+  font-weight: bold;
+  max-width: none !important;
+}
+.output {
+  font-size: 18px;
+  background-color: white;
+  border: 1px solid black;
+  font-weight: bold;
+  max-width: none !important;
+}
+.main-container {
+  max-width: none !important;
+ }
+pre {
+  max-height: 500px !important;
+  overflow-y: auto !important;
+  overflow-x: scroll !important;
+ }
+.bgobs {
+  background-color: #a0d8d8;
+ }
+.bgcodigo {
+  background-color: #eeeeee;
+ }
+.bgsaida {
+  background-color: #ecf7db;
+ }
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval=TRUE,
+                      echo=TRUE, 
+                      fig.width=7, 
+                      fig.height=6,
+                      fig.align="center",
+                      comment=NA,
+                      class.source="code",
+                      class.output="output")
+```
+
+```{r eval=TRUE, echo=FALSE}
+systoper <- Sys.info()[[1]]
+if (systoper == "Linux")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("","home","silveira","Scilab","bin","scilab")
+  parameter <- "-nw"
+}
+# Windows
+if (systoper == "Windows")
+{
+  # Troque para o executavel de onde esta instalado o scilab em seu computador
+  executable <- file.path("D:", "Usuarios", "Jose", "scilab2023", "bin", "Scilex")
+  parameter <- ""
+}
+```
+
+```{r,eval=TRUE,echo=FALSE}
+eng_scilab <- function(options) {
+code <- stringr::str_c(options$code, collapse = '\n')
+if (options$eval) 
+{
+  cmd <- sprintf("%s %s -e %s",
+                 executable,
+                 parameter,
+                 shQuote(code,type="cmd"))
+  out <- system(cmd, intern = TRUE)
+}else{out <- "output when eval=FALSE and engine='scilab'"}
+
+knitr::engine_output(options, options$code, out)
+
+}
+
+knitr::knit_engines$set(scilab=eng_scilab)
+```
+
+```{r}
+invisible(Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8"))
+invisible(Sys.setlocale("LC_ALL", "pt_BR.UTF-8"))
+```
+
+```{r}
+options(warn=-1)
+suppressMessages(library(knitr, warn.conflicts=FALSE))
+suppressMessages(library(matrixcalc, warn.conflicts=FALSE))
+suppressMessages(library(matlib, warn.conflicts=FALSE))
+suppressMessages(library(calculus, warn.conflicts=FALSE))
+suppressMessages(library(MASS, warn.conflicts=FALSE))
+suppressMessages(library(pracma, warn.conflicts=FALSE))
+suppressMessages(library(far, warn.conflicts=FALSE))
+suppressMessages(library(rgl, warn.conflicts=FALSE))
+suppressMessages(library(MatrixModels, warn.conflicts=FALSE))
+suppressMessages(library(matrixStats, warn.conflicts=FALSE))
+suppressMessages(library(MatchIt, warn.conflicts=FALSE)) # distancia robusta
+suppressMessages(library(ellipse, warn.conflicts=FALSE))
+suppressMessages(library(car, warn.conflicts=FALSE))
+suppressMessages(library(HSAUR2, warn.conflicts=FALSE))
+suppressMessages(library(ggfortify, warn.conflicts=FALSE))
+suppressMessages(library(ggplot2, warn.conflicts=FALSE))
+suppressMessages(library(cluster, warn.conflicts=FALSE))
+suppressMessages(library(lfda, warn.conflicts=FALSE))
+suppressMessages(library(scatterplot3d, warn.conflicts=FALSE))
+suppressMessages(library(GGally, warn.conflicts=FALSE))
+suppressMessages(library(plotly, warn.conflicts=FALSE))
+suppressMessages(library(dplyr, warn.conflicts=FALSE))
+suppressMessages(library(fmsb, warn.conflicts=FALSE))
+suppressMessages(library(aplpack, warn.conflicts=FALSE))
+suppressMessages(library(DescTools, warn.conflicts=FALSE))
+suppressMessages(library(reticulate, warn.conflicts=FALSE))
+suppressMessages(library(mvtnorm, warn.conflicts=FALSE))
+suppressMessages(library(MVN, warn.conflicts=FALSE))
+suppressMessages(library(MomTrunc, warn.conflicts=FALSE))
+suppressMessages(library(rcompanion, warn.conflicts=FALSE))
+suppressMessages(library(cellWise, warn.conflicts=FALSE))
+suppressMessages(library(lawstat, warn.conflicts=FALSE))
+suppressMessages(library(diptest, warn.conflicts=FALSE))
+suppressMessages(library(MVar.pt, warn.conflicts=FALSE))
+suppressMessages(library(MVLM, warn.conflicts=FALSE))
+# An Introduction to Applied Multivariate Analysis with R'
+# (Brian S. Everitt and Torsten Hothorn, Springer, 2011)
+suppressMessages(library(MVA, warn.conflicts=FALSE))
+suppressMessages(library(apaTables, warn.conflicts=FALSE))
+suppressMessages(library(ppcor, warn.conflicts=FALSE))
+suppressMessages(library(FlexReg, warn.conflicts=FALSE))
+source("summarySEwithin2.R")
+```
+
+# Material
+
+* HTML de R Markdown em [`RPubs`](http://rpubs.com/josiqueira/){target="_blank"}
+* Arquivos em [`GitHub`](https://github.com/josiqueira/EstatMedR){target="_blank"}
+* [Prof. José Siqueira: ResearchGate](https://www.researchgate.net/profile/Jose-Siqueira-18){target="_blank"}
+
+# Pensamento
+
+"Não é paradoxo dizer que nos nossos momentos de inspiração mais teórica podemos estar o mais próximo possível de nossas aplicações mais práticas."
+
+> WHITEHEAD, AN _apud_ BOYER, CB (1974) _História da matemática_. São Paulo: Blücher/EDUSP, p. 419.
+
+# Sumário
+
+1. Aspectos de análise multivariada
+1. Álgebra matricial e vetor estocástico
+1. Geometria amostral e amostragem aleatória
+1. Distribuição normal multivariada
+1. Inferência sobre vetor de média 
+1. Comparação de várias médias multivariadas
+1. Modelo de regressão linear multivariada
+1. Componentes principais
+1. Análise de fatores e inferência sobre matriz de covariância
+1. Análise de correlação canônica
+1. Discriminação e classificação
+1. Clusterização, métodos de distância e _ordination_
+  
+<!-- # Adicionar -->
+
+<!-- * Linear Algebra and Its Applications with R - Yoshida - 2021.pdf -->
+<!--   * 2.2.5 Conceptual Quizzes -->
+<!--   * 3.1 Introductory Example from Astronomy : library(conics) -->
+<!--   * 4.1 Introductory Example from Data Science: library(factoextra) -->
+<!--   * 6.2.2 Working Examples  -->
+
+<!-- # 6. Comparação de várias médias multivariadas -->
+
+<!-- ## Introdução -->
+
+<!-- # 7. Modelo de regressão linear multivariada -->
+
+<!-- ## Introdução -->
+
+<!-- # 8. Componentes principais -->
+
+<!-- ## Introdução -->
+
+<!-- # 9. Análise de fatores e inferência sobre matriz de covariância -->
+
+<!-- ## Introdução -->
+
+<!-- # 10. Análise de correlação canônica -->
+
+<!-- ## Introdução -->
+
+<!-- # 11. Discriminação e classificação -->
+
+<!-- ## Introdução -->
+
+<!-- # 12. Clusterização, métodos de distância e _ordination_ -->
+
+# Incluir
+
+* [Classical Multivariate Regression](https://cran.r-project.org/web/packages/rrr/vignettes/rrr.html)
+
+* Alexopoulos E. C. (2010). Introduction to multivariate regression analysis. Hippokratia, 14(Suppl 1), 23–28. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3049417/
+
+* Notes for Predictive Modeling: 4.3 Multivariate multiple linear model: Eduardo García-Portugués, 2023:  https://bookdown.org/egarpor/PM-UC3M/lm-iii-mult.html
+
+* The Epidemiologist: R Handbook: 19 Univariate and multivariable regression: https://epirhandbook.com/en/univariate-and-multivariable-regression.html
+
+# Introdução
+
+A análise de regressão é a metodologia estatística para prever valores de uma ou mais variáveis de resposta (dependentes) a partir de uma coleção de valores de variáveis preditoras (independentes). Também pode ser usada para avaliar os efeitos das variáveis preditoras nas respostas. Infelizmente, o nome "regressão", derivado do título do primeiro artigo sobre o assunto por F. Galton, de forma alguma reflete a importância ou a amplitude de aplicação desta metodologia.
+
+Neste capítulo, discutimos primeiramente o modelo de regressão múltipla para a previsão de uma única resposta. Esse modelo é então generalizado para lidar com a previsão de várias variáveis dependentes. Nosso tratamento deve ser um tanto conciso, pois existe uma vasta literatura sobre o assunto. (Se você estiver interessado em aprofundar-se na análise de regressão, consulte os seguintes livros, em ordem ascendente de dificuldade: Abraham e Ledolter, Bowerman e O'Connell, Kutner et al. (2005), Draper e Smith (1998), Cook e Weisberg, Seber e Goldberger.) Nosso tratamento abreviado destaca as suposições da regressão e suas consequências, formulações alternativas do modelo de regressão e a aplicabilidade geral das técnicas de regressão em situações aparentemente diferentes.
+
+# Modelo de Regressão Linear Clássico
+
+Seja \(z_1, z_2, \ldots, z_r\) as variáveis preditoras que se acredita estarem relacionadas com uma variável de resposta \(Y\). Por exemplo, com \(r = 4\), poderíamos ter o seguinte modelo de regressão hedônica [Hedonic regression](https://en.wikipedia.org/wiki/Hedonic_regression){target="_blank"}:
+
+- \(Y =\) valor de mercado atual do imóvel
+
+e
+
+- \(z_1 =\) metros quadrados de área habitável
+- \(z_2 =\) localização (indicador para a zona da cidade central ou não central)
+- \(z_3 =\) valor avaliado no ano passado
+- \(z_4 =\) qualidade da construção (preço por metro quadrado)
+
+O modelo de regressão linear clássico afirma que \(Y\) é composto por uma média, que depende de maneira contínua das variáveis \(z_i\), e um erro aleatório \(e\), que contabiliza o erro de medição e os efeitos de outras variáveis não explicitamente consideradas no modelo. Os valores das variáveis preditoras registrados no experimento ou definidos pelo pesquisador são tratados como fixos (sem erro de medição). O erro (e, portanto, a resposta) é visto como uma variável aleatória cujo comportamento é caracterizado por um conjunto de pressupostos distribucionais.
+
+## Erro de Medição (Kutner et al. 2005, p. 165)
+
+Em modelo de regressão não consideramos explicitamente a presença de erros de medição nas observações, seja na variável de resposta Y ou na variável preditora X. Agora examinaremos brevemente os efeitos dos erros de medição nas observações das variáveis de resposta e preditora.
+
+### Erro de Medição na VD
+
+Quando erros de medição aleatórios estão presentes nas observações da variável de resposta Y, não são criados novos problemas quando esses erros são não correlacionados e não tendenciosos (erros de medição positivos e negativos tendem a se anular). Considere, por exemplo, um estudo da relação entre o tempo necessário para completar uma tarefa (Y) e a complexidade da tarefa (X). O tempo para completar a tarefa pode não ser medido com precisão porque a pessoa operando o cronômetro pode não fazê-lo nos instantes precisos necessários. Contanto que esses erros de medição sejam de natureza aleatória, não correlacionados e não tendenciosos, esses erros de medição são simplesmente absorvidos no termo de erro do modelo \( \varepsilon \). O termo de erro do modelo sempre reflete os efeitos compostos de um grande número de fatores não considerados no modelo, um dos quais agora seria a variação aleatória devido à imprecisão no processo de medição de Y.
+
+# Erro de Medição na VI
+
+Infelizmente, uma situação diferente ocorre quando as observações na variável preditora X estão sujeitas a erros de medição. Frequentemente, é claro, as observações em X são precisas, sem erros de medição, como quando a variável preditora é o preço de um produto em diferentes lojas, o número de variáveis em diferentes problemas de otimização ou a taxa salarial para diferentes classes de empregados. Em outros momentos, no entanto, erros de medição podem entrar no valor observado para a variável preditora, por exemplo, quando a variável preditora é a pressão em um tanque, a temperatura em um forno, a velocidade de uma linha de produção ou a idade relatada de uma pessoa.
+
+# Regressão Linear Univariada Simples
+
+* $r$: número de variáveis explicativas/preditoras/indepedentes/covariáveis intervalares
+
+* $p=1, q=1, r=1$
+
+```{r echo=FALSE, out.width="100%", fig.cap="Tabela 1. Representações univariada e multivariada do GLM (Modelo Linear General). Chartier & Faulkner, 2008"}
+knitr::include_graphics("./image/GLM_Uni_Multivariado.png")
+```
+
+Uma forma de definir com mais precisão o número de variáveis dependentes (DV) é $pq$. Se $pq=1$, o modelo é univariado. Se $pq\ge2$, o modelo é multivariado.
+
+Observar que Correlação Canônica não tem VD-VI, pois não é um modelo de regressão. A confusão da classificação começa ao misturar variável manifesta com variável latente. Variável latente pode ser nominal ou intervalar (_continuous_). Note que Regressão Multivariada em GLM multivariado.
+
+```{r echo=FALSE, out.width="80%", fig.cap="Figura 1. Diagramas de Venn para a) dois preditores intervalares em regressão, b) análise de variância unifatorial, c) ANOVA bifatorial e d) medidas repetidas. Chartier & Faulkner, 2008"}
+knitr::include_graphics("./image/Fig1_VennDiagram.png")
+```
+
+* Chartier, S & Faulkner, A (2008) General Linear Models: An integrated approach to statistics. _Tutorial in Quantitative Methods for Psychology_
+4(2): 65‐78.
+
+* [`JW6_Cap7_RLS_ANOVA_Testet.R`](JW6_Cap7_RLS_ANOVA_Testet.R){target="_blank"}  
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+alfa <- 0.05 
+# The Effect of Vitamin C on Tooth Growth in Guinea Pigs
+# len: numeric	Tooth length
+# supp:	factor	Supplement type (VC or OJ).
+#	dose:	numeric	Dose in milligrams/day
+Dados <- datasets::ToothGrowth
+print.data.frame(Dados)
+Dados$supp <- factor(Dados$supp,
+                     levels=c("VC", "OJ"))
+Dados$dose <- factor(Dados$dose)
+boxplot(len~supp,
+        data=Dados)
+alfaBonf <- alfa/length(unique(Dados$supp))
+gplots::plotmeans(len~supp,
+                  connect=FALSE,
+                  col="black",
+                  barcol="black",
+                  p=1-alfaBonf,
+                  main="Porquinho-da-Índia",
+                  data=Dados)
+
+# Solução 1: lm(len~supp, data=Dados), car::Anova e summary
+fit <- lm(len~supp,
+          data=Dados)
+print(sai <- car::Anova(fit))
+print(out <- summary(fit))
+R2 <- out$r.squared
+df1 <- sai$Df[1]
+df2 <- sai$Df[2]
+F_omnibus <- (R2/df1)/((1-R2)/df2) # Pestana & Gageiro, 2005, p. 77
+pv <- 1-pf(F_omnibus, df1, df2)
+if(pv<2.2e-16) p_omnibus <- "< 2.2e-16"
+if(pv>2.2e-16) p_omnibus <- paste0("= ", formatC(pv, format="e", digits=2))
+Fcrit <- qf(1-alfa, df1, df2)
+cat("Omnibus F(",df1, ",", df2, ") = ", round(Fcrit,4), 
+    ", F = ", round(F_omnibus,4), 
+    ", p ", p_omnibus, ", R^2 = eta^2 = ", round(R2,4), sep="")
+print(effectsize::eta_squared(fit,
+                              partial = TRUE,
+                              generalized = FALSE,
+                              ci = 1-alfa,
+                              alternative = "two.sided",
+                              verbose = TRUE), digits=2)
+
+# Solução 2: lm(Dados$len~supp.num) e model.matrix(~supp, data=Dados) 
+supp.num <- as.numeric(Dados$supp)
+xtabs(~Dados$supp)
+xtabs(~supp.num)
+fit <- lm(Dados$len~supp.num)
+print(car::Anova(fit))
+print(summary(fit))
+r <- cor(Dados$len, supp.num)
+r
+R2 <- r^2
+dm <- model.matrix(~supp, data=Dados)
+str(dm)
+n <- dim(dm)[1]
+df1 <- dim(dm)[2] - 1
+df2 <- dim(dm)[1] - 2
+# n <- nrow(Dados)
+# df1 <- 1
+# df2 <- n - 2
+F_omnibus <- (R2/df1)/((1-R2)/df2) # Pestana & Gageiro, 2005, p. 77
+pv <- 1-pf(F_omnibus, df1, df2)
+if(pv<2.2e-16) p_omnibus <- "< 2.2e-16"
+if(pv>2.2e-16) p_omnibus <- paste0("= ", formatC(pv, format="e", digits=2))
+Fcrit <- qf(1-alfa, df1, df2)
+cat("Omnibus F(",df1, ",", df2, ") = ", round(Fcrit,4), 
+    ", F = ", round(F_omnibus,4), 
+    ", p ", p_omnibus, ", R^2 = eta^2 = ", round(R2,4), "\n", sep="")
+print(effectsize::eta_squared(fit,
+                              partial = TRUE,
+                              generalized = FALSE,
+                              ci = 1-alfa,
+                              alternative = "two.sided",
+                              verbose = TRUE), digits=2)
+confint(fit)
+len.media <- mean(Dados$len)
+VC.media <- mean(supp.num)
+len.sd <- sd(Dados$len)
+VC.sd <- sd(supp.num)
+beta1_hat <- r*len.sd/VC.sd
+beta0.hat <- len.media - beta1_hat*VC.media
+y.hat <- beta0.hat + beta1_hat*supp.num
+MSE <- sum((Dados$len-y.hat)^2)/(df2)
+sqrt(MSE)
+beta1.se <- sqrt(MSE/((n-1)*(VC.sd)^2))
+t.obs <- beta1_hat/beta1.se
+beta1.LI <- beta1_hat - qt(1-alfa/2, df2)*beta1.se
+beta1.LS <- beta1_hat + qt(1-alfa/2, df2)*beta1.se
+cat("\nIC95%(beta1) = [", round(beta1.LI,4), ", ", 
+    round(beta1.LS,4), "]", "\n", sep="")
+confint(fit)
+
+# Solução 3: DescTools::TTestA
+len.mean <- aggregate(len~supp, FUN=mean, data=Dados)
+len.sd <- aggregate(len~supp, FUN=sd, data=Dados)
+len.n <- aggregate(len~supp, FUN=length, data=Dados)
+DescTools::TTestA(mx=len.mean[2,2],
+                  sx=len.sd[2,2],
+                  nx=len.n[2,2],
+                  my=len.mean[1,2],
+                  sy=len.sd[1,2],
+                  ny=len.n[1,2],
+                  paired=FALSE,
+                  var.equal=TRUE,
+                  conf.level=1-alfa)
+
+# Solução 4: Fórmula com n, média e desvio-padrão
+nA <- len.n[2,2]
+nB <- len.n[1,2]
+mediaA <- len.mean[2,2]
+mediaB <- len.mean[1,2]
+dpA <- len.sd[2,2]
+dpB <- len.sd[1,2]
+dif <- mediaA - mediaB
+dfA <- nA - 1
+dfB <- nB - 1
+df <- dfA + dfB
+sdp <- sqrt((dfA*dpA^2+dfB*dpB^2)/df)
+ep <- sdp*sqrt((1/nA+1/nB))
+t <- dif/ep
+p <- 2*pt(-abs(t),df)
+eta2 <- t^2/(t^2 + df)
+mag_eta2 <- effectsize::interpret_eta_squared(eta2)
+cat("\nAnálise de significância estatística: valor p\n")
+cat("\tt = ",t,"\n",sep="")
+cat("\tdf = ",df,"\n",sep="")
+cat("\tValor-p = ",p,"\n",sep="")
+cat("Análise de significância prática: tamanho de efeito\n")
+cat("\tEta^2 = ",eta2, "\n", sep="")
+print(mag_eta2)
+```
+
+$$\Diamond$$
+
+# Modelo de Regressão Linear Múltipla
+
+Especificamente, o modelo de regressão linear com uma única resposta tem a forma:
+
+\[\begin{align}
+Y &= \sum_{i=0}^{r}{\beta_iz_i} + \varepsilon\\
+z_0&=1
+\end{align}\]
+
+\[ \text{Resposta} = \text{média (dependendo de } z_1, z_2, \ldots, z_r) + \text{erro} \]
+
+O termo "linear" refere-se ao fato de que a média é uma função linear dos parâmetros desconhecidos \(\beta_0, \beta_1, \ldots, \beta_r\). As variáveis preditoras podem ou não entrar no modelo como termos de primeira ordem.
+
+Com \(n\) observações independentes em \(Y\) e os valores associados de \(z_i\), o modelo completo torna-se:
+
+\[
+\begin{aligned}
+Y_1 & = \beta_0z_{10} + \beta_1z_{11} + \beta_2z_{12} + \cdots + \beta_rz_{1r} + \varepsilon_1 \\
+Y_2 & = \beta_0z_{20} + \beta_1z_{21} + \beta_2z_{22} + \cdots + \beta_rz_{2r} + \varepsilon_2 \\
+& \vdots \\
+Y_n & = \beta_0z_{n0} + \beta_1z_{n1} + \beta_2z_{n2} + \cdots + \beta_rz_{nr} + \varepsilon_n
+\end{aligned}
+\]
+
+ou
+
+\[
+Y_i = \sum_{k=0}^{r} \beta_k z_{ik} + \varepsilon_i\\
+i = 1, 2, \ldots, n
+\]
+
+Em que $z_{10}=z_{20}=\cdots=z_{n0}=1$.
+
+Os termos de erro são assumidos ter as seguintes propriedades:
+
+1. \(\mathbb{E}(\varepsilon_i) = 0\);
+2. \(\mathbb{V}(\varepsilon_i) = \sigma^2\) (homocedasticidade); e
+3. \(\mathbb{C}(\varepsilon_i, \varepsilon_j) = 0\), para \(i \neq j\).
+
+Em notação de matriz, a equação (7-1) torna-se:
+
+\[
+\begin{bmatrix}
+Y_1 \\
+Y_2 \\
+\vdots \\
+Y_n
+\end{bmatrix}
+=
+\begin{bmatrix}
+1 & z_{11} & z_{12} & \cdots & z_{1r} \\
+1 & z_{21} & z_{22} & \cdots & z_{2r} \\
+\vdots & \vdots & \vdots & \ddots & \vdots \\
+1 & z_{n1} & z_{n2} & \cdots & z_{nr}
+\end{bmatrix}
+\begin{bmatrix}
+\beta_0 \\
+\beta_1 \\
+\beta_2 \\
+\vdots \\
+\beta_r
+\end{bmatrix}
++
+\begin{bmatrix}
+\varepsilon_1 \\
+\varepsilon_2 \\
+\vdots \\
+\varepsilon_n
+\end{bmatrix} \tag{7-1}
+\]
+
+ou
+
+\[
+\mathbf{Y} = \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon}
+\]
+
+com dimensões \(n \times 1\), \(n \times (r+1)\), \((r+1) \times 1\) e \(n \times 1\), respectivamente.
+
+E as especificações em (7-2) tornam-se:
+
+1. \(\mathbb{E}(\boldsymbol{\varepsilon}) = \mathbf{0}\);
+2. \(\mathbb{C}(\boldsymbol{\varepsilon}) = \mathbb{E}(\boldsymbol{\varepsilon}\boldsymbol{\varepsilon}^{\prime}) = \sigma^2\mathbf{I}\).
+
+|             | Estocástico | Determinístico |
+|-------------|-------------|----------------|
+| Observável  | $\mathbf{Y}$   | $\mathbf{z}$    |
+| Estimável   | $\boldsymbol{\varepsilon}$ | $\boldsymbol{\beta}$ |
+
+Observe que o valor 1 na primeira coluna da _matriz de planejamento_ (_design matrix_) \( \mathbf{z} \) é o multiplicador do termo constante \( \beta_0 \). É costumeiro introduzir a variável artificial igual a 1.
+
+Cada coluna de \( \mathbf{z} \) consiste nos \( n \) valores da variável preditora correspondente, enquanto a \( i \)-ésima linha de \( \mathbf{z} \) contém os valores para todas as variáveis preditoras na \( i \)-ésima observação.
+
+## Modelo de Regressão Linear Clássico
+
+\[
+\mathbf{Y} = \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon}
+\]
+
+\[
+\mathbb{E}(\boldsymbol{\varepsilon}) = \mathbf{0} \quad \text{e} \quad \mathbb{C}(\boldsymbol{\varepsilon}) = \sigma^2\mathbf{I} \tag{7-3}
+\]
+
+em que \(\boldsymbol{\beta}\) e \(\sigma^2\) são parâmetros desconhecidos, e a matriz de planejamento \(\mathbf{z}\) tem como linha \(i\):
+
+\[
+[z_{i0} \; z_{i1} \; \cdots\; z_{ir}]
+\]
+
+Embora as suposições do termo de erro em (7-2) sejam muito modestas, mais tarde precisaremos adicionar a suposição de multinormalidade para intervalos de confiança e testar hipóteses.
+
+Agora, forneceremos alguns exemplos do modelo de regressão linear.
+
+## Exemplo 7.1: Ajustando um modelo de regressão linear para uma reta
+
+Determine o modelo de regressão linear para ajustar uma reta
+
+Resposta média = \( \mathbb{E}(Y) = \beta_0 + \beta_1 z_1 \)
+
+para os dados
+
+
+|  |  |  |  |  |  |
+|---------|---|---|---|---|---|
+| \(z_1\) | 0 | 1 | 2 | 3 | 4 |
+| \(y\)   | 1 | 4 | 3 | 8 | 9 |
+
+
+Antes das respostas serem observadas, os erros são estocásticos:
+
+\[ \mathbf{Y} = \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon} \]
+
+em que 
+
+\[ \boldsymbol{\varepsilon}^{\prime} = [\varepsilon_1 \; \varepsilon_2\; \cdots \; \varepsilon_5] \]
+
+A equação para da \(i\)-ésimo observação é
+
+\[
+Y_i = \beta_0 + \beta_1 z_{i1} + \varepsilon_i
+\]
+
+em que
+
+\[
+\mathbf{Y} = \begin{bmatrix}
+Y_1 \\
+Y_2 \\
+Y_3 \\
+Y_4 \\
+Y_5
+\end{bmatrix}
+\]
+
+é o vetor de respostas,
+
+\[
+\mathbf{z} = \begin{bmatrix}
+1 & z_{11} \\
+1 & z_{21} \\
+1 & z_{31} \\
+1 & z_{41} \\
+1 & z_{51}
+\end{bmatrix}
+\]
+
+é a matriz de _design_,
+
+\[
+\mathbf{\varepsilon} = \begin{bmatrix}
+\varepsilon_1 \\
+\varepsilon_2 \\
+\varepsilon_3 \\
+\varepsilon_4 \\
+\varepsilon_5
+\end{bmatrix}
+\]
+
+é o vetor de erros aleatórios, e
+
+\[
+\mathbf{\beta} = \begin{bmatrix}
+\beta_0 \\
+\beta_1
+\end{bmatrix}
+\]
+
+é o vetor de parâmetros desconhecidos.
+
+Os dados para esse modelo de regressão linear simples estão contidos no vetor de resposta observada \( \mathbf{y} \) e na matriz de _design_ \( \mathbf{z} \), em que
+
+\[
+\mathbf{y} = \begin{bmatrix}
+y_1 \\
+y_2 \\
+y_3 \\
+y_4 \\
+y_5
+\end{bmatrix}
+= \begin{bmatrix}
+1 \\
+4 \\
+3 \\
+8 \\
+9
+\end{bmatrix}
+\]
+
+e
+
+\[
+\mathbf{z} = \begin{bmatrix}
+1 & z_{11} \\
+1 & z_{21} \\
+1 & z_{31} \\
+1 & z_{41} \\
+1 & z_{51}
+\end{bmatrix}
+= \begin{bmatrix}
+1 & 0 \\
+1 & 1 \\
+1 & 2 \\
+1 & 3 \\
+1 & 4
+\end{bmatrix}
+\]
+
+
+Note a seguir que podemos lidar com uma expressão quadrática para a resposta média introduzindo o termo \( \beta_2z_2 \) com \( z_2 = z_{1}^2 \).
+Os dados para este modelo de regressão linear múltipla estão contidos no vetor de resposta observável \( \mathbf{Y} \) e na matriz de _design_ \( \mathbf{Z} \), em que
+
+\[
+\begin{aligned}
+\mathbf{Y} & = \begin{bmatrix}
+Y_1 \\
+Y_2 \\
+\vdots \\
+Y_n
+\end{bmatrix} \\
+\mathbf{z} & = \begin{bmatrix}
+1 & z_{11} & z_{11}^2 \\
+1 & z_{21} & z_{21}^2 \\
+\vdots & \vdots & \vdots \\
+1 & z_{n1} & z_{n1}^2
+\end{bmatrix}
+\end{aligned}
+\]
+
+O modelo de regressão linear múltipla para a \( i \)-ésimo observação neste último caso pode ser:
+
+Modelo com duas variáveis preditoras:
+
+\[
+Y_i = \beta_0 + \beta_1 z_{i1} + \beta_2 z_{i2} + \varepsilon_i
+\]
+
+ou
+
+Modelo com uma variável preditora com efeitos linear e quadrático (polinômio de ordem 2):
+
+\[
+Y_i = \beta_0 + \beta_1 z_{i1} + \beta_2 z_{i1}^2 + \varepsilon_i
+\]
+
+$$\Diamond$$
+
+## Exemplo 7.2: A matriz de delineamento para ANOVA univariada como um modelo de regressão
+
+Determine a matriz de planejamento se o modelo de regressão linear for aplicado à situação de ANOVA unifatorial univariada independente no Exemplo 6.7.
+
+* $p=1, q=1, g=3\; (n_1=3, n_2=2, n_3=3)$
+
+Considere as seguintes amostras independentes:
+
+População 1: 9, 6, 9
+
+População 2: 0, 2
+
+População 3: 3, 1, 2
+
+Criamos as chamadas variáveis fictícias (_dummy_) para lidar com as três médias populacionais:
+
+\[\mu_1 = \mu + \tau_1\\ \mu_2 = \mu + \tau_2\\ \mu_3 = \mu + \tau_3\]
+
+Definimos
+
+\[
+z_{j1} = \begin{cases}
+1 & \text{se a observação é da população 1} \\
+0 & \text{caso contrário}
+\end{cases}
+\]
+
+\[
+z_{j2} = \begin{cases}
+1 & \text{se a observação é da população 2} \\
+0 & \text{caso contrário}
+\end{cases}
+\]
+
+\[
+z_{j3} = \begin{cases}
+1 & \text{se a observação é da população 3} \\
+0 & \text{caso contrário}
+\end{cases}
+\]
+
+e \(\beta_0 = \mu\), \(\beta_1 = \tau_1\), \(\beta_2 = \tau_2\), \(\beta_3 = \tau_3\). Então
+
+\[Y_j = \beta_0 + \beta_1z_{j1} + \beta_2z_{j2} + \beta_3z_{j3} + \epsilon_j\\ j = 1,2,\ldots,8\]
+
+em que organizamos as observações das três populações em sequência. Assim, obtemos o vetor de resposta observado e a matriz de planejamento:
+
+\[
+\begin{aligned}
+\mathbf{y} &= \begin{bmatrix} 9 \\ 6 \\ 9 \\ 0 \\ 2 \\ 3 \\ 1 \\ -2 \end{bmatrix} \quad (8 \times 1) \\
+\mathbf{z} &= \begin{bmatrix} 1 & 1 & 0 & 0 \\ 1 & 1 & 0 & 0 \\ 1 & 1 & 0 & 0 \\ 1 & 0 & 1 & 0 \\ 1 & 0 & 1 & 0 \\ 1 & 0 & 0 & 1 \\ 1 & 0 & 0 & 1 \\ 1 & 0 & 0 & 1 \end{bmatrix} \quad (8 \times 4)
+\end{aligned}
+\]
+
+* $p=1, q=1, r=3$
+
+* [`JW6_Example7.2.R`](JW6_Example7.2.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+n1 <- 3
+n2 <- 2
+n3 <- 3
+n <- n1 + n2 + n3
+Grupo <- factor(c(rep("1", n1), rep("2", n2), rep("3", n3)))
+y <- c(9, 6, 9, 0, 2, 3, 1, 2)
+x <- data.frame(Grupo, y)
+print(x)
+# One-way ANOVA (offset from reference group): 
+# https://en.wikipedia.org/wiki/Design_matrix
+X <- model.matrix(~Grupo, 
+                  data=x) # ANOVA
+print(X)
+# Multiple regression: 
+# https://en.wikipedia.org/wiki/Design_matrix
+Um <- model.matrix(~ 1, data = x)
+print(Um)
+z.Grupo <- model.matrix(~ -1 + Grupo, data = x)
+print(z.Grupo)
+z <- cbind(Um, z.Grupo) # Regressão
+print(z)
+out <- t(z) %*% z
+print(out)
+```
+
+$$\Diamond$$
+
+A construção de variáveis fictícias, como no Exemplo 7.2, permite que toda a análise de variância seja tratada dentro do arcabouço de regressão linear múltipla.
+
+# Análise de Regressão por Mínimos Quadrados (MOLS)
+
+Um dos objetivos da análise de regressão é desenvolver uma equação que permita ao pesquisador prever a resposta para valores dados das variáveis preditoras. Portanto, é necessário "ajustar" o modelo em (7-3) ao \(y_j\) observado correspondente aos valores conhecidos \(1, z_{j1}, \ldots, z_{jr}\). Ou seja, devemos determinar os valores para os _coeficientes de regressão_ \(\boldsymbol{\beta}\) e a _variância do erro_ \(\sigma^2\) consistentes com os dados disponíveis.
+
+Seja \(\mathbf{b}\) os valores de tentativa para \(\boldsymbol{\beta}\). Considere a diferença \(y_j - b_0 - b_1z_{j1} - \cdots - b_rz_{jr}\) entre a resposta observada \(y_j\) e o valor \(b_0 + b_1z_{j1} + \cdots + b_rz_{jr}\) que seria esperado se \(\mathbf{b}\) fosse o vetor de parâmetro "verdadeiro". Tipicamente, as diferenças \(y_j - b_0 - b_1z_{j1} - \cdots - b_rz_{jr}\) não serão nulas, porque a resposta flutua (de maneira caracterizada pelas suposições do termo de erro) em torno do seu valor esperado.
+
+O método dos mínimos quadrados seleciona \(\mathbf{b}\) de modo a minimizar a soma dos quadrados dessas diferenças:
+
+\[\begin{align}
+S(\mathbf{b})&=\sum_{j=1}^{n} \left(y_j - \sum_{i=0}^{r}{b_i z_{ji}}\right)^2\\
+S(\mathbf{b})&=(\mathbf{y} - \mathbf{z}\mathbf{b})^{\prime}(\mathbf{y} - \mathbf{z}\mathbf{b})
+\end{align}
+\tag{7-4}
+\]
+
+Os coeficientes \( \mathbf{b} \) escolhidos pelo critério dos mínimos quadrados são chamados de _estimativas de mínimos quadrados_ dos parâmetros de regressão \( \boldsymbol{\beta} \). Daqui em diante, serão denotados por \( \hat{\boldsymbol{\beta}} \) para enfatizar seu papel como estimativas de \( \boldsymbol{\beta} \).
+
+Os coeficientes \( \hat{\boldsymbol{\beta}} \) são consistentes com os dados no sentido de que produzem respostas médias estimadas (ajustadas), \( \hat{\beta}_0 + \hat{\beta}_1 z_{j1} + \cdots + \hat{\beta}_r z_{jr} \), cuja soma dos quadrados das diferenças em relação às observações \( y_j \) é a menor possível. As diferenças
+
+\[
+\hat{\varepsilon}_j = y_j - \sum_{i=0}^{r}{\hat{\beta}_i z_{ji}}\\
+j = 1, 2, \ldots,n \tag{7-5}
+\]
+
+são chamadas de _resíduos._ O vetor de resíduos \( \hat{\boldsymbol{\varepsilon}} = \mathbf{y} - \mathbf{z} \hat{\boldsymbol{\beta}} \) contém informações sobre o parâmetro desconhecido \( \sigma^2 \). (Veja o Resultado 7.2.)
+
+__Resultado 7.1.__ Seja \( \mathbf{z} \) uma matriz com posto completo \( r + 1 \). A estimativa de mínimos quadrados de \( \boldsymbol{\beta} \) em (7-3) é dada por
+
+\[
+\hat{\boldsymbol{\beta}} = (\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\mathbf{Y}
+\]
+
+Seja \( \hat{\mathbf{Y}} = \mathbf{z}\hat{\boldsymbol{\beta}} = \mathbf{H}\mathbf{Y} \) os _valores estimados_ de \( \mathbf{Y} \), em que \( \mathbf{H} = \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime} \) é chamada de matriz "chapéu" (_Hat_). Então, os _resíduos_
+
+\[
+\hat{\boldsymbol{\varepsilon}} = \mathbf{Y} - \hat{\mathbf{Y}} = \left[\mathbf{I} - \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\right]\mathbf{Y} = (\mathbf{I} - \mathbf{H})\mathbf{Y}
+\]
+
+satisfazem \( \mathbf{z}^{\prime}\hat{\boldsymbol{\varepsilon}} = \mathbf{0} \) e \( \mathbf{Y}^{\prime}\hat{\boldsymbol{\varepsilon}} = \mathbf{0} \). Além disso, a soma dos quadrados dos resíduos é
+
+\[
+\sum_{j=1}^{n}{\hat{\varepsilon}_j^2} = \hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}} =\mathbf{Y}^{\prime}[\mathbf{I} - \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}]\mathbf{Y} = \mathbf{Y}^{\prime}\mathbf{Y} - \mathbf{Y}^{\prime}\mathbf{z}\hat{\boldsymbol{\beta}}
+\]
+
+Se \( \mathbf{z} \) não tem posto completo, \((\mathbf{z}^{\prime}\mathbf{z})^{-1}\) é substituído por \((\mathbf{z}^{\prime}\mathbf{z})^{-}\), uma inversa generalizada de \(\mathbf{z}\mathbf{z}\). (Veja o Exercício 7.6.)
+
+$$\Diamond$$
+
+Resultado 7.1 mostra como as estimativas de mínimos quadrados \(\boldsymbol{\beta}\) e os resíduos \(\boldsymbol{\varepsilon}\) podem ser obtidos a partir da matriz de planejamento \(\mathbf{Z}\) e das respostas \(\mathbf{Y}\) por operações simples de matrizes.
+
+## Exemplo 7.3: Calculando as estimativas de mínimos quadrados, os resíduos e a soma dos quadrados dos resíduos
+
+Calcule as estimativas de mínimos quadrados \(\boldsymbol{\beta}\), os resíduos \(\boldsymbol{\varepsilon}\) e a soma dos quadrados dos resíduos para um modelo de reta
+
+\[
+Y_j=\beta_0 + \beta_1 z_{j1}+\varepsilon_j
+\]
+
+ajustado para os dados
+
+\[
+\begin{array}{cc}
+z_1 & y \\
+0 & 1 \\
+1 & 4 \\
+2 & 3 \\
+3 & 8 \\
+4 & 9 \\
+\end{array}
+\]
+
+Sejam \(\mathbf{z}\) a matriz de planejamento e \(\mathbf{y}\) o vetor de respostas:
+
+\[
+\mathbf{z} = \begin{bmatrix} 1 & 0 \\ 1 & 1 \\ 1 & 2 \\ 1 & 3 \\ 1 & 4 \end{bmatrix}, \quad \mathbf{y} = \begin{bmatrix} 1 \\ 4 \\ 3 \\ 8 \\ 9 \end{bmatrix}
+\]
+
+A estimativa de mínimos quadrados para \(\boldsymbol{\beta}\) é dada por:
+
+\[
+\hat{\boldsymbol{\beta}} = (\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\mathbf{y}
+\]
+
+Os resíduos são calculados como:
+
+\[
+\hat{\boldsymbol{\varepsilon}} = \mathbf{y} - \mathbf{z}\hat{\boldsymbol{\beta}}
+\]
+
+E a soma dos quadrados dos resíduos é:
+
+\[
+\hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}}
+\]
+
+* $p=1, q=1, r=1$
+
+* [`JW6_Example7.3.R`](JW6_Example7.3.R){target="_blank"}
+
+```{r}
+# Dados
+z <- matrix(c(1, 0, 
+              1, 1,
+              1, 2, 
+              1, 3, 
+              1, 4), 
+            ncol=2, byrow=TRUE)
+z
+y <- c(1, 4, 3, 8, 9)
+y
+
+# Estimativas de mínimos quadrados para beta
+beta_hat <- solve(t(z) %*% z) %*% t(z) %*% y
+beta_hat
+
+# Resíduos
+y_hat <- z %*% beta_hat
+y_hat
+residuals <- y - y_hat
+round(residuals,2)
+round(sum(residuals), 6)
+
+# Soma dos quadrados dos resíduos
+sqr <- sum(residuals^2)
+sqr
+
+plot(z[, 2], y, pch=16, col='gray', 
+     main='Gráfico de Regressão', xlab='z', ylab='y')
+curve(beta_hat[1]+beta_hat[2]*x, min(z), max(z), col='black', add=TRUE)
+legend('topleft', legend=c('Dados', 'Reta de regressão'), 
+       col=c('gray', 'black'), pch=c(16, NA), lty=c(NA, 1), bty="n")
+```
+
+Equação de regressão linear simples univariada por OLS:
+
+$$\hat{y} = 1 + 2z_1\\
+z_1\in[0,4]$$
+
+Este segmento de reta representa a média de $y$ para cada valor de $z_1\in[0,4]$. Um dos valores pelos quais a reta passa é o centróide $(\bar{y}, \bar{z}_1)$, sendo que $\bar{y}=\frac{1}{5}(1+4+3+8+9)=5$ e $\bar{z}_1=\frac{1}{5}(0+1+2+3+4)=2$:
+
+$$\hat{y}(\bar{z}_1)=\bar{y}\\
+\hat{y}(2)=1+2\times 2=5$$
+
+## Visualização de OLS
+
+Infinitas retas passam pelo centróide. Construindo quadrados cujos lados sejam a distância entre os valores observados $y$ e valores os estimados $\hat{y}$ por uma reta, a que melhor se ajusta é aquela cuja somatória das áreas dos quadrados for mínima. Esta reta ajustada pelo **método de mínimos quadrados ordinários** é a que foi representada no gráfico (toda reta ajustada por este método passa obrigatoriamente pelo centróide).
+
+Execute [`demo_minimos_quadrados.R`](demo_minimos_quadrados.R){target="_blank"} para uma demonstração:
+
+```{r echo=TRUE, eval=FALSE}
+source("demo_minimos_quadrados.R")
+```
+
+## Método dos mínimos quadrados em WolframAlpha, R e SCILAB
+
+```{r fig.align="left", echo=FALSE}
+knitr::include_graphics("./image/logoW.png")
+```
+
+[LeastSquares[{{1,0}, {1,1}, {1,2}, {1,3}, {1,4}}, {1,4,3,8,9}]](https://www.wolframalpha.com/input?i=LeastSquares%5B%7B%7B1%2C0%7D%2C+%7B1%2C1%7D%2C+%7B1%2C2%7D%2C+%7B1%2C3%7D%2C+%7B1%2C4%7D%7D%2C+%7B1%2C4%2C3%2C8%2C9%7D%5D){target="_blank"}
+
+```{r fig.align="left", echo=FALSE}
+knitr::include_graphics("./image/logoR.png")
+```
+
+* [`JW6_Example7.3_R.R`](JW6_Example7.3_R.R){target="_blank"}
+
+```{r}
+Y <- c(1,4,3,8,9)
+X <- matrix(c(1, 0, 
+              1, 1,
+              1, 2, 
+              1, 3, 
+              1, 4), 
+            ncol=2, byrow=TRUE)
+Y
+X
+b <- solve(t(X)%*%X)%*%t(X)%*%Y
+b
+solve(crossprod(X), crossprod(X,Y))
+y <- X%*%b
+e <- Y - y
+P <- X%*%solve(t(X)%*%X)%*%t(X)
+matrixcalc::is.symmetric.matrix(P)
+matrixcalc::is.idempotent.matrix(P)
+Q <- t(Y)%*%e
+Q
+Q <- t(e)%*%e
+Q
+e.soma <- round(t(e)%*%rep(1,length(e)), 6)
+e.soma
+ortg <-  round(t(y)%*%e, 6)
+ortg
+n <- length(Y)
+R2 <- (t(y)%*%Y/n-mean(Y)^2)/(t(Y)%*%Y/n-mean(Y)^2)
+R2
+plot(X[,2], Y,
+     main=paste0("OLS: y = Xb\nR^2 = ", round(R2,2)),
+     ylab="VD",
+     xlab="X",
+     ylim=1.1*c(min(y), max(y)))
+curve(b[1]+b[2]*x, min(X[,2]), max(X[,2]), add=TRUE)
+```
+
+```{r fig.align="left", echo=FALSE}
+knitr::include_graphics("./image/logoS.png")
+```
+
+```{r engine="scilab"}
+Y=[1;4;3;8;9]
+X=[1 0;1 1;1 2;1 3;1 4]
+b=inv(X'*X)*X'*Y
+lsq(X,Y)
+y=X*b
+e=Y-y
+P=X*inv(X'*X)*X'
+Q=Y'*e
+Q=e'*e
+esum=e'*[1 1 1 1 1]'
+ortg=y'*e
+n=length(Y)
+R2=(y'*Y/n-mean(Y)^2)/(Y'*Y/n-mean(Y)^2)
+quit
+```
+
+$$\Diamond$$
+
+## Demonstração do método de mínimos quadrados
+
+* $p=1, q=1, r=2$
+
+* [Proofs involving ordinary least squares: Wikipedia](https://en.wikipedia.org/wiki/Proofs_involving_ordinary_least_squares){target="_blank"}
+
+A álgebra matricial é indispensável em áreas como análise estatística multivariada, planejamento de experimentos e análise de variância e covariância.
+
+Para dar uma ideia de tal aplicação estatística, consideramos um modelo de regressão. Suponha que nos seja dado um diagrama de dispersão consistindo de pontos $(z_i,y_i)$, $i = 1,2, \ldots, n$, em que $x_i$ e $y_i$ são observações intervalares. Suponha ainda que os pontos estejam próximos de uma certa curva e que queremos ajustar uma função quadrática. a equação é:
+
+$$y=\beta_0+\beta_1z+\beta_2z^2$$
+
+em que as constantes $\beta_0$, $\beta_1$ e $\beta_2$ são desconhecidas. As coordenadas $z_i$ e $y_i$ dos pontos não satisfazem exatamente uma equação quadrática. Portanto, escrevemos:
+
+$$Y_i=\beta_0+\beta_1z_i+\beta_2z_i^2+\varepsilon_i$$
+
+em que $\epsilon_i$ é o termo de erro.
+
+O sistema com $n$ equações lineares nos parâmetros pode ser escrito na forma matricial:
+
+O sistema com \(n\) equações lineares nos parâmetros pode ser escrito na forma matricial:
+
+\[
+\mathbf{Y} = \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon}
+\]
+
+Em que:
+
+\[
+\mathbf{Y} = \begin{bmatrix} Y_1 \\ Y_2 \\ \vdots \\ Y_n \end{bmatrix}
+\]
+
+\[
+\mathbf{z} = \begin{bmatrix} 1 & z_1 & z_1^2 \\ 1 & z_2 & z_2^2 \\ \vdots & \vdots & \vdots \\ 1 & z_n & z_n^2 \end{bmatrix}
+\]
+
+\[
+\boldsymbol{\beta} = \begin{bmatrix} \beta_0 \\ \beta_1 \\ \beta_2 \end{bmatrix}
+\]
+
+\[
+\boldsymbol{\varepsilon} = \begin{bmatrix} \varepsilon_1 \\ \varepsilon_2 \\ \vdots \\ \varepsilon_n \end{bmatrix}
+\]
+
+A equação matricial \(\mathbf{Y} = \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon}\) é chamada de modelo linear, pois é linear em \(\boldsymbol{\beta}\).
+
+Para encontrar coeficientes adequados, aplicamos o método dos mínimos quadrados (OLS), que minimiza a soma dos quadrados dos erros:
+
+\[
+\sum_{i=1}^{n} \varepsilon_i^2 = \boldsymbol{\varepsilon}^\prime \boldsymbol{\varepsilon}
+\]
+
+Isso significa que os coeficientes desconhecidos \(\beta_0\), \(\beta_1\) e \(\beta_2\) são determinados de tal forma que:
+
+\[
+Q = \boldsymbol{\varepsilon}^\prime \boldsymbol{\varepsilon} = (\mathbf{Y} - \mathbf{z}\boldsymbol{\beta})^\prime (\mathbf{Y} - \mathbf{z}\boldsymbol{\beta})
+\]
+
+assume o menor valor possível. A solução pode ser encontrada por métodos de álgebra matricial ou podemos aplicar cálculo diferencial. Conforme Teichroew (1964, p. 580-3) e Tay (2018):
+
+\[
+Q = \boldsymbol{\varepsilon}^\prime \boldsymbol{\varepsilon} = (\mathbf{Y} - \mathbf{z}\boldsymbol{\beta})^\prime (\mathbf{Y} - \mathbf{z}\boldsymbol{\beta}) = \boldsymbol{\beta}^\prime \mathbf{z}^\prime \mathbf{z}\boldsymbol{\beta} - 2\mathbf{Y}^\prime \mathbf{z}\boldsymbol{\beta} + \mathbf{Y}^\prime \mathbf{Y}
+\]
+
+A condição de primeira ordem (necessária) para encontrar o mínimo de \(Q\) é:
+
+\[
+\begin{aligned}
+\dfrac{\partial Q}{\partial \boldsymbol{\beta}} &= 2\mathbf{z}^\prime \mathbf{z}\boldsymbol{\beta} - 2\mathbf{z}^\prime \mathbf{Y} \\
+\mathbf{0} &= 2\mathbf{z}^\prime \mathbf{z}\hat{\boldsymbol{\beta}} - 2\mathbf{z}^\prime \mathbf{Y} \\
+\hat{\boldsymbol{\beta}} &= (\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime \mathbf{Y}
+\end{aligned}
+\]
+
+A condição de segunda ordem (suficiente) para um mínimo é:
+
+\[
+\dfrac{\partial^2 Q}{\partial \boldsymbol{\beta} \partial \boldsymbol{\beta}^\prime}\Bigg|_{\boldsymbol{\beta}=\hat{\boldsymbol{\beta}}} = 2\mathbf{z}^\prime \mathbf{z}
+\]
+
+A matriz de informação \(\mathbf{z}^\prime \mathbf{z}\) é uma matriz simétrica \(3 \times 3\) e definida positiva (todos os autovalores são positivos), ou seja, \(\mathbf{z}^\prime \mathbf{z} > 0\). Se a segunda derivada é positiva, então o ponto crítico é de mínimo. Portanto, \(\hat{\boldsymbol{\beta}}\) é a estimativa de mínimos quadrados:
+
+\[
+Q_{\min} = \mathbf{Y}^\prime (\mathbf{Y} - \mathbf{z}\hat{\boldsymbol{\beta}}) = \mathbf{Y}^\prime \hat{\boldsymbol{\varepsilon}} = \hat{\boldsymbol{\varepsilon}}^\prime \hat{\boldsymbol{\varepsilon}}
+\]
+
+Em que \(\hat{\boldsymbol{\varepsilon}} = \mathbf{Y} - \mathbf{z}\hat{\boldsymbol{\beta}}\) é o vetor de resíduos. As relações adicionais incluem:
+
+\[
+\begin{aligned}
+\mathbf{\hat{Y}} &= \mathbf{z}\hat{\boldsymbol{\beta}} \\
+\mathbf{Y} - \hat{\boldsymbol{\varepsilon}} &= \mathbf{z}\hat{\boldsymbol{\beta}} \\
+\mathbf{Y} &= \mathbf{z}\hat{\boldsymbol{\beta}} + \hat{\boldsymbol{\varepsilon}}
+\end{aligned}
+\]
+
+Além disso, a soma dos quadrados dos resíduos é nula:
+
+\[
+\hat{\boldsymbol{\varepsilon}}^\prime \mathbf{1} = 0
+\]
+
+A matriz de planejamento \(\mathbf{z}\) e o vetor das estimativas de resíduos são ortogonais (\(\mathbf{z}\) e \(\hat{\boldsymbol{\varepsilon}}\) são matematicamente independentes):
+
+\[
+\begin{aligned}
+\mathbf{Y} &= \mathbf{z}\hat{\boldsymbol{\beta}} \\
+\mathbf{Y} - \mathbf{z}\hat{\boldsymbol{\beta}} &= 0 \\
+\mathbf{z}^\prime \mathbf{Y} - \mathbf{z}^\prime \mathbf{z}\hat{\boldsymbol{\beta}} &= 0 \\
+\mathbf{z}^\prime (\mathbf{Y} - \mathbf{z}\hat{\boldsymbol{\beta}}) &= 0 \\
+\mathbf{z}^\prime \hat{\boldsymbol{\varepsilon}} &= 0
+\end{aligned}
+\]
+
+O estimador OLS de \(\beta\) é não-viesado se \(\mathbb{E}(\boldsymbol{\varepsilon}) = 0\):
+
+\[
+\begin{aligned}
+\hat{\boldsymbol{\beta}} &= (\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime \mathbf{Y} \\
+\hat{\boldsymbol{\beta}} &= (\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime (\mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon}) \\
+\hat{\boldsymbol{\beta}} &= (\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime \mathbf{z}\boldsymbol{\beta} + (\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime \boldsymbol{\varepsilon} \\
+\hat{\boldsymbol{\beta}} &= \boldsymbol{\beta} + (\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime \boldsymbol{\varepsilon} \\
+\mathbb{E}(\hat{\boldsymbol{\beta}}) &= \boldsymbol{\beta} + (\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime \mathbb{E}(\boldsymbol{\varepsilon}) \\
+\mathbb{E}(\hat{\boldsymbol{\beta}}) &= \boldsymbol{\beta}
+\end{aligned}
+\]
+
+Os valores preditos de \(\mathbf{Y}\) são:
+
+\[
+\mathbf{\hat{Y}} = \mathbf{z}\hat{\boldsymbol{\beta}} = \mathbf{z}(\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime \mathbf{Y} = \mathbf{H}\mathbf{Y}
+\]
+
+Em que \(\mathbf{H} = \mathbf{z}(\mathbf{z}^\prime \mathbf{z})^{-1} \mathbf{z}^\prime\) é chamada de matriz de projeção (_Projection matrix_), matriz de influência (_influence matrix_) ou matriz chapéu (_Hat matrix_): https://en.wikipedia.org/wiki/Projection_matrix.
+
+\(\mathbf{H}\) é simétrica (\(\mathbf{H}^\prime = \mathbf{H}\)) e idempotente (\(\mathbf{H}^2 = \mathbf{H}\)).
+
+O vetor da variável dependente predita \(\mathbf{\hat{Y}}\) e o vetor das estimativas de resíduos são ortogonais (\(\mathbf{\hat{Y}}\) e \(\hat{\boldsymbol{\varepsilon}}\) são matematicamente independentes):
+
+\[
+\mathbf{\hat{Y}}^\prime \hat{\boldsymbol{\varepsilon}} = 0
+\]
+
+## Decomposição da Soma dos Quadrados
+
+De acordo com o Resultado 7.1, \(\hat{\mathbf{y}}^{\prime}\hat{\boldsymbol{\varepsilon}} = 0\), então a soma total dos quadrados da resposta \(\mathbf{y}^{\prime}\mathbf{y}=\sum_{j=1}^{n}{y^2_j}\) satisfaz:
+
+\[\begin{align}
+\mathbf{y}^{\prime}\mathbf{y} &= (\hat{\mathbf{y}} + \mathbf{y} - \hat{\mathbf{y}})^{\prime}(\hat{\mathbf{y}} + \mathbf{y} - \hat{\mathbf{y}})\\
+&= (\hat{\mathbf{y}} + \hat{\boldsymbol{\varepsilon}})^{\prime}(\hat{\mathbf{y}} + \hat{\boldsymbol{\varepsilon}})\\
+\mathbf{y}^{\prime}\mathbf{y}&= \hat{\mathbf{y}}^{\prime}\hat{\mathbf{y}} + \hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}}
+\end{align}
+\tag{7-7}
+\]
+
+Uma vez que a primeira coluna de \(\mathbf{z}\) é $\mathbf{1}$, a condição \(\mathbf{z}^{\prime}\hat{\boldsymbol{\varepsilon}} = \mathbf{0}\) inclui o requisito
+
+\[
+0 = \mathbf{1}^{\prime}\hat{\boldsymbol{\varepsilon}} = \sum_{j=1}^n \hat{\varepsilon}_j = \sum_{j=1}^n (y_j - \hat{y}_j) \, \text{ ou } \, \bar{y} = \bar{\hat{y}}
+\]
+
+Subtraindo \(n\bar{y}^2 = n\left(\bar{\hat{y}}\right)^2\) de ambos os lados da decomposição em (7-7), obtemos a decomposição básica da soma dos quadrados em relação à média:
+
+\[
+\mathbf{y}^{\prime}\mathbf{y} - n\bar{y}^2 = \hat{\mathbf{y}}^{\prime}\hat{\mathbf{y}} - n\left(\bar{\hat{y}}\right)^2 + \hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}}
+\]
+
+ou
+
+\[
+\sum_{j=1}^n (y_j - \bar{y})^2 = \sum_{j=1}^n (\hat{y}_j - \bar{y})^2 + \sum_{j=1}^n \hat{\varepsilon}_j^2
+\tag{7-8}
+\]
+
+SS em relação à média = SS da regressão + SS dos resíduos
+
+A decomposição da soma dos quadrados precedente sugere que a qualidade do ajuste do modelo pode ser medida pelo _coeficiente de determinação_ \( R^2 \):
+
+\[
+R^2 = \dfrac{\sum_{j=1}^n (\hat{y}_j - \bar{y})^2}{\sum_{j=1}^n (y_j - \bar{y})^2}
+\tag{7-9}
+\]
+
+A quantidade \( R^2 \) fornece a proporção da variação total de \( y \) "explicada" por, ou atribuível a, as variáveis preditoras \( z_1, z_2, \ldots, z_r \). Aqui \( R^2 \) (ou o coeficiente de correlação múltipla \( R = +\sqrt{R^2} \)) é igual a 1 se a equação ajustada passar por todos os pontos observados, de modo que \( \hat{\varepsilon}_j = 0 \) para todos \( j \). No outro extremo, \( R^2 \) é 0 se \( \hat{\beta}_0 = \bar{y} \) e \( \hat{\beta}_1 = \hat{\beta}_2 = \cdots = \hat{\beta}_r = 0 \). Nesse caso, as variáveis preditoras \( z_1, z_2, \ldots, z_r \) não têm influência na resposta.
+
+O \(R^2\) é uma medida estatística de quão próximos os dados estão da função de regressão ajustada. Esta medida varia entre 0 (ausência de ajuste) e 1 (ajuste perfeito). \(R^2\) é conhecido como o coeficiente de determinação ou o coeficiente de determinação múltipla para a regressão múltipla.
+
+\[
+R^2 = \dfrac{\mathbf{\hat{Y}}^\prime \mathbf{Y}/n - \bar{Y}^2}{\mathbf{Y}^\prime \mathbf{Y}/n - \bar{Y}^2}
+\]
+
+## Geometria dos Mínimos Quadrados
+
+Uma interpretação geométrica da técnica de mínimos quadrados destaca a natureza do conceito. De acordo com o modelo clássico de regressão linear,
+
+Vetor resposta média é: 
+
+\[
+\mathbb{E}(\mathbf{Y})=\mathbf{z}\boldsymbol{\beta}=\beta_0\begin{bmatrix}
+1 \\
+1 \\
+\vdots \\
+1
+\end{bmatrix}
++
+\beta_1
+\begin{bmatrix}
+z_{11} \\
+z_{21} \\
+\vdots \\
+z_{n1}
+\end{bmatrix}
++ \cdots +
+\beta_r
+\begin{bmatrix}
+z_{1r} \\
+z_{2r} \\
+\vdots \\
+z_{nr}
+\end{bmatrix}
+\]
+
+Assim, \(\mathbb{E}(\mathbf{Y})\) é uma combinação linear das colunas de \(\mathbf{z}\). À medida que \(\boldsymbol{\beta}\) varia, \(\mathbf{z}\boldsymbol{\beta}\) abrange o plano do modelo de todas as combinações lineares. Geralmente, o vetor de observação \(\mathbf{Y}\) não estará no plano do modelo, devido ao erro aleatório \(\boldsymbol{\varepsilon}\); ou seja, \(\mathbf{Y}\) não é (exatamente) uma combinação linear das colunas de \(\mathbf{z}\). Lembre-se de que
+
+\[
+\mathbf{Y} = 
+\begin{array}{c}
+\mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon}
+\end{array}
+\]
+
+```{r echo=FALSE, out.width="80%", fig.cap="Figura 7.1 Mínimos quadrados com uma projeção para n = 3 e r = 1."}
+knitr::include_graphics("./image/Fig.7.1.png")
+```
+
+```{r echo=FALSE, out.width="80%", fig.cap="A estimativa OLS pode ser vista como uma projeção no espaço linear estendido pelos regressores. X<sub>1</sub> e X<sub>2</sub> referem-se às colunas da matriz de X.) Wikipedia: https://en.wikipedia.org/wiki/Ordinary_least_squares" }
+knitr::include_graphics("./image/OLSproj.png")
+```
+
+* [`JW6_Cap7_RLS3D.R`](JW6_Cap7_RLS3D.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+vec <- rbind(diag(3), c(1,1,1))
+rownames(vec) <- c("1", "2", "3", "y")
+rgl::open3d()
+matlib::vectors3d(vec, color=c(rep("black",3), "red"), lwd=2)
+# draw the XZ plane, whose equation is Y=0
+rgl::planes3d(0, 0, 1, 0, col="gray", alpha=0.2)
+matlib::vectors3d(c(1,1,0), col="green", lwd=2)
+# show projections of the unit vector J
+rgl::segments3d(rbind(c(1,1,1), c(1, 1, 0)))
+rgl::segments3d(rbind(c(0,0,0), c(1, 1, 0)))
+rgl::segments3d(rbind(c(1,0,0), c(1, 1, 0)))
+rgl::segments3d(rbind(c(0,1,0), c(1, 1, 0)))
+# show some orthogonal vectors
+p1 <- c(0,0,0)
+p2 <- c(1,1,0)
+p3 <- c(1,1,1)
+p4 <- c(1,0,0)
+p5 <- c(0,1,0)
+matlib::corner(p1, p2, p3, col="red")
+matlib::corner(p1, p4, p2, col="red")
+matlib::corner(p1, p5, p2, col="blue")
+rgl::rglwidget()
+```
+
+Uma vez que as observações estejam disponíveis, a solução de mínimos quadrados é derivada do vetor de desvio
+
+\[
+\mathbf{y} - \mathbf{z}\mathbf{b} = (\text{vetor de observação}) - (\text{vetor no plano do modelo})
+\]
+
+O comprimento ao quadrado \((\mathbf{y} - \mathbf{z}\mathbf{b})^{\prime}(\mathbf{y} - \mathbf{z}\mathbf{b})\) é a soma dos quadrados \(S(\mathbf{b})\). Como ilustrado na Figura 7.1, \(S(\mathbf{b})\) é o menor possível quando \(\mathbf{b}\) é selecionado de modo que \(\mathbf{z}\mathbf{b}\) seja o ponto no plano do modelo mais próximo de \(\mathbf{y}\). Esse ponto ocorre na ponta da projeção perpendicular de \(\mathbf{y}\) no plano. Ou seja, para a escolha \(\mathbf{b} = \hat{\boldsymbol{\beta}}\), \(\hat{\mathbf{y}} = \mathbf{z}\hat{\boldsymbol{\beta}}\) é a projeção de \(\mathbf{y}\) no plano consistindo de todas as combinações lineares das colunas de \(\mathbf{z}\). O vetor residual \(\hat{\boldsymbol{\varepsilon}} = \mathbf{y} - \hat{\mathbf{y}}\) é perpendicular a esse plano. Essa geometria se mantém mesmo quando \(\mathbf{z}\) não é de posto completo.
+
+Quando \(\mathbf{z}\) tem posto completo, a operação de projeção é expressa analiticamente como multiplicação pela matriz \(\mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\). Para ver isso, usamos a decomposição espectral (2-16) para escrever
+
+\[
+\mathbf{z}^{\prime}\mathbf{z} = \sum_{i=1}^{r+1} \lambda_i \mathbf{e}_i \mathbf{e}_i^{\prime}
+\]
+
+em que \(\lambda_1 \ge \lambda_2 \ge \cdots \ge \lambda_{r+1} > 0\) são os autovalores de \(\mathbf{z}^{\prime}\mathbf{z}\) e \(\mathbf{e}_1, \mathbf{e}_2, \ldots, \mathbf{e}_{r+1}\) são os autovetores correspondentes. Se \(\mathbf{z}\) é de posto completo,
+\[
+(\mathbf{z}^{\prime}\mathbf{z})^{-1} = \sum_{i=1}^{r+1} \frac{1}{\lambda_i} \mathbf{e}_i \mathbf{e}_i^{\prime}
+\]
+Considere \(\mathbf{q}_i = \lambda_i^{-1/2} \mathbf{z} \mathbf{e}_i\), que é uma combinação linear das colunas de \(\mathbf{z}\). Então \(\mathbf{q}_i^{\prime}\mathbf{q}_j = 0\). Isso significa que os \(r + 1\) vetores \(\mathbf{q}_i\) são mutuamente perpendiculares e têm comprimento unitário. Suas combinações lineares abrangem o espaço de todas as combinações lineares das colunas de \(\mathbf{z}\). Além disso,
+\[
+\mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime} = \sum_{i=1}^{r+1} \mathbf{q}_i \mathbf{q}_i^{\prime}
+\]
+
+De acordo com o Resultado 2A.2 e a Definição 2A.12, a projeção de \(\mathbf{y}\) em uma combinação linear de \(\{\mathbf{q}_1, \mathbf{q}_2, \ldots, \mathbf{q}_{r+1}\}\) é
+
+\[
+\sum_{i=1}^{r+1}{(\mathbf{q}_{i}^{\prime}\mathbf{y})\mathbf{q}_{i}}=\mathbf{z}\hat{\boldsymbol{\beta}}
+\]
+
+Assim, a multiplicação por \(\mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\) projeta um vetor sobre o espaço abrangido pelas colunas de \(\mathbf{z}\).
+
+Da mesma forma, \([\mathbf{I} - \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}]\) é a matriz para a projeção de \(\mathbf{y}\) no plano perpendicular ao plano abrangido pelas colunas de \(\mathbf{z}\).
+
+Se \(\mathbf{z}\) não for de posto completo, podemos usar a inversa generalizada \((\mathbf{z}^{\prime}\mathbf{z})^{-}=\sum_{i=1}^{r+1}{\lambda_i^{-1}\mathbf{e}_i\mathbf{e}_i^{\prime}}\) - um tipo especial de inversa que pode ser usada quando a matriz não é invertível no sentido usual. No caso de \(\mathbf{z}^{\prime}\mathbf{z}\) não ser de posto completo, os autovalores \(\lambda_1\ge \lambda_2\ge \cdots \ge \lambda_{r_1+1}>0=\lambda_{r_1+2} = \cdots =  \lambda_{r+1} = 0\), como descrito no Exercício 7.6. Então, \(\mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-}\mathbf{z}^{\prime}"=\sum_{i=1}^{r+1}{\mathbf{q}_i\mathbf{q}_i^{\prime}}\) gera a projeção única de \(\mathbf{y}\) no espaço abrangido pelas colunas linearmente independentes de \(\mathbf{z}\). Isso é verdadeiro para qualquer escolha da inversa generalizada. (Veja [23].)
+
+## Propriedades Amostrais dos Estimadores de Mínimos Quadrados Clássicos
+
+O estimador de mínimos quadrados \(\hat{\boldsymbol{\beta}}\) e os resíduos \(\hat{\boldsymbol{\varepsilon}}\) possuem as propriedades amostrais detalhadas no próximo resultado.
+
+__Resultado 7.2.__ Sob o modelo de regressão linear geral em (7-3), o estimador de mínimos quadrados \(\hat{\boldsymbol{\beta}} = (\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\mathbf{Y}\) possui
+\[
+\mathbb{E}(\hat{\boldsymbol{\beta}}) = \boldsymbol{\beta} \quad \text{e} \quad \mathbb{C}(\hat{\boldsymbol{\beta}}) = \sigma^2(\mathbf{z}^{\prime}\mathbf{z})^{-1}
+\]
+Os resíduos \(\hat{\boldsymbol{\varepsilon}}\) possuem as propriedades
+\[
+\mathbb{E}(\boldsymbol{\varepsilon}) = \mathbf{0} \quad \text{e} \quad \mathbb{C}(\boldsymbol{\varepsilon}) = \sigma^2[\mathbf{I} - \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}] = \sigma^2[\mathbf{I} - \mathbf{H}]
+\]
+
+A soma de quadrados dos resíduos é:
+
+$$\text{SS}_{\text{res}}=\hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}}$$
+
+
+Além disso,
+\[
+\mathbb{E}(\hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}}) = (n - r - 1)\sigma^2
+\]
+portanto, definindo
+
+\[\begin{align}
+s^2 &= \dfrac{\hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}}}{n-\text{rank}(\mathbf{z})}\\
+&= \dfrac{\hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}}}{n-(r+1)}\\
+&= \dfrac{\text{SS}_{\text{res}}}{n - r - 1}\\
+&=\dfrac{\mathbf{Y}^{\prime}\left(\mathbf{I} - \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\right)\mathbf{Y}}{n - r - 1} \\
+s^2&= \dfrac{\mathbf{Y}^{\prime}(\mathbf{I} - \mathbf{H})\mathbf{Y}}{\text{tr}(\mathbf{I} - \mathbf{H})}
+\end{align}
+\]
+
+temos
+
+\[
+\mathbb{E}(s^2) = \sigma^2
+\]
+Além disso, \(\mathbb{C}(\hat{\boldsymbol{\beta}},\hat{\boldsymbol{\varepsilon}})=\mathbf{0}\).
+
+Demonstração: Manual de Soluções, p. 164
+
+$$\Diamond$$
+
+O estimador de mínimos quadrados \(\hat{\boldsymbol{\beta}}\) possui uma propriedade de variância mínima que foi estabelecida por Gauss. O seguinte resultado diz respeito aos estimadores "melhores" de funções lineares paramétricas da forma \(\mathbf{c}^{\prime} \boldsymbol{\beta} = \sum_{i=1}^r c_i \beta_i\) para qualquer vetor \(\mathbf{c}\).
+
+__Resultado 7.3 (Teorema dos mínimos quadrados de Gauss).__ Seja \(\mathbf{Y} = \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon}\), onde \(\mathbb{E}(\boldsymbol{\varepsilon}) = 0\),
+\(\mathbb{C}(\boldsymbol{\varepsilon}) = \sigma^2\mathbf{I}\), e \(\mathbf{z}\) tem posto completo \(r + 1\). Para qualquer vetor \(\mathbf{c}\), o estimador
+\[
+\mathbf{c}^{\prime}\hat{\boldsymbol{\beta}} = \sum_{i=1}^r c_i\hat{\beta}_i
+\]
+de \(\mathbf{c}^{\prime} \boldsymbol{\beta}\) possui a menor variância possível entre todos os estimadores lineares da forma
+
+\[
+\mathbf{a}^{\prime}\mathbf{Y} = \sum_{i=1}^n a_i Y_i
+\]
+
+que são não viesados para \(\mathbf{c}^{\prime}\boldsymbol{\beta}\).
+
+$$\Diamond$$
+
+Este resultado poderoso afirma que a substituição de \(\boldsymbol{\beta}\) por \(\hat{\boldsymbol{\beta}}\) leva ao melhor estimador de \(\mathbf{c}^{\prime}\boldsymbol{\beta}\) para qualquer \(\mathbf{c}\) de interesse. Em terminologia estatística, o estimador \(\mathbf{c}^{\prime}\hat{\boldsymbol{\beta}}\) é chamado de melhor estimador linear não-viesado de variância mínima (BLUE) de \(\mathbf{c}^{\prime}\boldsymbol{\beta}\).
+
+# Inferência sobre o Modelo de Regressão
+
+Descrevemos procedimentos inferenciais baseados no modelo de regressão linear clássico em (7-3) com a suposição adicional (tentativa) de que os erros \( \boldsymbol{\varepsilon} \) têm uma distribuição normal.
+Métodos para verificar a adequação geral do modelo são considerados na Seção 7.6.
+
+## Inferências Relativas aos Parâmetros de Regressão
+
+Antes de podermos avaliar a importância de variáveis específicas na função de regressão
+\[ \mathbb{E}(\mathbf{Y}) = \sum_{i=0}^r \beta_i z_i \tag{7-10}\] 
+devemos determinar as distribuições amostrais de \( \hat{\boldsymbol{\beta}} \) e a soma dos quadrados dos resíduos, \( \hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}} \). Para fazer isso, vamos supor que os erros \( \boldsymbol{\varepsilon} \) tenham uma distribuição multinormal.
+
+__Resultado 7.4__. Seja \( \mathbf{Y} = \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon} \), em que \( \mathbf{z} \) tem posto completo \( r + 1 \) e \( \boldsymbol{\varepsilon} \) é distribuído como \( \mathcal{N}_n(\mathbf{0}, \sigma^2\mathbf{I}) \). Então, o estimador de máxima verossimilhança de \( \boldsymbol{\beta} \) é o mesmo que o estimador de mínimos quadrados \( \hat{\boldsymbol{\beta}} \). Além disso,
+
+\[ \hat{\boldsymbol{\beta}} = (\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\mathbf{Y}  \sim \mathcal{N}_{r+1}(\boldsymbol{\beta}, \sigma^2(\mathbf{z}^{\prime}\mathbf{z})^{-1}) \]
+
+$\hat{\boldsymbol{\beta}}$ é distribuído independentemente dos resíduos \( \hat{\boldsymbol{\varepsilon}} = \mathbf{Y} - \mathbf{z}\hat{\boldsymbol{\beta}} \). Adicionalmente,
+
+\[\begin{align}
+\hat{\sigma}^2 &= \dfrac{\hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}}}{n}\\
+n\hat{\sigma}^2 &= \hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}} \sim\chi^2_{n - r - 1}
+\end{align}\]
+
+em que \( \hat{\sigma}^2 \) é o estimador de máxima verossimilhança de \( \sigma^2 \).
+
+Demonstração: Manual de Soluções, p. 165
+
+$$\Diamond$$
+
+Um elipsoide de confiança para \(\boldsymbol{\beta}\) é facilmente construído. Ele é expresso em termos da matriz de covariância estimada \(s^2 (\mathbf{z}^{\prime}\mathbf{z})^{-1}\), em que \(s^2 = \hat{\boldsymbol{\varepsilon}}^{\prime}\hat{\boldsymbol{\varepsilon}} / (n - r - 1)\).
+
+__Resultado 7.5.__ Seja \(\mathbf{Y} = \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon}\), em que \(\mathbf{z}\) tem posto completo \(r + 1\) e \(\boldsymbol{\varepsilon} \sim \mathcal{N}_n(\mathbf{0}, \sigma^2\mathbf{I})\). Então,
+
+1. Uma região de confiança de \(100(1 - \alpha)\%\) para \(\boldsymbol{\beta}\) é dada por
+
+\[
+(\boldsymbol{\beta}-\hat{\boldsymbol{\beta}})^{\prime}\mathbf{z}^{\prime}\mathbf{z}(\boldsymbol{\beta}-\hat{\boldsymbol{\beta}}) \leq s^2(r + 1)F_{r + 1, n - r - 1}(1-\alpha)=s^2\dfrac{n-r-1}{n-1}T^2_{r+1,n-1}(1-\alpha)
+\]
+
+2. Intervalos de confiança _simultâneos_ de \(100(1 - \alpha)\%\) para os \(\beta_i\) são dados por
+
+\[
+\text{IC}95\%(\beta_i)=\left[\hat{\beta}_i \pm \sqrt{\widehat{\mathbb{V}}(\hat{\beta}_i)}\sqrt{(r + 1)F_{r + 1, n - r - 1}(1-\alpha)}\right]\\
+i=1,2,\ldots,r
+\]
+
+em que \(\widehat{\mathbb{V}}(\hat{\beta}_i)\) é o elemento diagonal de \(s^2(\mathbf{z}^{\prime}\mathbf{z})^{-1}\) correspondente a \(\hat{\beta}_i\).
+
+$$\Diamond$$
+
+O elipsoide de confiança é centrado na estimativa de máxima verossimilhança \(\hat{\boldsymbol{\beta}}\), e sua orientação e tamanho são determinados pelos autovalores e autovetores de \(\mathbf{z}^{\prime}\mathbf{z}\). Se um autovalor é quase zero, o elipsoide de confiança será muito longo na direção do autovetor correspondente.
+
+Os praticantes muitas vezes ignoram a propriedade de confiança "simultânea" das estimativas de intervalo no Resultado 7.5. Em vez disso, eles substituem \((r + 1)F_{r + 1, n - r - 1}(1-\alpha)\) pelo valor _t_ um de cada vez \(t_{n-r-1}(1-\alpha/2)\) e usam os intervalos
+
+\[
+\text{IC}95\%(\beta_i)=\left[\hat{\beta}_i \pm t_{n-r-1}\left(1-\dfrac{\alpha}{2}\right)\sqrt{\widehat{\mathbb{V}}(\hat{\beta}_i)}\right]\\
+i=1,2,\ldots,r
+\tag{7-11}
+\]
+
+quando procuram por variáveis preditoras importantes.
+
+## Exemplo 7.4: Ajustando um modelo de regressão a dados imobiliários
+
+Os dados de avaliação na Tabela 7.1 foram coletados de 20 residências em um bairro de Milwaukee, Wisconsin. Ajuste o modelo de regressão
+
+\[
+Y_j = \beta_0 + \beta_1 z_{j1} + \beta_2 z_{j2} + \varepsilon_j
+\]
+
+em que \(z_{j1}\) é o tamanho total da habitação (em centenas de pés quadrados), \(z_{j2}\) é o valor avaliado (em milhares de dólares), e \(Y\) é o preço de venda (em milhares de dólares), a esses dados usando o método de mínimos quadrados. Um cálculo computacional produz
+
+\[
+(\mathbf{z}^{\prime}\mathbf{z})^{-1} = 
+\begin{bmatrix} 
+5.1523 &  \\
+0.2544 & 0.0512 \\
+-0.1463 &  -0.0172 & 0.0067 
+\end{bmatrix}
+\]
+
+e
+
+\[
+\hat{\boldsymbol{\beta}} = (\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\mathbf{y} = \begin{bmatrix} 30.967 \\ 2.634 \\ 0.045 \end{bmatrix}
+\]
+
+Assim, a equação ajustada é
+
+\[
+\hat{y} = 30.967 + 2.634\;z_1 + 0.045\;z_2
+\]
+
+com \(s = 3.473\). Os números entre parênteses são os desvios-padrão estimados dos coeficientes de mínimos quadrados. Além disso, \(R^2 = 0.834\), indicando que os dados apresentam uma forte relação de regressão. Se os resíduos \( \hat{\boldsymbol{\varepsilon}} \) passarem nas verificações de diagnóstico descritas na Seção 7.6, a equação ajustada poderá ser usada para prever o preço de venda de outra casa no bairro a partir de seu tamanho e valor avaliado. Observamos que um intervalo de confiança de 95% para \(\beta_2\) é dado por
+
+\[\begin{align}
+\text{IC}95\%(\beta_2)&=\left[\hat{\beta}_2 \pm t_{17}\left(1-\dfrac{0.05}{2}\right)\sqrt{\widehat{\mathbb{V}}(\hat{\beta}_2)}\right] \\
+&= \left[0.045 \pm 2.110\times 0.285\right]\\
+\text{IC}95\%(\beta_2)&=[−0.556,0.647]
+\end{align}
+\]
+
+O intervalo de confiança inclui \(\beta_2 = 0\).
+
+Se o modelo é _preditivo_, a variável \(z_2\) pode ser eliminada do modelo de regressão e a análise repetida com a única variável preditora \(z_1\). Dado o tamanho da habitação, o valor avaliado parece agregar pouco à previsão do preço de venda. Se o modelo é _explicativo_, mesmo a variável \(z_2\) não sendo significante, ela permanece no modelo.
+
+* [`JW6_Example7.4.R`](JW6_Example7.4.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+
+Dados <- read.csv("JW6Data/T7-1.dat", sep = "", header = FALSE)
+names(Dados) <- c("z1", "z2", "y")
+print.data.frame(Dados)
+print(psych::describe(Dados))
+boxplot(Dados)
+GGally::ggpairs(Dados)
+
+z <- model.matrix(~z1+z2,
+                  data=Dados)
+try(infomatrix.inv <- solve(t(z)%*%z))
+round(svd(z)$d, 2)
+# condition index < 30
+CI <- sqrt(svd(z)$d[1]/svd(z)$d[length(svd(z)$d)])
+CI
+y <- as.matrix(Dados["y"])
+beta_hat <- infomatrix.inv%*%t(z)%*%y
+beta_hat
+y_hat <- z%*%beta_hat
+print(round(y_hat, 2))
+res <- y-y_hat
+n <- dim(Dados)[1]
+r <- length(grep("z",colnames(Dados)))
+s <- as.numeric(sqrt(crossprod(res)/(n-r-1)))
+s
+R2 <- 1 - crossprod(res)/((n-1)*var(y))
+R2
+alfa <- 0.05
+LL_beta2 <- beta_hat[r+1] - 
+  qt(1-alfa/(2*r), n-r-1)*sqrt(diag((s^2)*infomatrix.inv)[r+1])
+UL_beta2 <- beta_hat[r+1] + 
+  qt(1-alfa/(2*r), n-r-1)*sqrt(diag((s^2)*infomatrix.inv)[r+1])
+cat("IC98.75%(beta_2) = [", 
+    round(LL_beta2,3), ",", 
+    round(UL_beta2,3), "]", 
+    sep="")
+
+# GLM
+fit <- lm(y~z1+z2,
+          data=Dados)
+print(fit)
+print(summary(fit))
+print(confint(fit), digits=2)
+print(round(predict(fit),2))
+print(round(t(y_hat), 2))
+# plot(fit)
+
+alfa <- 0.05
+# https://en.wikipedia.org/wiki/Partial_correlation
+# https://en.wikiversity.org/wiki/Semi-partial_correlation
+# IC95% de beta padronizado e sr2 (r semi-parcial^2) entre -1 e 1.
+print(apaTables::apa.reg.table(fit,
+                               prop.var.conf.level = 1-alfa))
+fitst <- lm(scale(y)~scale(z1)+scale(z2),
+          data=Dados)
+print(fitst, digits=4)
+# partial correlation
+prz1 <- (cor(Dados$y,Dados$z1)-cor(Dados$y,Dados$z2)*cor(Dados$z2,Dados$z1))/
+         sqrt((1-cor(Dados$y,Dados$z2)^2)*(1-cor(Dados$z2,Dados$z1)^2))
+round(prz1,4)
+pr.z1 <- as.numeric(ppcor::pcor.test(Dados$y, Dados$z1, Dados$z2)$estimate)
+round(pr.z1,4)
+prz2 <- (cor(Dados$y,Dados$z2)-cor(Dados$y,Dados$z1)*cor(Dados$z1,Dados$z2))/
+  sqrt((1-cor(Dados$y,Dados$z1)^2)*(1-cor(Dados$z1,Dados$z2)^2))
+round(prz2,4)
+pr.z2 <- as.numeric(ppcor::pcor.test(Dados$y, Dados$z2, Dados$z1)$estimate)
+round(pr.z2,4)
+# semipartial = part correlation
+srz1 <- (cor(Dados$y,Dados$z1)-cor(Dados$y,Dados$z2)*cor(Dados$z2,Dados$z1))/
+         sqrt((1-cor(Dados$z2,Dados$z1)^2))
+round(srz1,4)
+sr.z1 <- as.numeric(ppcor::spcor.test(Dados$y, Dados$z1, Dados$z2)$estimate)
+round(sr.z1,4)
+sr2.z1 <- sr.z1^2
+round(sr2.z1,4)
+srz2 <- (cor(Dados$y,Dados$z2)-cor(Dados$y,Dados$z1)*cor(Dados$z1,Dados$z2))/
+         sqrt((1-cor(Dados$z2,Dados$z1)^2))
+round(srz2,4)
+sr.z2 <- as.numeric(ppcor::spcor.test(Dados$y, Dados$z2, Dados$z1)$estimate)
+round(sr.z2,4)
+sr2.z2 <- sr.z2^2
+round(sr2.z2,6)
+# Kutner et al. (2005, p. 276)
+# standardized beta
+b1.std <- (cor(Dados$y,Dados$z1)-cor(Dados$y,Dados$z2)*cor(Dados$z2,Dados$z1))/
+           (1-cor(Dados$z1,Dados$z2)^2)
+round(b1.std,4)
+b1std <-  srz1/sqrt((1-cor(Dados$z2,Dados$z1)^2))
+round(b1std,4)
+b2.std <- (cor(Dados$y,Dados$z2)-cor(Dados$y,Dados$z1)*cor(Dados$z1,Dados$z2))/
+          (1-cor(Dados$z1,Dados$z2)^2)
+round(b2.std,4)
+b2std <-  srz2/sqrt((1-cor(Dados$z2,Dados$z1)^2))
+round(b2std,4)
+# beta padronizado não é uma correlação e os limites superior/inferior de 
+# beta padronizado são +-1/sqrt((1-cor(Dados$z2,Dados$z1)^2))
+
+# Plano de regressão
+rgl::plot3d(fit, size = 5)
+rgl::planes3d(0, 0, 1, 0, col="gray", alpha=0.2)
+rgl::planes3d(0, 1, 0, 0, col="gray", alpha=0.2)
+rgl::planes3d(1, 0, 0, 0, col="gray", alpha=0.2)
+centroid <- colMeans(Dados)
+rgl::points3d(centroid, size = 5, col = "purple3")
+rgl::text3d(x = centroid,col = "purple3", texts = "centroide")
+rgl::rglwidget()
+```
+
+$$\Diamond$$
+
+## Testes de Razão de Verossimilhança para os Parâmetros de Regressão
+
+Parte da análise de regressão está preocupada em avaliar os efeitos de variáveis preditoras particulares na variável resposta. Uma hipótese nula de interesse afirma que
+certas variáveis \(z\) não influenciam a resposta \(Y\). Esses preditores serão rotulados
+\(z_{q+1}, z_{q+2}, \ldots, z_r\). Esta afirmação se traduz na hipótese estatística
+
+\[
+H_0:\beta_{q+1} = \beta_{q+2} = \cdots = \beta_r = 0 \quad \text{ou} \quad H_0:\boldsymbol{\beta}_{(2)} = \mathbf{0} \tag{7-12}
+\]
+
+em que \(\boldsymbol{\beta}_{(2)} = [\beta_{q+1}\; \beta_{q+2}\; \cdots\; \beta_r]^{\prime}\).
+
+Definindo
+
+\[
+\mathbf{z} = \begin{bmatrix} \mathbf{z}_1 & \mathbf{z}_2 \end{bmatrix}
+\]
+
+em que \(\mathbf{z}_1\) tem dimensões \(n \times (q+1)\) e \(\mathbf{z}_2\) tem dimensões \(n \times (r-q)\) e
+
+$$\boldsymbol{\beta}=
+\begin{bmatrix}
+\boldsymbol{\beta}_{(1)}\\
+\boldsymbol{\beta}_{(2)}
+\end{bmatrix}$$
+
+em que \(\boldsymbol{\beta}_{(1)}\) tem dimensões \((q+1) \times 1\) e \(\boldsymbol{\beta}_{(2)}\) tem dimensões \((r-q) \times 1\)
+
+Podemos expressar o modelo linear geral como
+
+\[\begin{align}
+\mathbf{Y} &= \mathbf{z}\boldsymbol{\beta} + \boldsymbol{\varepsilon} \\
+&= \begin{bmatrix} \mathbf{z}_1 & \mathbf{z}_2 \end{bmatrix} \begin{bmatrix} \boldsymbol{\beta}_{(1)} \\ \boldsymbol{\beta}_{(2)} \end{bmatrix} + \boldsymbol{\varepsilon} \\
+\mathbf{Y}&= \mathbf{z}_1\boldsymbol{\beta}_{(1)} + \mathbf{z}_2\boldsymbol{\beta}_{(2)} + \boldsymbol{\varepsilon}
+\end{align}
+\]
+
+Sob a hipótese nula \(H_0: \boldsymbol{\beta}_{(2)} = 0\), temos \(\mathbf{Y} = \mathbf{z}_1\boldsymbol{\beta}_{(1)} + \boldsymbol{\varepsilon}\). O teste de razão de verossimilhança de \(H_0\) é baseado na
+
+\[\begin{align}
+\text{Soma Extra de Quadrados} &= \text{SS}_\text{res}(\mathbf{z}_1) - \text{SS}_\text{res}(\mathbf{z}) \\
+\text{Soma Extra de Quadrados} &= \left(\mathbf{y} - \mathbf{z}_1\hat{\boldsymbol{\beta}}_{(1)}\right)^{\prime}\left(\mathbf{y} - \mathbf{z}_1\hat{\boldsymbol{\beta}}_{(1)}\right) - \left(\mathbf{y} - \mathbf{z}\hat{\boldsymbol{\beta}}\right)^{\prime}\left(\mathbf{y} - \mathbf{z}\hat{\boldsymbol{\beta}}\right)
+\end{align}
+\tag{7-13}\] 
+
+em que \(\hat{\boldsymbol{\beta}}_{(1)} = \left(\mathbf{z}_1^{\prime}\mathbf{z}_1\right)^{-1}\mathbf{z}_1^{\prime}\mathbf{Y}\).
+
+__Resultado 7.6.__ Seja \(\mathbf{z}\) de posto completo \(r + 1\) e \(\boldsymbol{\varepsilon}\) distribuído como \(\mathcal{N}_n(\mathbf{0},\sigma^2I)\). O teste de razão de verossimilhança de \(H_0: \boldsymbol{\beta}_{(2)} = \mathbf{0}\) é equivalente a um teste de \(H_0\) baseado na soma extra de quadrados em (7-13). Em particular, o teste de razão de verossimilhança rejeita \(H_0\) se
+
+\[\begin{align}
+F&=\dfrac{\dfrac{\mathbf{Y}^{\prime}(\mathbf{H}-\mathbf{H}_{(1)})\mathbf{Y}}{\text{tr}(\mathbf{H}-\mathbf{H}_{(1)})}}{\dfrac{\mathbf{Y}^{\prime}(\mathbf{I}-\mathbf{H})\mathbf{Y}}{\text{tr}(\mathbf{I}-\mathbf{H})}}> F_{\text{tr}(\mathbf{I}-\mathbf{H}),\text{tr}(\mathbf{H}-\mathbf{H}_{(1)})}(1-\alpha)\\
+F&=\dfrac{\dfrac{\text{SS}_{\text{res}}(\mathbf{z}_1)-\text{SS}_{\text{res}}(\mathbf{z})}{\text{rank}(\mathbf{z})-\text{rank}(\mathbf{z}_1)}}{\dfrac{\text{SS}_{\text{res}}(\mathbf{z})}{n-\text{rank}(\mathbf{z})}}> F_{\text{rank}(\mathbf{z})-\text{rank}(\mathbf{z}_1),n-\text{rank}(\mathbf{z})}(1-\alpha)
+\end{align}\]
+
+Sendo que $\mathbf{I}-\mathbf{H}_{(1)} - (\mathbf{I}-\mathbf{H})= \mathbf{H}-\mathbf{H}_{(1)}$; $\mathbf{z}$ e $\mathbf{z}_1$ têm postos completos,  $\text{rank}(\mathbf{z})-\text{rank}(\mathbf{z}_1)=r+1-(q+1)=r-q$ e $n-\text{rank}(\mathbf{z})=n-(r+1) = n-r-1$:
+
+\[F=\dfrac{\dfrac{\text{SS}_{\text{res}}(\mathbf{z}_1)-\text{SS}_{\text{res}}(\mathbf{z})}{r-q}}{\dfrac{\text{SS}_{\text{res}}(\mathbf{z})}{n-r-1}} > F_{r-q,n-r-1}(1-\alpha)
+\]
+
+$$\Diamond$$
+
+__Comentário.__ O teste de razão de verossimilhança é implementado da seguinte forma. Para testar se todos os coeficientes em um subconjunto são zero, ajuste o modelo com e sem os termos correspondentes a esses coeficientes. A melhoria na soma dos quadrados dos resíduos (a soma extra dos quadrados) é comparada à soma dos quadrados dos resíduos para o modelo completo através da razão F. O mesmo procedimento se aplica mesmo em situações de análise de variância, em que \(\mathbf{z}\) não é de posto completo. Em situações em que \( \mathbf{z} \) não possui posto completo, \( \text{rank}(\mathbf{z}) \) substitui \( r + 1 \) e \( \text{rank}(\mathbf{z}_1) \) substitui \( q + 1 \) no Resultado 7.6.
+
+Mais geralmente, é possível formular hipóteses nulas concernentes a \(r - q\) combinações lineares de \(\boldsymbol{\beta}\) da forma \(H_0: \mathbf{C}\boldsymbol{\beta} = \mathbf{A}_0\). Seja a matriz \(\mathbf{C}\) de dimensões \((r - q) \times (r + 1)\) de posto completo, seja \(\mathbf{A}_0 = \mathbf{0}\), e considere
+
+\[
+H_0: \mathbf{C}\boldsymbol{\beta} = \mathbf{0}
+\]
+
+Esta hipótese nula se reduz à escolha anterior quando \(\mathbf{C} = [\mathbf{0} \; \mathbf{I}]\), sendo que $\mathbf{I}$ tem dimensões $(r-q)\times (r-q)$.
+
+Sob o modelo completo, 
+
+\[
+\mathbf{C}\hat{\boldsymbol{\beta}}\sim \mathcal{N}_{r-q}\left(\mathbf{C}\boldsymbol{\beta}, \sigma^2\mathbf{C}\mathbf{z}^{\prime}\mathbf{z}\mathbf{C}^{\prime}\right) 
+\] 
+
+Rejeitamos
+\(H_0: \mathbf{C}\boldsymbol{\beta} = \mathbf{0}\) no nível \(\alpha\) se $\mathbf{0}$ _não_ estiver no elipsoide de confiança de 100(1 - \(\alpha\)% para \(\mathbf{C}\boldsymbol{\beta}\). Equivalentemente, rejeitamos \(H_0: \mathbf{C}\boldsymbol{\beta} = \mathbf{0}\) se
+
+\[
+F=\dfrac{\dfrac{(\mathbf{C}\hat{\boldsymbol{\beta}})^{\prime}\left(\mathbf{C}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{C}^{\prime}\right)\mathbf{C}\hat{\boldsymbol{\beta}}}{r-q}}{\dfrac{\text{SS}_{\text{res}}}{n-r-1}} > F_{r-q, n-r-1}(1-\alpha)
+\]
+
+O teste em (7-14) é o teste de razão de verossimilhança, e o numerador na razão F é a soma extra dos quadrados dos resíduos incorridos ao ajustar o modelo, sujeito à restrição de que \(\mathbf{C}\boldsymbol{\beta} = \mathbf{0}\) (veja [23]).
+
+O próximo exemplo ilustra como desenhos experimentais desbalanceados são facilmente tratados pela teoria geral que acabamos de descrever.
+
+## Exemplo 7.5: Testando a importância de preditores adicionais usando a abordagem de soma extra de quadrados
+
+Clientes masculinos e femininos avaliaram o serviço em três estabelecimentos (locais) de uma grande rede de restaurantes. As avaliações de serviço foram convertidas em um índice. A Tabela 7.2 contém os dados para \(n = 18\) clientes. Cada ponto de dados na tabela é categorizado de acordo com o local (1, 2 ou 3) e sexo (masculino = 0 e feminino = 1). Essa categorização tem o formato de uma tabela bidimensional com números desiguais de observações por célula. Por exemplo, a combinação de local 1 e masculino tem 5 respostas, enquanto a combinação de local 2 e feminino tem 2 respostas. Introduzindo três variáveis _dummy_ para representar o local e duas variáveis _dummy_ para representar o gênero, podemos desenvolver um modelo de regressão relacionando o índice de serviço \(F\) ao local, gênero e sua "interação" usando a matriz de _design_.
+
+```{r echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("./image/Table7.2.png")
+```
+
+```{r echo=FALSE, out.width="80%", fig.cap=""}
+knitr::include_graphics("./image/z7.5.png")
+```
+
+O vetor de coeficientes pode ser representado como
+
+\[
+\boldsymbol{\beta}^{\prime} = [\beta_0, \beta_1, \beta_2, \beta_3, \tau_1, \tau_2, \gamma_{11}, \gamma_{12}, \gamma_{21}, \gamma_{22}, \gamma_{31}, \gamma_{32}]
+\]
+
+em que os \(\beta_i (i > 0)\) representam os efeitos dos locais na determinação do serviço, os \(\tau_i\) representam os efeitos do sexo no índice de serviço, e os \(\gamma_{ij}\) representam os efeitos de interação entre local e sexo.
+
+A matriz de _design_ \(\mathbf{z}\) não é de posto completo. (Por exemplo, a coluna 1 é igual à soma das colunas 2-4 ou colunas 5-6.) Na verdade, \(\text{rank}(\mathbf{z}) = 6<12\).
+
+Para o modelo completo, os resultados de um programa de computador dão
+
+\[
+\text{SS}_{\text{res}}(\mathbf{z}) = 2977.4
+\]
+
+e
+
+\[
+n - \text{rank}(\mathbf{z}) = 18 - 6 = 12
+\]
+
+O modelo sem os termos de interação tem a matriz de _design_ \(\mathbf{z}_1\) consistindo nas primeiras seis colunas de \(\mathbf{z}\). 
+
+Descobrimos que
+
+\[
+\text{SS}_{\text{res}}(\mathbf{z}_1) = 3419.1
+\]
+
+com
+
+\[
+n - \text{rank}(\mathbf{z}_1) = 18 - 4 = 14
+\]
+
+Para testar
+
+\[
+H_0: \gamma_{11} = \gamma_{12} = \gamma_{21} = \gamma_{22} = \gamma_{31} = \gamma_{32} = 0
+\]
+
+(sem interação local-sexo), calculamos
+
+\[\begin{align}
+F&=\dfrac{\dfrac{\text{SS}_{\text{res}}(\mathbf{z}_1)-\text{SS}_{\text{res}}(\mathbf{z})}{\text{rank}(\mathbf{z})-\text{rank}(\mathbf{z}_1)}}{\dfrac{\text{SS}_{\text{res}}(\mathbf{z})}{n-\text{rank}(\mathbf{z})}}\\
+F&=\dfrac{\dfrac{3419.1 - 2977.4}{6-4}}{\dfrac{2977.4}{18-6}}\\
+F&=0.89
+\end{align}\]
+
+\[
+F_{2,12}(0.95)=3.89\quad p = 0.436
+\]
+
+Os valores _p_ de soma extra de quadrados e do modelo completo com `lm` são iguais ($p = 0.436$). Note que os dados são desbalanceados.
+
+* [`JW6_Example7.5.R`](JW6_Example7.5.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+
+Dados <- read.csv("JW6Data/T7-2.dat", sep = "", header = FALSE)
+names(Dados) <- c("F1", "F2", "y")
+Dados$F1 <- factor(Dados$F1)
+Dados$F2 <- factor(Dados$F2)
+print.data.frame(Dados)
+# Dados desbalanceados
+xtabs(~F1+F2, data=Dados)
+
+print(psych::describeBy(y~F1+F2,
+                        mat=1,
+                        digits=2,
+                        data=Dados))
+boxplot(y~F1*F2,
+        data=Dados)
+GGally::ggpairs(Dados)
+
+# Solução 1: Soma extra de quadrados por lm e anova
+fit <- lm(y~F1+F2+F2:F1,
+          data=Dados)
+print(summary(fit))
+print(car::Anova(fit))
+
+fit.princ <- lm(y~F1+F2,
+                data=Dados)
+print(summary(fit.princ))
+print(car::Anova(fit.princ))
+print(anova(fit.princ, fit))
+
+# os valores p de soma extra de quadrados e do modelo completo são iguais (p = 0.436)
+
+# Solução 2: Soma extra de quadrados por model.matrix
+z0 <- model.matrix(~1,
+                   data=Dados)
+zF1 <- model.matrix(~-1+F1,
+                    data=Dados)
+zF2 <- model.matrix(~-1+F2,
+                    data=Dados)
+zF12 <- model.matrix(~-1+F1:F2,
+                     data=Dados)
+z <- cbind(z0,zF1,zF2,zF12)
+z
+try(solve(t(z)%*%z))
+round(svd(z)$d, 2)
+round(infomatrix.inv_z <- matlib::Ginv(t(z)%*%z), 2)
+# condition index < 30
+CI <- sqrt(svd(z)$d[1]/svd(z)$d[length(svd(z)$d)])
+CI
+y <- as.matrix(Dados["y"])
+n <- nrow(Dados)
+I <- diag(1,n)
+SSres.z <- t(y)%*%(I-z%*%infomatrix.inv_z%*%t(z))%*%y
+as.numeric(SSres.z)
+z1 <- z[,1:(ncol(z0)+ncol(zF1)+ncol(zF2))]
+z1
+try(solve(t(z1)%*%z1))
+round(svd(z1)$d, 2)
+round(infomatrix.inv_z1 <- matlib::Ginv(t(z1)%*%z1), 2)
+SSres.z1 <- t(y)%*%(I-z1%*%infomatrix.inv_z1%*%t(z1))%*%y
+as.numeric(SSres.z1)
+# https://en.wikipedia.org/wiki/QR_decomposition
+z.rank <- qr(z)$rank
+z.rank
+z1.rank <- qr(z1)$rank
+z1.rank
+dfnum <- z.rank-z1.rank
+dfden <- n-z.rank
+F <- as.numeric(((SSres.z1-SSres.z)/dfnum)/(SSres.z/dfden))
+as.numeric(F)
+alfa <- 0.05
+Fcrit <- qf(1-alfa, dfnum, dfden)
+F > Fcrit
+pv <- 1-pf(F, dfnum, dfden)
+cat("F(", dfnum,",",dfden,") = ", F, 
+    " p = ", pv," ESS = ", SSres.z1-SSres.z,"\n", sep="")
+print(anova(fit.princ, fit))
+```
+
+A razão F pode ser comparada com um ponto percentual apropriado de uma distribuição F com 2 e 12 graus de liberdade. Esta razão F não é significativa para qualquer nível de significância razoável \(\alpha\). Consequentemente, concluímos que o índice de serviço não depende de qualquer interação localização-sexo, e esses termos podem ser descartados do modelo.
+
+Usando a abordagem de soma extra de quadrados, podemos verificar que não há diferença entre as localizações (sem efeito de localização), mas que o sexo é significante; ou seja, homens e mulheres não dão as mesmas classificações para o serviço.
+
+Em situações de análise de variância em que as contagens de células são desiguais, a variação na resposta atribuível a diferentes variáveis preditoras e suas interações geralmente não pode ser separada em quantidades independentes. Para avaliar as influências relativas dos preditores na resposta neste caso, é necessário ajustar o modelo com e sem os termos em questão e calcular as estatísticas de teste F apropriadas.
+
+$$\Diamond$$
+
+# Inferência a partir da Função de Regressão Estimada
+
+Regressão é interpolação da VD no domínio observado das VI.
+
+Uma vez que um investigador esteja satisfeito com o modelo de regressão ajustado, ele pode ser usado para resolver dois problemas de predição. Seja \( \mathbf{z}_0 = [1\;z_{01}\; \cdots\; z_{0r}] \) valores selecionados para as variáveis preditoras que pertencem ao seu domínio observado. Então, \( \mathbf{z}_0 \) e \( \hat{\boldsymbol{\beta}} \) podem ser usados para (1) estimar a função de regressão \( \beta_0 + \beta_1 z_{01} + \cdots + \beta_r z_{0r} \) em \( \mathbf{z}_0 \) e (2) para estimar o valor da resposta \( Y \) em \( \mathbf{z}_0 \).
+
+## Estimando a Função de Regressão em \( \mathbf{z}_0 \)
+
+Seja \( Y \) o valor da resposta quando as variáveis preditoras têm valores \( \mathbf{z}_0 = [1\;z_{01}\; \cdots\; z_{0r}] \). De acordo com o modelo em (7-3), o valor esperado de \( Y \) é
+
+\[
+\mathbb{E}\left(Y | \mathbf{z}_0\right) = \sum_{i=0}^{r}{\beta_i z_{0i}} = \mathbf{z}_0^{\prime} \boldsymbol{\beta} \tag{7-15}
+\]
+
+Sua estimativa de mínimos quadrados é \( \mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}} \).
+
+**Resultado 7.7.** Para o modelo de regressão linear em (7-3), \( \mathbf{z}_0 \hat{\boldsymbol{\beta}} \) é o estimador linear não-viesado de \( \mathbb{E}(Y | \mathbf{z}_0) \) com variância mínima, \( \mathbb{V}(\mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}}) = \mathbf{z}_0 (\mathbf{z}^{\prime}\mathbf{z})^{-1} \mathbf{z}_0^{\prime} \sigma^2 \). Se  \( \boldsymbol{\varepsilon} \) têm distribuição multinormal, então um intervalo de confiança de \( 100(1 - \alpha)\% \) para \( \mathbb{E}(Y | \mathbf{z}_0) = \mathbf{z}_0^{\prime} \boldsymbol{\beta} \) é fornecido por
+
+\[
+\text{IC}95\%(\mathbb{E}(Y|\mathbf{z}_0))=\left[\mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}} \pm t_{n-r-1}(1-\alpha/2) s \sqrt{\mathbf{z}_0^{\prime} (\mathbf{z}^{\prime}\mathbf{z})^{-1} \mathbf{z}_0}\right]
+\]
+
+$$\Diamond$$
+
+## Previsão de uma Nova Observação em \( \mathbf{z}_0 \)
+
+A previsão de uma nova observação, como \( Y \), em \( \mathbf{z}_0 = [1\; z_{01}\; \cdots\; z_{0r}] \) é mais incerta do que estimar o valor esperado de \( Y \). De acordo com o modelo de regressão de (7-3), temos
+
+\[
+Y = \mathbf{z}_0^{\prime}\boldsymbol{\beta} + \varepsilon_0
+\]
+
+ou
+
+\[
+\text{(nova resposta } Y\text{)} = \text{(valor esperado de } Y \text{ em } \mathbf{z}_0\text{)} + \text{(novo erro)}
+\]
+
+em que \( \varepsilon_0 \) é distribuído como \( \mathcal{N}(0, \sigma^2) \) e é independente de \( \varepsilon \) e, portanto, de \( \hat{\boldsymbol{\beta}} \) e \( s^2 \). Os erros \( \boldsymbol{\varepsilon }\) influenciam os estimadores \( \hat{\boldsymbol{\beta}} \) e \( s^2 \) através das respostas \( \mathbf{Y} \), mas \( \varepsilon_0 \) não.
+
+__Resultado 7.8.__ Dado o modelo de regressão linear de (7-3), uma nova observação \( Y \) tem o _preditor não viesado_
+
+\[
+\mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}} = \sum_{i=0}^{r}{\hat{\beta}_i z_{0i}}
+\]
+
+A variância do _erro de previsão_ \( Y - \mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}} \) é
+
+\[
+\mathbb{V}\left(Y - \mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}}\right) = \sigma^2\left(1 + \mathbf{z}_0^{\prime}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}_0\right)
+\]
+
+Quando os erros \( \boldsymbol{\varepsilon } \) têm uma distribuição multinormal, um intervalo de predição de $100(1 - \alpha)\%$ para \( Y \) é dado por
+
+\[
+\text{IP}95\%(Y|\mathbf{z}_0)=\left[\mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}} \pm t_{n-r-1}(1-\alpha/2)s\sqrt{1 + \mathbf{z}_0^{\prime}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}_0}\right]
+\]
+
+$$\Diamond$$
+
+O intervalo de predição para \( y_0 \) é mais amplo do que o intervalo de confiança para estimar o valor da função de regressão \( \mathbb{E}(Y| \mathbf{z}_0) = \mathbf{z}_0^{\prime}\boldsymbol{\beta} \). A incerteza adicional na previsão de \( Y \), que é representada pelo termo extra \( s^2 \) na expressão
+
+\[
+s^2\left(1 + \mathbf{z}_0^{\prime}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}_0\right)
+\]
+
+vem da presença do termo de erro desconhecido \( \varepsilon_0 \).
+
+## Exemplo 7.6: Intervalos de confiança para uma resposta média e uma resposta futura
+
+Empresas considerando a compra de um computador devem primeiro avaliar suas futuras necessidades para determinar o equipamento adequado. Um cientista da computação coletou dados de sete locais semelhantes de empresas para que uma equação de previsão dos requisitos de hardware de computador para gestão de estoque pudesse ser desenvolvida. Os dados são fornecidos na Tabela 7.3 para
+
+\[\begin{align}
+z_1 &= \text{pedidos do cliente (milhar)}\\
+z_2 &= \text{contagem de adição-remoção de itens (milhar)}\\
+y &= \text{tempo da CPU (unidade central de processamento) (hora)}
+\end{align}\]
+
+Construa um intervalo de confiança de 95% para o tempo médio da CPU, \(\mathbb{E}(Y|\mathbf{z}_0) = \beta_0 + \beta_1z_{01} + \beta_2z_{02}\)
+em \(\mathbf{z}_0^{\prime} = [1,130, 7.5]\). Além disso, encontre um intervalo de predição de 95% para o requisito de CPU de uma nova instalação correspondente ao mesmo \(\mathbf{z}_0\).
+
+A função de regressão estimada é
+\[
+\hat{y} = 8.42 + 1.08\;z_1 + 0.42\;z_2
+\]
+e
+\[
+(\mathbf{z}^{\prime}\mathbf{z})^{-1} = 
+\begin{bmatrix} 
+8.17969 &  &  \\ 
+-.06411 & 0.00052 &  \\ 
+0.08831 & -.00107 & 0.01440 
+\end{bmatrix}
+\]
+com \(s = 1.204\) (`residual.scale` de `predict`). Consequentemente,
+\[
+\mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}} = 8.42 + 1.08\times 130 + 0.42\times7.5 = 151.84
+\]
+e
+\[
+s\sqrt{\mathbf{z}_0^{\prime}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}_0} = 1.204\times0.58928 = 0.73
+\]
+Temos \(t_4(0.025) = 2.776\), então o intervalo de confiança de 95% para o tempo médio da CPU em \(\mathbf{z}_0\) é
+\[\begin{align}
+\text{IC}95\%(\mathbb{E}(Y|\mathbf{z}_0))&=\left[\mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}} \pm t_{n-r-1}(0.975) s\sqrt{\mathbf{z}_0^{\prime} (\mathbf{z}^{\prime}\mathbf{z})^{-1} \mathbf{z}_0}\right]\\
+&= [151.84 \pm 2.776 \times 0.73]\\
+\text{IC}95\%(\mathbb{E}(Y|\mathbf{z}_0))&=[149.81, 153.87]
+\end{align}
+\]
+
+Uma vez que
+
+\[
+s\sqrt{1 + \mathbf{z}_0^{\prime}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}_0} = 1.204\times1.16071 = 1.40
+\]
+
+um intervalo de predição de 95% para o tempo da CPU em uma nova instalação com condições \(\mathbf{z}_0\) é
+
+\[\begin{align}
+\text{IP}95\%(Y|\mathbf{z}_0)&=\left[\mathbf{z}_0^{\prime} \hat{\boldsymbol{\beta}} \pm t_{n-r-1}(0.975)s\sqrt{1 + \mathbf{z}_0^{\prime}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}_0}\right] \\
+&= [151.84 \pm 2.776\times1.40]\\
+\text{IP}95\%(Y|\mathbf{z}_0)&=[147.93,155.75]
+\end{align}
+\]
+
+* [`JW6_Example7.6.R`](JW6_Example7.6.R){target="_blank"}
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+
+Dados <- read.csv("JW6Data/T7-3.dat", sep = "", header = FALSE)
+names(Dados) <- c("z1", "z2", "y")
+print.data.frame(Dados)
+
+print(psych::describe(Dados))
+boxplot(Dados)
+GGally::ggpairs(Dados)
+
+fit <- lm(y~z1+z2,
+          data=Dados)
+print(summary(fit))
+print(car::Anova(fit))
+alfa <- 0.05
+# IC95% de beta (correlação parcial) e sr2 entre -1 e 1.
+print(apaTables::apa.reg.table(fit,
+                               prop.var.conf.level = 1-alfa))
+
+z <- model.matrix(~z1+z2,
+                  data=Dados)
+z
+try(infomatrix.inv <- solve(t(z)%*%z))
+round(svd(z)$d, 2)
+# condition index < 30
+CI <- sqrt(svd(z)$d[1]/svd(z)$d[length(svd(z)$d)])
+CI
+
+z_0 <- c(1, 130, 7.5)
+y <- as.matrix(Dados["y"])
+beta_hat <- infomatrix.inv%*%t(z)%*%y 
+beta_hat
+n <- nrow(Dados)
+z.rank <- qr(z)$rank
+df <- n - z.rank
+df
+I <- diag(1,n)
+SSres <- t(y)%*%(I-z%*%infomatrix.inv%*%t(z))%*%y
+s <- sqrt(SSres/df)
+as.numeric(s)
+
+y.mean_z0 <- as.numeric(t(z_0)%*%beta_hat)
+cat("E^(Y|z0) = ", round(y.mean_z0,2), sep="")
+
+new <- data.frame(z1=130, z2=7.5)
+out <- predict(fit, new, se.fit = TRUE)
+as.numeric(out$fit)
+print(out)
+
+LL.conf <- t(z_0)%*%beta_hat - qt(1-alfa/2, df)*s*
+           sqrt(t(z_0)%*%infomatrix.inv%*%z_0)
+UL.conf <- t(z_0)%*%beta_hat + qt(1-alfa/2, df)*s*
+           sqrt(t(z_0)%*%infomatrix.inv%*%z_0)
+cat("IC95%(E(Y|z0)) = [", round(LL.conf,2), ",", round(UL.conf,2),
+    "]", sep="")
+predict(fit, new, interval="confidence", level=1-alfa)
+
+LL.pred <- t(z_0)%*%beta_hat - qt(1-alfa/2, df)*s*
+           sqrt(1+t(z_0)%*%infomatrix.inv%*%z_0)
+UL.pred <- t(z_0)%*%beta_hat + qt(1-alfa/2, df)*s*
+           sqrt(1+t(z_0)%*%infomatrix.inv%*%z_0)
+cat("IP95%(E(Y|z0)) = [", round(LL.pred,2), ",", round(UL.pred,2),
+    "]", sep="")
+predict(fit, new, interval="prediction", level=1-alfa)
+```
+
+# Verificação do Modelo e Outros Aspectos da Regressão
+
+## O Modelo é Adequado?
+
+Assumindo que o modelo é "correto", usamos a função de regressão estimada para fazer inferências. Claro, é imperativo examinar a adequação do modelo _antes_ que a função estimada se torne parte permanente do aparelho de tomada de decisão.
+
+Todas as informações da amostra sobre falta de ajuste estão contidas nos resíduos
+
+\[
+\hat{\epsilon_j} = Y_j - \sum_{i=1}^{r}{\hat{\beta_i} z_{ji}} \\
+j=1,2,\ldots,n
+\]
+
+ou
+
+\[
+\hat{\boldsymbol{\varepsilon}} = \mathbf{Y} - \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\mathbf{Y} = (\mathbf{I} - \mathbf{H})\mathbf{Y} \tag{7-16}
+\]
+
+Se o modelo é válido, cada resíduo é uma estimativa do erro \(\varepsilon_j\), que se presume ser uma variável aleatória normal com média zero e variância \(\sigma^2\). Embora os resíduos \(\hat{\boldsymbol{\varepsilon}}\) tenham valor esperado 0, sua matriz de covariância \(\sigma^2[\mathbf{I} - \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}] = \sigma^2[\mathbf{I} - \mathbf{H}]\) não é diagonal. Os resíduos têm variâncias desiguais e correlações diferentes de zero. Felizmente, as correlações geralmente são pequenas e as variâncias são quase iguais.
+
+Como os resíduos \(\hat{\boldsymbol{\varepsilon}}\) têm matriz de covariância \(\sigma^2[\mathbf{I} - \mathbf{H}]\), as variâncias dos \(\varepsilon_j\) podem variar muito se os elementos diagonais de \(\mathbf{H}\), as _alavancas_ \(h_{jj}\), forem substancialmente diferentes. Consequentemente, muitos estatísticos preferem diagnósticos gráficos baseados em resíduos studentizados. Usando o quadrado médio residual \(s^2\) como uma estimativa de \(\sigma^2\), temos
+
+\[
+\widehat{\mathbb{V}}(\hat{\varepsilon}_j) = s^2(1 - h_{jj}) \\
+j = 1, 2, \ldots, n \tag{7-17}
+\]
+
+e os _resíduos studentizados_ são
+
+\[
+\hat{\varepsilon}_j^* = \dfrac{\hat{\varepsilon}_j}{s\sqrt{1 - h_{jj}}} \tag{7-18}
+\]
+
+Esperamos que os resíduos studentizados pareçam, aproximadamente, como amostras independentes de uma distribuição \(\mathcal{N}(0, 1)\). Alguns pacotes de software vão um passo além e studentizam $\hat{\varepsilon}_j$ usando a variância estimada excluindo uma observação $s^2(j)$, que é o quadrado médio residual quando a observação \(j\)-ésima é removida da análise.
+
+## Alavancagem e Influência
+
+Embora uma análise de resíduos seja útil para avaliar o ajuste de um modelo, desvios do modelo de regressão muitas vezes são ocultados pelo processo de ajuste. Por exemplo, pode haver "outliers" tanto na resposta quanto nas variáveis explicativas que podem ter um efeito considerável na análise, mas que não são facilmente detectados a partir de uma análise de gráficos de resíduos. Na verdade, esses outliers podem _determinar_ o ajuste.
+
+A alavancagem \(h_{jj}\), o elemento diagonal \((j, j)\) de \(\mathbf{H} = \mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\), pode ser interpretada de duas maneiras relacionadas. Primeiro, a alavancagem está associada ao  \(i\)-ésimo ponto dos dados e mede, no espaço das variáveis explicativas, o quão distante a observação \(j\)-ésima está das outras \(n - 1\) observações. Para a regressão linear simples com uma variável explicativa \(z\), 
+
+$$\begin{align}
+h_{jj}&=\dfrac{1}{n}\left(1+\left(\dfrac{z_j-\bar{z}}{s}\right)^2\right)\\
+s^2&=\dfrac{1}{n}\sum_{j=1}^{n}{(z_j-\bar{z})^2}\end{align}$$
+
+A alavancagem média é \((r + 1)/n\). (Veja o Exercício 7.8.)
+
+Segundo, a alavancagem é uma medida do "puxão" que um único caso exerce no ajuste. O vetor de valores previstos é
+
+\[
+\hat{\mathbf{Y}} = \mathbf{z}\hat{\boldsymbol{\beta}}=\mathbf{z}(\mathbf{z}^{\prime}\mathbf{z})^{-1}\mathbf{z}^{\prime}\mathbf{Y} = \mathbf{H}\mathbf{Y}
+\]
+
+em que a \(j\)-ésima linha expressa o valor ajustado \(\hat{y}_j\) em termos das observações como
+
+\[
+\hat{y}_j = h_{jj}y_j+\sum_{k\ne j}^{}{h_{jk}yk}
+\]
+
+Desde que todos os outros valores de \(y\) sejam mantidos fixos,
+
+\[
+\text{(mudança em } \hat{y}_j) = h_{jj}\text{(mudança em } y_j)
+\]
+
+Se a alavancagem é grande em relação aos outros \(h_{jk}\), então \(y_j\) será um grande contribuidor para o valor previsto \(\hat{y}_j\).
+
+Observações que afetam significativamente as inferências extraídas dos dados são consideradas _influentes_. Métodos para avaliar a influência geralmente são baseados na mudança no vetor de estimativas de parâmetros, \(\hat{\boldsymbol{\beta}}\), quando observações são excluídas. Gráficos baseados em estatísticas de alavancagem e influência e seu uso na verificação diagnóstica de modelos de regressão são descritos em [3], [5] e [10]. Essas referências são recomendadas para qualquer pessoa envolvida em uma análise de modelos de regressão.
+
+Se, após as verificações diagnósticas, nenhuma violação séria das suposições for detectada, podemos fazer inferências sobre \(\boldsymbol{\beta}\) e os futuros valores de \(Y\) com alguma certeza de que não seremos enganados.
+
+* [`JW6_Cap7_leverage.R`](JW6_Cap7_leverage.R){target="_blank"}
+
+```{r}
+# Criar dados simulados
+set.seed(123)
+n <- 10
+x <- rnorm(n)
+y <- 2 * x + rnorm(n)
+Dados <- data.frame(x,y)
+print(psych::describe(Dados))
+boxplot(Dados)
+GGally::ggpairs(Dados)
+DescTools::PlotBag(Dados$x, Dados$y)
+
+# Ajustar um modelo de regressão linear
+modelo <- lm(y ~ x, data=Dados)
+print(summary(modelo))
+alfa <- 0.05
+# IC95% de beta (correlação parcial) e sr2 entre -1 e 1.
+print(apaTables::apa.reg.table(modelo,
+                               prop.var.conf.level = 1-alfa))
+
+# Calcular valores de alavancagem
+leverage <- hatvalues(modelo)
+print.data.frame(cbind(Dados, leverage), digits=2)
+cat("Limiar de alavancagem = ", 2*mean(leverage), sep="")
+
+# Plotar valores de alavancagem
+# plot(modelo)
+plot(leverage, 
+     ylab = "Valores de Alavancagem", 
+     xlab = "Observação", pch = 16)
+abline(h = 2*mean(leverage), col = "red")
+
+# Criar um dataframe para os dados
+dados <- data.frame(x = x, y = y, leverage = leverage)
+
+# Criar o gráfico
+grafico <- ggplot2::ggplot(dados, ggplot2::aes(x = x, y = y)) +
+  ggplot2::geom_point() +
+  ggplot2::geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  ggplot2::geom_text(ggplot2::aes(label = sprintf("%.2f", leverage)), vjust = 1.3) +
+  ggplot2::labs(title = "Dados, Reta de Regressão e Valores de Alavancagem",
+       x = "x",
+       y = "y") 
+# Exibir o gráfico
+print(grafico)
+```
+
+__Resultado 7.10__
+
+Demonstração: Manual de Soluções, p. 166-7
+
+# Questões
+
+7.1, 7.2, 7.3, 7.6, 7.8, 7.9, 7.11, 7.12, 7.21, 7.22, 7.24, 7.25, 7.27 
+
+* [Regression effective degrees of freedom: Wikipedia](https://en.wikipedia.org/wiki/Degrees_of_freedom_(statistics)#Effective_degrees_of_freedom){target="_blank"}
+
+# Scripts em R
+
+```{r}
+Sys.setlocale("LC_CTYPE", "pt_BR.UTF-8")
+Sys.setlocale("LC_ALL", "pt_BR.UTF-8")
+dados <- read.csv("JW6Data/T5-1.DAT", sep = "", header = FALSE)
+colnames(dados) <- c("Suor", "Na", "K")
+print(psych::describe(dados))
+print(cov(dados), digits = 3)
+car::Boxplot(dados)
+rgl::plot3d(lm(K~Suor+Na, data = dados), size = 5)
+rgl::planes3d(0, 0, 1, 0, col="gray", alpha=0.2)
+rgl::planes3d(0, 1, 0, 0, col="gray", alpha=0.2)
+rgl::planes3d(1, 0, 0, 0, col="gray", alpha=0.2)
+centroid <- colMeans(dados)
+rgl::points3d(centroid, size = 5, col = "purple3")
+rgl::text3d(x = centroid,col = "purple3", texts = "centroide")
+rgl::rglwidget()
+```
+
+```{r}
+sigma <- matrix(c(4,3,3,4), ncol = 2, nrow = 2)
+mu <- c(5, 5)
+n <- 1000
+set.seed(123)
+x <- mvtnorm::rmvnorm(n = n, mean = mu, sigma = sigma)
+d <- data.frame(x)
+p2 <- ggplot2::ggplot(d, 
+                      ggplot2::aes(x = X1, y = X2)) +
+  ggplot2::geom_point(alpha = .5) +
+  ggplot2::geom_density_2d()
+p2
+```
+
+```{r}
+# Regressão3D
+x1 <- rep(seq(0,10,0.5),100)
+ x2 <- rep(seq(0,10,0.5),each=100)
+ par(mfrow=c(2,2))
+ Ey1 <- 83 + 9*x1 + 6*x2
+ scatterplot3d::scatterplot3d(x1,x2,Ey1,highlight.3d=TRUE,
+                              xlim=c(0,10),
+                ylim=c(0,10),zlim=c(0,240),
+                xlab=expression(x[1]),
+                ylab=expression(x[2]),
+                zlab="E(y)",main =
+                expression(paste("A 3-d plot for ", 
+                                 E(Y*"|"*x,beta) == 83 + 9*x[1]
+                                     + 6*x[2])),z.ticklabs="")
+ Ey2 <- 83 + 9*x1 + 6*x2 + 3*x1*x2
+ scatterplot3d::scatterplot3d(x1,x2,Ey2,highlight.3d=TRUE,
+                              xlim=c(0,10),
+                ylim=c(0,10),zlim=c(0,600),
+                xlab=expression(x[1]),
+                ylab=expression(x[2]),zlab="E(y)",main =
+                expression(paste("A 3-d plot for ",
+                                 E(Y*"|"*x,beta)== 83 + 9*x[1]
+                                     + 6*x[2] + 3*x[1]*x[2])),
+                z.ticklabs="")
+ Ey3 <- 83 + 9*x1 + 6*x2 + 2*x1^4 + 3*x2^3 + 3*x1*x2
+ scatterplot3d::scatterplot3d(x1,x2,Ey3,highlight.3d=TRUE,
+                              xlim=c(0,10),
+                ylim=c(0,10),
+                zlim=c(0,25000),
+                xlab=expression(x[1]),
+                ylab=expression(x[2]),
+                zlab="E(y)",main =
+                expression(paste("A 3-d plot for ",
+                                 E(Y*"|"*x,beta)== 83 + 9*x[1]
+                                    + 6*x[2] + 2*x[1]^4 + 3*x[2]^3 + 3*x[1]*x[2])),
+                z.ticklabs="")
+ Ey4 <- 83 + 9*x1 + 6*x2 - 2*x1^4 - 3*x2^3 + 3*x1*x2
+ scatterplot3d::scatterplot3d(x1,x2,Ey4,highlight.3d=TRUE,
+                              xlim=c(0,10),
+                ylim=c(0,10),zlim=c(-23000,100),
+                xlab=expression(x[1]),
+                ylab=expression(x[2]),
+                zlab="E(y)",main =
+                expression(paste("A 3-d plot for ",
+                                 E(Y*"|"*x,beta)==83 + 9*x[1]
+                                     + 6*x[2] - 2*x[1]^4 - 3*x[2]^3 + 3*x[1]*x[2])),
+                z.ticklabs="")
+par(mfrow=c(2,2))
+x1=x2=seq(from=0,to=10,by=0.2)
+ey1 <- function(a,b) 83 + 9*a + 6*b
+Ey1 <- outer(x1,x2,ey1)
+contour(x1,x2,Ey1,main = expression(paste("Cantour plot for ",
+                                          E(Y*"|"*x,beta) ==83 + 9*x[1]+ 6*x[2])))
+ey2 <- function(a,b) 83 + 9*a + 6*b + 3*a*b
+Ey2 <- outer(x1,x2,ey2)
+contour(x1,x2,Ey2,main = expression(paste("Cantour plot for ",
+                                          E(Y*"|"*x,beta)==83 + 9*x[1]+ 6*x[2] + 3*x[1]*x[2])))
+ey3 <- function(a,b) 83 + 9*a + 6*b + 2*a^4 + 3*b^3 + 3*a*b
+Ey3 <- outer(x1,x2,ey3)
+contour(x1,x2,Ey3,main = expression(paste("Cantour plot for ",
+                                          E(Y*"|"*x,beta)==83 + 9*x[1] + 6*x[2] + 2*x[1]^4 + 3*x[2]^3 + 3*x[1]*x[2])))
+ey4 <- function(a,b) 83 + 9*a + 6*b - 2*a^4 - 3*b^3 + 3*a*b
+Ey4 <- outer(x1,x2,ey4)
+contour(x1,x2,Ey4,main = expression(paste("Cantour plot for ",
+                                          E(Y*"|"*x,beta)==83 + 9*x[1] + 6*x[2] - 2*x[1]^4 - 3*x[2]^3 + 3*x[1]*x[2])))
+```
+
+# Bibliografia
+
+* Livro adotado:
+  * JOHNSON, RA & WICHERN, DW (2007) _Applied multivariate statistical analysis_. 6<sup>th</sup> ed. NJ: Prentice Hall.
+
+* ANDERSON, TW (2003) _An introduction to multivariate statistical analysis_. 3<sup>rd</sup> ed. NY: Wiley.
+* EVERITT, BS & HOTHORN, T (2011) _An introduction to applied multivariate analysis with R_. USA: Springer.
+* FLURY, B (1997) _A first course in multivariate statistics_. NY: Springer-Verlag.
+* HARDLE, W & SIMAR, L (2015) _Applied multivariate statistical analysis_. 4<sup>th</sup> ed. NY: Springer-Verlag.
+* JAMES, G; WITTEN, D; HASTIE, T; & TIBSHIRANI, R (2021) _An Introduction to statistical learning with applications in R_. 2<sup>nd</sup> ed. USA: Springer.
+* MARDIA, KV, KENT, JT & BIBBY, JM (2003) _Multivariate analysis_. UK: Academic.
+* MORRISON, DF (1990) _Multivariate statistical methods_. 3<sup>rd</sup> ed. NY: McGraw-Hill.
+* REIS, E (2001) _Estatística multivariada aplicada_. 2<sup>a</sup> ed. Lisboa: Sílabo.
+* REIS, SF (1988) Morfometria e Estatística Multivariada em Biologia Evolutiva. _Revista Brasileira de Zoologia_ 5(4): 571-80.
+* RENCHER, AC & CHRISTENSEN, WF (2012) _Methods of multivariate analysis_. 3<sup>rd</sup> ed. NJ: Wiley.
+* SAVILLE, DJ & WOOD, GR (1996) _Statistical methods:  a geometric primer_.USA: Lawrence Erlbaum. 
+* SOUZA, J (1997) _Estatística econômica e social_. RJ: Campus.
+* SRIVASTAVA, MS & CARTER, EM (1983) _An Introduction to applied multivariate Statistics_. North Holland.
+* SRIVASTAVA, MS (2006) _Methods of multivariate statistics_. NY: Wiley.
+* WICKENS, TD (1995) _The geometry of multivariate Statistics_. USA: Lawrence Erlbaum.
+
+<br>
+
+# Bibliografia adicional
+
+* Batschelet, E (1978) _Introdução à matemática para biocientistas_. Tradução da 2ª ed. São Paulo: EDUSP e Rio de Janeiro: Interciência.
+* Batschelet, E (1979) _Introduction to mathematics for life scientists_. 3rd ed. NY: Springer.
+* Bickel, PJ & Doksum, KA (2001) _Mathematical Statistics: Basic Ideas and Selected Topics_, Volume I. USA: CRC.
+* Bilodeau, M & Brenner, D (1999) _Theory of Multivariate Statistics_. USA: Springer. T^2 de Hotelling
+* Denis, DJ (2021) _Applied Univariate, Bivariate, and Multivariate Statistics Using Python: A Beginners Guide to Advanced Data Analysis_. NJ: Wiley. 
+* Genz, A (1992) Numerical Computation of Multivariate Normal Probabilities. _Journal of Computational and Graphical Statistics_ 1(2): 141–149. https://doi.org/10.2307/1390838
+* Hardle, W & Hlavka, Z (2007) _Multivariate Statistics - Exercises and Solutions_. USA: Springer.
+* KASSAMBARA, A (2017) _Practical guide to cluster analysis in R: 
+Unsupervised machine learning_. STHDA: http://www.sthda.com.
+* Kollo. T &  von Rosen, D (2005) _Advanced Multivariate Statistics with Matrices_. USA: Springer. 
+* MAIR, P (2018) _Modern psychometrics with R_. USA: Springer.
+* Manly, BFJ & Alberto, JAN (2017) _Multivariate Statistical Methods: A Primer using R_. 4<sup>th</sup> ed. USA: CRC.  
+* Matloff, N (2020) _Probability and Statistics for Data Science: Math + R _ Data_. USA: CRC.
+* Mirman, D (2014) _Growth Curve Analysis and Visualization Using R_. USA: CRC.
+* Pessoa, DGC (2008) Exemplos do livro de Johnson e Wichern.
+* Rawlings, JO et al. (1998) _Applied Regression Analysis: A Research Tool_. USA: Springer. T^2 de Hotelling
+* Schumacker, RE (2016) _Using R With Multivariate Statistics_. USA: SAGE.
+* Siqueira, JO (2012) _Fundamentos de métodos quantitativos_: aplicados em Administração, Economia, Contabilidade e Atuária usando WolframAlpha e SCILAB. São Paulo: Saraiva. Soluções dos exercícios em  https://www.researchgate.net/publication/326533772_Fundamentos_de_metodos_quantitativos_-_Solucoes.
+* Tay, A  (2018) _OLS using Matrix Algebra_. http://www.mysmu.edu/faculty/anthonytay/MFE/OLS_using_Matrix_Algebra.pdf 
+* Teichroew, D (1964) _An introduction to management science: deterministic models_. NJ: Wiley.
+* Timm, NH (2002) _Applied Multivariate Analysis_. USA: Springer. T^2 de Hotelling 
+* Zelterman, D (2015) _Applied Multivariate Statistics with R_. USA: Springer. 
+
+<!-- * https://esajournals.onlinelibrary.wiley.com/doi/10.1890/0012-9658%282000%29081%5B3178%3ACARTAP%5D2.0.CO%3B2 -->
+<!-- CLASSIFICATION AND REGRESSION TREES: A POWERFUL YET SIMPLE TECHNIQUE FOR ECOLOGICAL DATA ANALYSIS -->
+<!-- Glenn De'ath,Katharina E. Fabricius -->
+<!-- Volume81, Issue11, November 2000, Pages 3178-3192 -->
+
+<!-- * Multivariate Regression Trees: A New Technique for Modeling Species-Environment Relationships -->
+<!-- Author(s): Glenn De'ath -->
+<!-- Source: Ecology, Vol. 83, No. 4 (Apr., 2002), pp. 1105-1117 -->
+<!-- http://www.jstor.org/stable/3071917 -->
+
+<!-- * Zhang Z. Decision tree modeling using R. -->
+<!--  Ann Transl Med 2016;4(15):275. doi: 10.21037/atm.2016.05.14 -->
+<!--  http://dx.doi.org/10.21037/atm.2016.05.14 -->
+
+<br>
+
+# Aplicativos 
+
+* OpenAI (2021) ChatGPT. https://openai.com/research/chatgpt
+* Wolfram Research (n.d.) Wolfram|Alpha. https://www.wolframalpha.com/
+* Scilab Enterprises (n.d.) Scilab - Open source software for numerical computation. https://www.scilab.org/
+
+# Análise estatística multivariada em R e Python na internet
+
+* Chaves Neto, A. CE-704 ANÁLISE MULTIVARIADA APLICADA À
+PESQUISA. https://docs.ufpr.br/~soniaisoldi/ce090/CE076AM_2010.pdf
+* ME 731 - Métodos em Análise Multivariada em R. https://www.ime.unicamp.br/~cnaber/Material_AM_2S_2020.htm
+* Nogueira, FE (2007) Modelos de regressão multivariada. Dissertação (Mestrado). https://teses.usp.br/teses/disponiveis/45/45133/tde-25062007-163150/publico/dissertacao_4.pdf
+* Análise Multivariada. https://www.professores.uff.br/samuelcampos/analise-multivariada/
+
+* Severn, K (2023) Multivariate Statistics.
+https://rich-d-wilkinson.github.io/MATH3030/
+* Powell, J (2019) Multivariate statistics in R. https://www.hiercourse.com/multivariate
+* Plotting PCA/clustering results using ggplot2 and ggfortify: https://rpubs.com/sinhrks/plot_pca
+* ggfortify : Extension to ggplot2 to handle some popular packages - R software and data visualization: http://www.sthda.com/english/wiki/ggfortify-extension-to-ggplot2-to-handle-some-popular-packages-r-software-and-data-visualization
+* A Little Book of Python for Multivariate Analysis: https://python-for-multivariate-analysis.readthedocs.io/index.html
+
+# Matriz e vetor no YouTube 
+
+* [Zach Star: The Applications of Matrices | What I wish my teachers told me way earlier](https://www.youtube.com/watch?v=rowWM-MijXU&t=695s){target="_blank"}
+
+* [Zach Star: O determinante | A essência da Álgebra Linear, capítulo 5](https://www.youtube.com/watch?v=Ip3X9LOh2dk&t=171s){target="_blank"}
+
+* [Zach Star: The applications of eigenvectors and eigenvalues | That thing you heard in Endgame has other uses](https://www.youtube.com/watch?v=i8FukKfMKCI&t=90s){target="_blank"}
+
+
+
+
+
+
