@@ -1,0 +1,677 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+  ignorenonframetext,
+]{beamer}
+\title{MAN5728: Tópicos Essenciais da Bioestatística}
+\subtitle{Módulo 3}
+\author{José O Siqueira
+(\href{mailto:siqueira@usp.br}{\nolinkurl{siqueira@usp.br}})\\
+Paulo SP Silveira
+(\href{mailto:silveira@usp.br}{\nolinkurl{silveira@usp.br}})}
+\date{20 abril 2022 16:07h}
+
+\usepackage{pgfpages}
+\setbeamertemplate{caption}[numbered]
+\setbeamertemplate{caption label separator}{: }
+\setbeamercolor{caption name}{fg=normal text.fg}
+\beamertemplatenavigationsymbolsempty
+% Prevent slide breaks in the middle of a paragraph
+\widowpenalties 1 10000
+\raggedbottom
+\setbeamertemplate{part page}{
+  \centering
+  \begin{beamercolorbox}[sep=16pt,center]{part title}
+    \usebeamerfont{part title}\insertpart\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{section page}{
+  \centering
+  \begin{beamercolorbox}[sep=12pt,center]{part title}
+    \usebeamerfont{section title}\insertsection\par
+  \end{beamercolorbox}
+}
+\setbeamertemplate{subsection page}{
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center]{part title}
+    \usebeamerfont{subsection title}\insertsubsection\par
+  \end{beamercolorbox}
+}
+\AtBeginPart{
+  \frame{\partpage}
+}
+\AtBeginSection{
+  \ifbibliography
+  \else
+    \frame{\sectionpage}
+  \fi
+}
+\AtBeginSubsection{
+  \frame{\subsectionpage}
+}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={MAN5728: Tópicos Essenciais da Bioestatística},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\newif\ifbibliography
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\begin{document}
+\frame{\titlepage}
+
+\begin{frame}{Conteúdo}
+\protect\hypertarget{conteuxfado}{}
+\begin{itemize}
+\tightlist
+\item
+  Testes de hipóteses: conceito
+\item
+  Teste qui-quadrado
+\item
+  Testes paramétricos mais utilizados na área da saúde:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    teste t
+  \item
+    ANOVA
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Material}
+\protect\hypertarget{material}{}
+\begin{itemize}
+\tightlist
+\item
+  \href{}{Material do Módulo 3 no GoogleDrive}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Apresentação em HTML, scripts em R e arquivos de dados do Módulo 2
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Carregar pacotes}
+\protect\hypertarget{carregar-pacotes}{}
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{options}\NormalTok{(}\AttributeTok{warn=}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{)}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(knitr, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(readxl, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(psych, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(HH, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(DescTools, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(MVN, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(Rmisc, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(ggplot2, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\FunctionTok{suppressMessages}\NormalTok{(}\FunctionTok{library}\NormalTok{(reshape2, }\AttributeTok{warn.conflicts=}\ConstantTok{FALSE}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+\end{frame}
+
+\begin{frame}[fragile]{Ler planilha}
+\protect\hypertarget{ler-planilha}{}
+Os dados da planilha Excel Biometria\_FMUSP.xlsx foram coletados pelos
+docentes do curso de Medicina da FMUSP dos estudantes do segundo ano de
+uma mesma disciplina em três anos consecutivos.
+
+As varíaveis do arquivo são (\(missing = NA\)):
+
+\begin{itemize}
+\tightlist
+\item
+  ID: idenficador do(a) estudante\\
+\item
+  Ano da coleta dos dados: 1, 2, 3\\
+\item
+  Turma: A, B\\
+\item
+  Sexo: Feminino, Masculino
+\item
+  Mao: Destro, Canhoto, Ambidestro\\
+\item
+  TipoSang: A+, A-, \ldots{}
+\item
+  ABO: A, B, AB, O
+\item
+  AtivFisica: nível de atividade física
+\item
+  Sedentarismo: Não, Sim\\
+\item
+  MCT: massa corporal total (kg)
+\item
+  Estatura: cm\\
+\item
+  IMC: índice de massa corpórea (\(kg/m^2\))
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{Dados }\OtherTok{\textless{}{-}}\NormalTok{ readxl}\SpecialCharTok{::}\FunctionTok{read\_excel}\NormalTok{(}\AttributeTok{path=}\StringTok{"Biometria\_FMUSP.xlsx"}\NormalTok{,}
+                            \AttributeTok{sheet=}\StringTok{"dados"}\NormalTok{,}
+                            \AttributeTok{na=}\StringTok{"NA"}\NormalTok{)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{MCT[Dados}\SpecialCharTok{$}\NormalTok{MCT}\SpecialCharTok{==}\FunctionTok{max}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{MCT,}\AttributeTok{na.rm=}\ConstantTok{TRUE}\NormalTok{)] }\OtherTok{\textless{}{-}} \ConstantTok{NA}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{Estatura[Dados}\SpecialCharTok{$}\NormalTok{Estatura}\SpecialCharTok{==}\FunctionTok{min}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{Estatura,}\AttributeTok{na.rm=}\ConstantTok{TRUE}\NormalTok{)] }\OtherTok{\textless{}{-}} \ConstantTok{NA}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{ID }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{ID)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{Ano }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{Ano)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{Turma }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{Turma)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{Sexo }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{Sexo)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{Mao }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{Mao)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{TipoSang }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{TipoSang)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{ABO }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{ABO)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{AtivFisica }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{AtivFisica)}
+\NormalTok{Dados}\SpecialCharTok{$}\NormalTok{Sedentarismo }\OtherTok{\textless{}{-}} \FunctionTok{factor}\NormalTok{(Dados}\SpecialCharTok{$}\NormalTok{Sedentarismo)}
+\NormalTok{Dados.F }\OtherTok{\textless{}{-}} \FunctionTok{subset}\NormalTok{(Dados, Sexo}\SpecialCharTok{==}\StringTok{"F"}\NormalTok{)}
+\NormalTok{Dados.M }\OtherTok{\textless{}{-}} \FunctionTok{subset}\NormalTok{(Dados, Sexo}\SpecialCharTok{==}\StringTok{"M"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+\end{frame}
+
+\begin{frame}{Testes de hipóteses: conceito}
+\protect\hypertarget{testes-de-hipuxf3teses-conceito}{}
+\href{http://rpsychologist.com/d3/NHST/}{Understanding Statistical Power
+and Significance Testing: An interactive visualization}
+\end{frame}
+
+\begin{frame}{Análise estatística inferencial}
+\protect\hypertarget{anuxe1lise-estatuxedstica-inferencial}{}
+\begin{itemize}
+\tightlist
+\item
+  Significância estatística: valor \(p\)
+\item
+  Significância prática: tamanho de efeito
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Erro amostral}
+\protect\hypertarget{erro-amostral}{}
+``Constitui um dos problemas enfrentados quando conduzimos uma pesquisa
+o fato de não sabermos qual é o padrão existente na população de
+interesse. De fato, o motivo de realizarmos a pesquisa é, em primeiro
+lugar, determinar esse padrão. Você precisa estar ciente de que, algumas
+vezes, devido ao erro amostral, obteremos padrões nas amostras que não
+refletem de forma acurada a população de onde as amostras foram
+retiradas. Assim, precisamos de um algum meio para avaliar a
+probabilidade de que a amostra selecionada seja um retrato fiel da
+população. Os testes estatísticos nos auxiliam nesta decisão, mas isso
+ocorre de uma forma não de todo intuitiva.''
+
+\begin{quote}
+Dancey \& Reidy, 2019
+\end{quote}
+\end{frame}
+
+\begin{frame}{Efeito populacional}
+\protect\hypertarget{efeito-populacional}{}
+\begin{itemize}
+\tightlist
+\item
+  Associação/ concordância entre variáveis na população
+\item
+  Diferença entre condições na população
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Hipóteses nula e alternativa}
+\protect\hypertarget{hipuxf3teses-nula-e-alternativa}{}
+\begin{itemize}
+\tightlist
+\item
+  Hipótese nula/ \(H_{0}\)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    A hipótese nula sempre declara que não existe efeito na população.
+  \end{itemize}
+\item
+  Hipótese de pesquisa/ alternativa/ \(H_{1}\)/ \(H_{a}\)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    A hipótese de pesquisa é a nossa previsão de como condições
+    específicas podem estar relacionadas.
+  \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Teste estatístico de hipótese nula}
+\protect\hypertarget{teste-estatuxedstico-de-hipuxf3tese-nula}{}
+``Em Estatística, assim como em Economia, Psicologia, Medicina e
+Direito, o problema de testagem de hipótese nula envolve a mediação de
+objetivos conflitantes. Há uma analogia legal interessante: no
+julgamento de um crime de homicídio, pede-se ao júri que decida entre a
+hipótese nula H0: O réu é inocente (princípio da presunção da inocência
+ou da não-culpabilidade) e a hipótese alternativa H1: o réu é culpado. O
+sistema judiciário não é perfeito. Comete-se um erro do tipo I
+condenando-se um inocente. A probabilidade do erro do tipo I é chamado
+de nível de significância do teste (α). O nível de confiança do teste
+(probabilidade de absolver o inocente) é 1 -- α. O erro do tipo II
+consiste em absolver um culpado. A probabilidade do erro do tipo II é o
+β. O poder do teste (probabilidade de condenar um culpado) é igual a 1
+-- β. A advertência do juiz ao júri, de que o crime ``a culpa pelo crime
+de homicídio deve ser provada além de qualquer dúvida razoável''
+significa que α deve ser muito pequena. Tem havido muitas reformas
+legais (e.g., limitar o poder da polícia para obter confissão)
+elaboradas a fim de reduzir α. Porém, essas mesmas reformas têm
+contribuído para aumentar β. Não há meios de reduzir α a zero
+(impossibilidade total de condenar um inocente) sem elevar β a 1 (tender
+a libertar todos os culpados, invalidando o julgamento). A única maneira
+de reduzir α e β concomitantemente é aumentar a evidência, i.e.,
+aumentar o tamanho da amostra.''
+
+\begin{quote}
+Wonnacott \& Wonnacott, 1981
+\end{quote}
+
+``Quais das seguintes situações representam um erro do tipo I e quais um
+erro do tipo II?
+
+\begin{enumerate}
+\tightlist
+\item
+  Você verificou, em um estudo, a existência de um relacionamento entre
+  a quantidade de chá ingerida por dia e a quantidade de dinheiro ganho
+  na loteria. Você conclui que, para ganhar na loteria, deve beber muito
+  chá.
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Solução: \(H_{0}\): Não há relacionamento entre quantidade de chá
+  ingerida e quantidade de dinheiro ganho na loteria. Um estudo concluiu
+  que essa relação existe, pois \(p<0.05\). Na realidade essa relação
+  não existe! Portanto, \(H_{0}\) foi rejeitada, sendo que ela é
+  verdadeira, i.e., o erro do tipo I foi cometido.
+\end{itemize}
+
+\begin{enumerate}
+\tightlist
+\item
+  Você verificou, em um estudo, que não existe diferença entre as
+  velocidades das tartarugas e dos guepardos. Você conclui que as
+  tartarugas são tão rápidas quanto os guepardos.
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Solução: \(H_{0}\): Não há diferença entre as velocidades das
+  tartarugas e guepardos. Um estudo concluiu que essa relação não
+  existe, pois \(p>0.05\). Na realidade essa diferença existe! Portanto,
+  \(H_{0}\) não foi rejeitada, sendo que ela é falsa, i.e., o erro do
+  tipo II foi cometido.
+\end{itemize}
+
+\begin{enumerate}
+\tightlist
+\item
+  Você verificou, em um estudo, que existe um relacionamento entre modo
+  de vida e renda anual. No entanto, em virtude de a probabilidade
+  associada com o relacionamento ser de \(0.5\), você conclui que não
+  existe relacionamento entre as duas variáveis.
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Solução: \(H_{0}\): Não há relacionamento entre modo de vida e renda
+  anual. Um estudo concluiu que essa relação não existe, pois
+  \(p>0.05\); Na realidade esse relacionamento existe! Portanto,
+  \(H_{0}\) não foi rejeitada sendo que ela é falsa, i.e., o erro do
+  tipo II foi cometido.''
+\end{itemize}
+
+\begin{quote}
+Dancey \& Reidy, 2019
+\end{quote}
+\end{frame}
+
+\begin{frame}{Valor \(p\)}
+\protect\hypertarget{valor-p}{}
+``O valor \(p\) é a probabilidade de que a estatística de teste seja
+igual ou mais extrema que o valor observado na direção prevista pela
+hipótese alternativa (\(H_{1}\)), presumindo que a hipótese nula
+(\(H_{0}\)) é verdadeira.''
+
+\begin{quote}
+Agresti \& Finlay, 2012, p.~171
+\end{quote}
+
+``Mínimo \(\alpha\) que rejeita \(H_{0}\).''
+
+\begin{quote}
+Wonnacott \& Wonnacott, 1981
+\end{quote}
+\end{frame}
+
+\begin{frame}{Por que estabelecer \(\alpha = 0.05\)?}
+\protect\hypertarget{por-que-estabelecer-alpha-0.05}{}
+``Não recomendamos abandonar o valor \(p\), nem reduzir arbitrariamente
+o limiar de significância {[}\(\alpha = 0.05\){]}.''
+
+\begin{quote}
+Di Leo \& Sardanelli, 2020, p.~6
+\end{quote}
+\end{frame}
+
+\begin{frame}{Testes unilateral e bilateral}
+\protect\hypertarget{testes-unilateral-e-bilateral}{}
+\begin{itemize}
+\tightlist
+\item
+  Quando a direção do relacionamento ou da diferença (efeito) é
+  especificada, então o teste é unilaterall; caso contrário, é
+  bilateral.
+\item
+  Em geral (mas nem sempre), se você tiver obtido um valor \(p\) para um
+  teste bilateral e quiser saber o valor mínimo correspondente para o
+  teste unilateral, então:
+  \(p_{\text{unilateral}} ≥ p_{\text{bilateral}}/2\)
+\item
+  Observe que o que deve ser dobrado ou dividido por 2 não é a
+  estatística de teste (e.g.: \(z\) ou \(t\)).
+\item
+  \(H_{0}: \mu \ge \mu_{0}\) vs.~\(H_{1}: \mu < \mu_{0}\) é equivalente
+  a \(H_{0}: \mu = \mu_{0}\) vs.~\(H_{1}: \mu < \mu_{0}\)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Demonstração em Gatás, 1978, p.~220-3.
+  \end{itemize}
+\end{itemize}
+
+``Testes unicaudais raramente devem ser usados para pesquisa básica ou
+aplicada em ecologia, comportamento animal ou qualquer outra ciência.''
+
+\begin{quote}
+Lombardi \& Hurlbert, 2009, p.~447
+\end{quote}
+
+``Testes unicaudais também se mostram úteis em uma área de interesse
+estatístico chamada `não inferioridade' e testes de `equivalência'.''
+
+\begin{quote}
+Lombardi \& Hurlbert, 2009, p.~462
+\end{quote}
+\end{frame}
+
+\begin{frame}{Teste de hipótese nula \& intervalo de confiança}
+\protect\hypertarget{teste-de-hipuxf3tese-nula-intervalo-de-confianuxe7a}{}
+\begin{itemize}
+\tightlist
+\item
+  Rejeitar a hipótese nula ao nível de significância adotado,
+  \(\alpha\), se o valor do parâmetro conjecturado na hipótese nula não
+  pertencer ao intervalo de confiança de \(1 - \alpha\).
+\item
+  Os critérios de valor \(p\) e de inervalo de confiança são, em geral,
+  equivalentes.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Críticas contra os testes de hipótese nula}
+\protect\hypertarget{cruxedticas-contra-os-testes-de-hipuxf3tese-nula}{}
+``Não recomendamos abandonar o valor \(p\), nem reduzir arbitrariamente
+o limiar de significância {[}\(\alpha = 0.05\){]}.''
+
+\begin{quote}
+Di Leo \& Sardanelli, 2020, p.~6
+\end{quote}
+
+``A testagem da hipótese nula é a abordagem dominante na Psicologia e
+Medicina. Apesar das críticas à testagem da hipótese nula, isso não
+significa que tal abordagem deve ser abandonada completamente. Ao invés
+disso, devemos ter um entendimento completo de seu significado para
+podermos nos beneficiar desta tecnologia da decisão. Além do valor
+\(p\), é importante usar o intervalo de confiança e de tamanho de
+efeito.''
+
+\begin{quote}
+Dancey \& Reidy, 2019
+\end{quote}
+\end{frame}
+
+\begin{frame}{Significância prática}
+\protect\hypertarget{significuxe2ncia-pruxe1tica}{}
+``Mesmo efeitos muito pequenos poderão apresentar significância
+estatística quando o tamanho da amostra for bem grande. Para determinar
+a significância prática a melhor abordagem consiste em obter uma medida
+do tamanho do efeito, sendo que essa medida não depende do tamanho da
+amostra. E.g.: o coeficiente de correlação de Pearson amostral mede a
+intensidade da associação linear entre duas variáveis quantitativas e
+não depende do tamanho da amostra.''
+
+\begin{quote}
+Dancey \& Reidy, 2019
+\end{quote}
+\end{frame}
+
+\begin{frame}{Interpretação errônea do valor \(p\)}
+\protect\hypertarget{interpretauxe7uxe3o-erruxf4nea-do-valor-p}{}
+\begin{itemize}
+\tightlist
+\item
+  Muitos pesquisadores sem experiência em estatística (e mesmo aqueles
+  com alguma) equiparam o valor \(p\) com o verdadeira tamanho do
+  efeito, i.e., quanto menor o valor \(p\), mais forte seria, por
+  exemplo, o relacionamento entre duas variáveis; talvez, de fato,
+  quanto mais forte o relacionamento, mais baixo o valor \(p\), mas não
+  significa que isso necessariamente ocorrerá.
+\item
+  O valor \(p\) não é a probabilidade de que a hipótese nula seja
+  verdadeira; de fato, não sabemos qual é a probabilidade de que a
+  hipótese nula seja verdadeira.
+\item
+  \(1 – p\) não é a probabilidade de que a hipótese alternativa seja
+  verdadeira; de fato, não sabemos qual é a probabilidade de que a
+  hipótese alternativa seja verdadeira.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Replicação}
+\protect\hypertarget{replicauxe7uxe3o}{}
+``A replicação é uma das pedras angulares da ciência. Se você observa um
+fenômeno uma vez, então pode ter sido por acaso; se o observa duas, três
+ou mais vezes, pode estar começando a aprender algo sobre o fenômeno
+estudado. Se o seu estudo foi o primeiro neste assunto, é sensato que
+você trate os resultados com certo grau de cautela.''
+
+\begin{quote}
+Dancey \& Reidy, 2019
+\end{quote}
+\end{frame}
+
+\begin{frame}{Planejamento do estudo: falando grego}
+\protect\hypertarget{planejamento-do-estudo-falando-grego}{}
+\begin{itemize}
+\tightlist
+\item
+  Coelho et al.~2008, Tabela 4.1
+\item
+  Perugini et al., 2018
+\item
+  Bacchetti, 2010
+\end{itemize}
+\end{frame}
+
+\begin{frame}{\(p>0.05\) e análise de poder retrospectivo}
+\protect\hypertarget{p0.05-e-anuxe1lise-de-poder-retrospectivo}{}
+``Evite o erro ``ausência de evidência = evidência de ausência'' {[}ou
+aceitar \(H_{0}\) se \(p>0.05\){]}. Se um teste de hipótese tem um valor
+\(p\) acima do nível \(\alpha\) escolhido, não é correto inferir que não
+houve efeito ou diferença entre os grupos.''
+
+\begin{quote}
+Althouse et al., 2021, p.~e73
+\end{quote}
+
+``Cálculos de potência post hoc usando o tamanho do efeito observado são
+uma simples transformação do valor \(p\) do estudo e nunca devem ser
+usados porque não respondem a uma pergunta importante. Se um cálculo de
+poder não foi realizado, então pode ser aceitável relatar um ``cálculo
+de poder'' ilustrando que o tamanho da amostra disponível foi suficiente
+para abordar a questão de interesse do estudo. Observe que isso deve ser
+baseado em algum tamanho mínimo de efeito de interesse para a inferência
+primária, não nos dados observados.''
+
+\begin{quote}
+Althouse et al., 2021, p.~e87
+\end{quote}
+
+``Repetimos pontos relatados por outros autores que o uso do poder
+estimado para interpretar resultados é logicamente inconsistente e
+redundante com o valor \(p\), e esse poder estimado pode ser tendencioso
+e altamente não confiável.''
+
+\begin{quote}
+Gerard et al., 1998, p.~802
+\end{quote}
+\end{frame}
+
+\begin{frame}{Referências}
+\protect\hypertarget{referuxeancias}{}
+\begin{itemize}
+\tightlist
+\item
+  COELHO, JP et al.~(2008) \emph{Inferência estatística: com utilização
+  do SPSS e G*Power}. Lisboa: Sílabo.
+\item
+  DANCEY, C \& REIDY, J (2019) \emph{Estatística sem Matemática para
+  Psicologia}. 7ª ed.~Porto Alegre: Penso.
+\item
+  STEPHENS, LJ (2009) \emph{Statistics in Psychology}. NY: McGraw-Hill,
+  Schaum's Outline Series.
+\item
+  DI LEO, G \& SARDANELLI, F (2020) Statistical significance: p value,
+  0.05 threshold, and applications to radiomics-reasons for a
+  conservative approach. \emph{Eur Radiol Exp} 4: 18.
+  \url{https://doi.org/10.1186/s41747-020-0145-y}
+\item
+  GATÁS, RR (1978) \emph{Elementos de probabilidade e inferência}. SP:
+  Atlas.
+\item
+  PERUGINI, M et al.~(2018) A practical primer to power analysis for
+  simple experimental designs. \emph{International Review of Social
+  Psychology} 31(1): 1--23, DOI: \url{https://doi.org/10.5334/irsp.181}.
+  Scripts R e Rmd: \url{https://github.com/mcfanda/primerPowerIRSP}
+\item
+  GERARD, PD \& SMITH, DR \& WEERRAKKODY, G (1998) Limits of
+  retrospective power analysis. \emph{The Journal of Wildlife
+  Management} 62(2): 801--7. \url{https://doi.org/10.2307/3802357}.
+\item
+  BACCHETTI, P (2010) Current sample size conventions: Flaws, harms, and
+  alternatives. \emph{BMC Med} 8: 17.
+  \url{https://doi.org/10.1186/1741-7015-8-17}.
+\item
+  AGRESTI, A \& FINLAY, B (2012) \emph{Métodos estatísticos para as
+  Ciências Sociais}. Porto Alegre: PENSO.
+\item
+  ALTHOUSE, AD et al.~(2021) Recommendations for statistical reporting
+  in cardiovascular medicine: A special report from the American Heart
+  Association. \emph{Circulation} 144(4): e70-e91.
+\item
+  WONNACOTT, T \& WONNACOTT, R (1981) \emph{Estatística aplicada à
+  Economia e à Administração}. RJ: LTC.
+\item
+  LOMBARDI, CM \& HURLBERT, SH (2009) Misprescription and misuse of
+  one-tailed tests. \emph{Austral Ecology} 34: 447-68.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Script R completo}
+\protect\hypertarget{script-r-completo}{}
+\begin{Shaded}
+\begin{Highlighting}[]
+  \FunctionTok{cat}\NormalTok{(}\FunctionTok{readLines}\NormalTok{(}\StringTok{"Modulo3.R"}\NormalTok{), }\AttributeTok{sep=}\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+\end{frame}
+
+\end{document}
